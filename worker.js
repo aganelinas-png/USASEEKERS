@@ -5,7 +5,7 @@ const GITHUB_HTML_PROD = 'https://raw.githubusercontent.com/aganelinas-png/USASE
 const ADMIN_SECRET_PLACEHOLDER = `window._adminSecret='ADMIN_SECRET_PLACEHOLDER';`;
 
 const FIREBASE_CONFIG_PLACEHOLDER = `const firebaseConfig={
-  apiKey:"FIREBASE_API_KEY_PLACEHOLDER",
+  apiKey:"FIREBASE_API_KEY_PLACEHOLDER", 
   authDomain:"FIREBASE_AUTH_DOMAIN_PLACEHOLDER",
   projectId:"FIREBASE_PROJECT_ID_PLACEHOLDER",
   storageBucket:"FIREBASE_STORAGE_BUCKET_PLACEHOLDER",
