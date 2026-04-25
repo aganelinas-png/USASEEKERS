@@ -927,14 +927,14 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
     <div class="ib" onclick="openDrawer()">☰</div>
     <div class="logo-pill" onclick="handleLogoClick()">
       <div class="logo-text">SpotSeekers</div>
-      <div class="logo-sub" id="topSub">0 / 0 collected</div>
+      <div class="logo-sub" id="topSub">0 collected</div>
       <div style="font-family:'DM Mono',monospace;font-size:.48rem;color:var(--tm);letter-spacing:.06em;margin-top:1px;opacity:.7">v24.03</div>
     </div>
     <div class="streak-pill" id="streakPill" style="display:none">🔥 <span id="streakNum">0</span></div>
   </div>
   <!-- FILTERS inline in topbar -->
   <div class="tb-filters" id="filterBar">
-    <div class="fcap on" data-cat="all" onclick="setFilter('all')">Visos</div>
+    <div class="fcap on" data-cat="all" onclick="setFilter('all')">All</div>
     <div class="fgroup" data-group="built" onclick="toggleFilterGroup('built')">🏛 Built <span class="fg-arr">▾</span></div>
     <div class="fgroup" data-group="place" onclick="toggleFilterGroup('place')">⛏ Place <span class="fg-arr">▾</span></div>
   </div>
@@ -1318,7 +1318,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 </div>
 
 <!-- Locked spots banner -->
-<div id="lockedBanner" onclick="openPremiumModal()" style="display:none;position:fixed;bottom:calc(80px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:200;background:linear-gradient(135deg,var(--surf2),var(--surf));border:1px solid var(--gold);border-radius:20px;padding:8px 16px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.35);cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;font-size:.8rem;color:var(--txt)">
+<div id="lockedBanner" onclick="openPremiumModal()" style="display:none;position:fixed;bottom:calc(80px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:200;background:linear-gradient(135deg,var(--surf2),var(--surf));border:1px solid var(--gold);border-radius:20px;padding:8px 16px;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.35);cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;font-size:.8rem;color:var(--txt)">
   <span style="font-size:.95rem">🔒</span>
   <span><strong id="lockedBannerCount" style="color:var(--gold)">0</strong> more historic spots with Premium</span>
   <span style="color:var(--gold);font-size:.75rem">→</span>
@@ -4260,27 +4260,10 @@ function processOsmElement(e){
 
 let _osmManualMode=false;
 
+// TODO: Add USA city/region bboxes for OSM manual import when ready
 const CITY_BBOXES_GLOBAL=[
-  // TODO: Add USA cities/regions for OSM manual import
   // ['New York','40.49,-74.26,40.92,-73.70'],
   // ['Chicago','41.64,-87.94,42.02,-87.52']
-],
-  [
-  // TODO: USA regions for OSM manual import
-],
-  [
-  // TODO: USA regions
-],
-  ['Alytus','54.38,24.02,54.42,24.08'],
-  [
-  // TODO: USA regions
-],
-  [
-  // TODO: USA regions
-],
-  ['Jonava','55.07,24.27,55.10,24.30'],
-  [
-  // TODO: Add USA regions for OSM manual import
 ];
 
 const OSM_CACHE_KEY_MANUAL='usa_osm_manual_regions_v1';
@@ -6388,8 +6371,8 @@ const OB_KEY='ss_onboarded_v1';
 const OB_SLIDES=[
   {icon:'🗺',title:'Welcome to SpotSeekers!',text:'Discover historic American places — buildings, districts, sites and much more.'},
   {icon:'📍',title:'Find a Spot on the Map',text:'The map shows thousands of spots. Each has its own history and unique tier.'},
-  {icon:'🚶',title:'Go There in Person',text:'To collect a spot you must physically visit it. GPS will verify you're close enough.'},
-  {icon:'✅',title:'Collect a Spot!',text:'When you're close — tap "Collect". You'll earn XP and the spot will be marked as collected.'},
+  {icon:'🚶',title:'Go There in Person',text:'To collect a spot you must physically visit it. GPS will verify you\'re close enough.'},
+  {icon:'✅',title:'Collect a Spot!',text:'When you\'re close — tap \"Collect\". You\'ll earn XP and the spot will be marked as collected.'},
   {icon:'⭐',title:'Level Up',text:'The more spots you collect — the higher your level. There are 50 levels and dozens of badges!'},
   {icon:'🏆',title:'Compete!',text:'See who collected the most on the leaderboard. Can you crack the TOP 10?'},
   {icon:'🎯',title:'Start Exploring!',text:'Register or sign in — and let the expedition begin. Thousands of spots await!'},
