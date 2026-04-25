@@ -5,7 +5,7 @@ const GITHUB_HTML_PROD = 'https://raw.githubusercontent.com/aganelinas-png/USASE
 const ADMIN_SECRET_PLACEHOLDER = `window._adminSecret='ADMIN_SECRET_PLACEHOLDER';`;
 
 const FIREBASE_CONFIG_PLACEHOLDER = `const firebaseConfig={
-  apiKey:"FIREBASE_API_KEY_PLACEHOLDER", 
+  apiKey:"FIREBASE_API_KEY_PLACEHOLDER",
   authDomain:"FIREBASE_AUTH_DOMAIN_PLACEHOLDER",
   projectId:"FIREBASE_PROJECT_ID_PLACEHOLDER",
   storageBucket:"FIREBASE_STORAGE_BUCKET_PLACEHOLDER",
@@ -306,10 +306,21 @@ function toggleCard(id) {
 </body>
 </html>`;
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Secret',
+};
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const adminSecret = env.ADMIN_SECRET || 'usa2026';
+
+    // ── OPTIONS preflight ──
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: CORS_HEADERS });
+    }
 
     // ── GET /.well-known/assetlinks.json — TWA verification ──
     if (url.pathname === '/.well-known/assetlinks.json') {
@@ -411,11 +422,11 @@ export default {
         const kvKey = `spots_usa_${pack}`;
         await env.SPOTS_KV.put(kvKey, body);
         return new Response(JSON.stringify({ ok: true, pack, kvKey, count: parsed.length }), {
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
         });
       } catch(e) {
         return new Response(JSON.stringify({ error: e.message }), {
-          status: 400, headers: { 'Content-Type': 'application/json' }
+          status: 400, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
         });
       }
     }
