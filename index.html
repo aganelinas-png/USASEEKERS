@@ -955,7 +955,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 <!-- WEATHER EXPANDED -->
 <div class="wx-expanded" id="wxExpanded">
   <div style="display:flex;justify-content:space-between;align-items:flex-start">
-    <div><div class="we-temp" id="weTemp">—°C</div><div class="we-desc" id="weDesc">Kraunama...</div></div>
+    <div><div class="we-temp" id="weTemp">—°C</div><div class="we-desc" id="weDesc">Loading...</div></div>
     <div style="font-size:26px" id="weIcon">🌤</div>
   </div>
   <div class="we-row">
@@ -1095,7 +1095,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 <div class="modal-bg" id="editorModal">
   <div class="modal-box">
     <div class="modal-handle"></div>
-    <div class="modal-title" id="editorTitle">Nauja vieta</div>
+    <div class="modal-title" id="editorTitle">New spot</div>
     <!-- OSM SEARCH -->
     <div class="fg" style="position:relative">
       <label class="fl">🔍 Search location</label>
@@ -1204,7 +1204,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
   <div class="mob-filter-bg" onclick="closeMobFilterSheet()"></div>
   <div class="mob-filter-panel">
     <div class="mob-filter-header">
-      <div class="mob-filter-title">Filtruoti vietas</div>
+      <div class="mob-filter-title">Filter spots</div>
       <div class="mob-filter-close" onclick="closeMobFilterSheet()">✕</div>
     </div>
     <div class="mob-filter-chips">
@@ -1369,20 +1369,54 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 
 // NRHP categories — these match spot.cat (normalized from spot.category on load)
 const CATS={
-  building:{label:'Buildings',emoji:'🏛',color:'#4a6fa5'},
-  structure:{label:'Structures',emoji:'⚙️',color:'#4a8c5c'},
-  district:{label:'Districts',emoji:'🏘',color:'#8B4513'},
-  site:{label:'Sites',emoji:'⛏',color:'#5a7a3a'},
-  object:{label:'Objects',emoji:'🗿',color:'#8B6914'},
-  hidden:{label:'Hidden',emoji:'🔮',color:'#6a3a8a'},
+  // ── Derived sub-categories (name-based classification) ──
+  church:    {label:'Churches',     emoji:'⛪',color:'#7a5c8a'},
+  school:    {label:'Schools',      emoji:'🏫',color:'#4a7a9b'},
+  bridge:    {label:'Bridges',      emoji:'🌉',color:'#4a6fa5'},
+  courthouse:{label:'Courthouses',  emoji:'⚖️',color:'#8a6a3a'},
+  hotel:     {label:'Hotels & Inns',emoji:'🏨',color:'#7a8a4a'},
+  military:  {label:'Military',     emoji:'🪖',color:'#5a7a5a'},
+  cemetery:  {label:'Cemeteries',   emoji:'⚱️',color:'#6a6a7a'},
+  theater:   {label:'Theaters',     emoji:'🎭',color:'#8a4a6a'},
+  museum:    {label:'Museums',      emoji:'🏺',color:'#6a4a8a'},
+  hospital:  {label:'Hospitals',    emoji:'🏥',color:'#4a8a6a'},
+  prison:    {label:'Prisons',      emoji:'🔒',color:'#5a5a6a'},
+  mill:      {label:'Mills',        emoji:'⚙️',color:'#7a6a4a'},
+  monument:  {label:'Monuments',    emoji:'🗿',color:'#8a7a4a'},
+  park:      {label:'Parks',        emoji:'🌿',color:'#4a8c5c'},
+  lighthouse:{label:'Lighthouses',  emoji:'🗼',color:'#4a7a9b'},
+  bank:      {label:'Banks',        emoji:'🏦',color:'#6a8a4a'},
+  // ── NRHP base categories (fallback) ──
+  building:  {label:'Buildings',    emoji:'🏛',color:'#4a6fa5'},
+  structure: {label:'Structures',   emoji:'🔩',color:'#5a7a6a'},
+  district:  {label:'Districts',    emoji:'🏘',color:'#8B4513'},
+  site:      {label:'Sites',        emoji:'⛏',color:'#5a7a3a'},
+  object:    {label:'Objects',      emoji:'🗿',color:'#8B6914'},
+  hidden:    {label:'Hidden',       emoji:'🔮',color:'#6a3a8a'},
 };
 
 const FILTER_GROUPS=[
-  {id:'building',label:'Buildings',emoji:'🏛',cats:['building']},
-  {id:'structure',label:'Structures',emoji:'⚙️',cats:['structure']},
-  {id:'district',label:'Districts',emoji:'🏘',cats:['district']},
-  {id:'site',label:'Sites',emoji:'⛏',cats:['site']},
-  {id:'object',label:'Objects',emoji:'🗿',cats:['object']},
+  {id:'church',     label:'Churches',      emoji:'⛪', cats:['church']},
+  {id:'courthouse', label:'Courthouses',   emoji:'⚖️', cats:['courthouse']},
+  {id:'school',     label:'Schools',       emoji:'🏫', cats:['school']},
+  {id:'museum',     label:'Museums',       emoji:'🏺', cats:['museum']},
+  {id:'bridge',     label:'Bridges',       emoji:'🌉', cats:['bridge']},
+  {id:'lighthouse', label:'Lighthouses',   emoji:'🗼', cats:['lighthouse']},
+  {id:'mill',       label:'Mills',         emoji:'⚙️', cats:['mill']},
+  {id:'military',   label:'Military',      emoji:'🪖', cats:['military']},
+  {id:'monument',   label:'Monuments',     emoji:'🗿', cats:['monument']},
+  {id:'cemetery',   label:'Cemeteries',    emoji:'⚱️', cats:['cemetery']},
+  {id:'hotel',      label:'Hotels & Inns', emoji:'🏨', cats:['hotel']},
+  {id:'bank',       label:'Banks',         emoji:'🏦', cats:['bank']},
+  {id:'theater',    label:'Theaters',      emoji:'🎭', cats:['theater']},
+  {id:'hospital',   label:'Hospitals',     emoji:'🏥', cats:['hospital']},
+  {id:'prison',     label:'Prisons',       emoji:'🔒', cats:['prison']},
+  {id:'park',       label:'Parks',         emoji:'🌿', cats:['park']},
+  {id:'building',   label:'Buildings',     emoji:'🏛', cats:['building']},
+  {id:'structure',  label:'Structures',    emoji:'🔩', cats:['structure']},
+  {id:'district',   label:'Districts',     emoji:'🏘', cats:['district']},
+  {id:'site',       label:'Sites',         emoji:'⛏', cats:['site']},
+  {id:'object',     label:'Objects',       emoji:'🗿', cats:['object']},
 ];
 
 // 4-tier system: 1=Local, 2=State, 3=National, 4=Landmark
@@ -1398,23 +1432,104 @@ const DEFAULT_RADIUS=80;
 
 // Per-category sensible defaults — used when no explicit radius is set
 const CAT_DEFAULT_RADIUS={
-  viewpoint:50,
   monument:55,
-  mural:55,
+  lighthouse:60,
   church:65,
   museum:65,
-  watertower:70,
-  history:80,
-  fort:130,
-  nature:150,
-  mound:160,
-  cemetery:220,
+  theater:65,
+  bank:65,
+  hotel:65,
+  hospital:70,
+  prison:70,
+  mill:70,
+  school:75,
+  courthouse:75,
+  building:80,
+  structure:80,
+  object:80,
+  military:100,
+  bridge:100,
+  site:100,
+  cemetery:120,
+  district:150,
+  park:180,
 };
 
 const DEFAULT_SPOTS=[]; // removed — KV/Firestore is always populated
 
 const BADGE_GROUPS=[
-  // ── NRHP Categories ──
+  // ── Sacred & Civic ──
+  {id:'churches',title:'Church Pilgrim',icon:'⛪',cat:'church',sub:true,badges:[
+    {id:'ch1',name:'Sunday Visitor',desc:'Visit 1 historic church',icon:'⛪',need:1,xpReward:10},
+    {id:'ch2',name:'Parish Hopper',desc:'Visit 10 churches',icon:'🕍',need:10,xpReward:30},
+    {id:'ch3',name:'Congregation Walker',desc:'Visit 50 churches',icon:'⛪',need:50,xpReward:100},
+    {id:'ch4',name:'Cathedral Pilgrim',desc:'Visit 200 churches',icon:'🙏',need:200,xpReward:300},
+    {id:'ch5',name:'Holy Roads Legend',desc:'Visit 500 churches',icon:'💎',need:500,xpReward:800},
+  ]},
+  {id:'courthouses',title:'Justice Seeker',icon:'⚖️',cat:'courthouse',sub:true,badges:[
+    {id:'cou1',name:'Order in the Court',desc:'Visit 1 courthouse',icon:'⚖️',need:1,xpReward:10},
+    {id:'cou2',name:'County Clerk',desc:'Visit 10 courthouses',icon:'📜',need:10,xpReward:30},
+    {id:'cou3',name:'Circuit Rider',desc:'Visit 40 courthouses',icon:'⚖️',need:40,xpReward:100},
+    {id:'cou4',name:'Supreme Walker',desc:'Visit 100 courthouses',icon:'💎',need:100,xpReward:300},
+  ]},
+  {id:'schools',title:'School Bell',icon:'🏫',cat:'school',sub:true,badges:[
+    {id:'sc1',name:'Class is in Session',desc:'Visit 1 historic school',icon:'🏫',need:1,xpReward:10},
+    {id:'sc2',name:'Campus Hopper',desc:'Visit 10 schools',icon:'📚',need:10,xpReward:25},
+    {id:'sc3',name:'Dean of History',desc:'Visit 50 schools',icon:'🎓',need:50,xpReward:80},
+    {id:'sc4',name:'Academic Legend',desc:'Visit 150 schools',icon:'💎',need:150,xpReward:250},
+  ]},
+  {id:'museums',title:'Museum Runner',icon:'🏺',cat:'museum',sub:true,badges:[
+    {id:'mu1',name:'First Exhibit',desc:'Visit 1 museum',icon:'🏺',need:1,xpReward:15},
+    {id:'mu2',name:'Gallery Hopper',desc:'Visit 5 museums',icon:'🖼',need:5,xpReward:40},
+    {id:'mu3',name:'Curator',desc:'Visit 15 museums',icon:'💎',need:15,xpReward:150},
+  ]},
+  // ── Infrastructure ──
+  {id:'bridges',title:'Bridge Walker',icon:'🌉',cat:'bridge',sub:true,badges:[
+    {id:'br1',name:'First Crossing',desc:'Walk over 1 historic bridge',icon:'🌉',need:1,xpReward:15},
+    {id:'br2',name:'River Hopper',desc:'Visit 10 bridges',icon:'🏗',need:10,xpReward:40},
+    {id:'br3',name:'Span Chaser',desc:'Visit 50 bridges',icon:'🌉',need:50,xpReward:120},
+    {id:'br4',name:'Bridge Legend',desc:'Visit 100 bridges',icon:'💎',need:100,xpReward:300},
+  ]},
+  {id:'lighthouses',title:'Lighthouse Keeper',icon:'🗼',cat:'lighthouse',sub:true,badges:[
+    {id:'lh1',name:'First Beam',desc:'Visit 1 lighthouse',icon:'🗼',need:1,xpReward:20},
+    {id:'lh2',name:'Coastal Watcher',desc:'Visit 5 lighthouses',icon:'🌊',need:5,xpReward:60},
+    {id:'lh3',name:'Keeper of the Light',desc:'Visit 15 lighthouses',icon:'💎',need:15,xpReward:200},
+  ]},
+  {id:'mills',title:'Mill Hunter',icon:'⚙️',cat:'mill',sub:true,badges:[
+    {id:'ml1',name:'Grind Time',desc:'Visit 1 historic mill',icon:'⚙️',need:1,xpReward:15},
+    {id:'ml2',name:'Mill Hopper',desc:'Visit 5 mills',icon:'🌾',need:5,xpReward:50},
+    {id:'ml3',name:'Mill Master',desc:'Visit 20 mills',icon:'💎',need:20,xpReward:150},
+  ]},
+  // ── History & Military ──
+  {id:'military',title:'Battlefield Walker',icon:'🪖',cat:'military',sub:true,badges:[
+    {id:'mi1',name:'At Ease',desc:'Visit 1 military site',icon:'🪖',need:1,xpReward:15},
+    {id:'mi2',name:'Enlisted',desc:'Visit 10 military sites',icon:'🎖',need:10,xpReward:40},
+    {id:'mi3',name:'Veteran Explorer',desc:'Visit 30 military sites',icon:'🏅',need:30,xpReward:120},
+    {id:'mi4',name:'General of History',desc:'Visit 75 military sites',icon:'💎',need:75,xpReward:300},
+  ]},
+  {id:'monuments',title:'Monument Seeker',icon:'🗿',cat:'monument',sub:true,badges:[
+    {id:'mo1',name:'First Memorial',desc:'Visit 1 monument or memorial',icon:'🗿',need:1,xpReward:10},
+    {id:'mo2',name:'Stone Reader',desc:'Visit 10 monuments',icon:'🏛',need:10,xpReward:30},
+    {id:'mo3',name:'Memorial Trail',desc:'Visit 40 monuments',icon:'🗿',need:40,xpReward:100},
+    {id:'mo4',name:'Monument Legend',desc:'Visit 100 monuments',icon:'💎',need:100,xpReward:250},
+  ]},
+  {id:'cemeteries',title:'Cemetery Walker',icon:'⚱️',cat:'cemetery',sub:true,badges:[
+    {id:'ce1',name:'Quiet Visitor',desc:'Visit 1 historic cemetery',icon:'⚱️',need:1,xpReward:15},
+    {id:'ce2',name:'Headstone Reader',desc:'Visit 5 cemeteries',icon:'🕯',need:5,xpReward:50},
+    {id:'ce3',name:'Eternal Grounds Walker',desc:'Visit 20 cemeteries',icon:'💎',need:20,xpReward:150},
+  ]},
+  // ── Commerce & Culture ──
+  {id:'hotels',title:'Inn Hopper',icon:'🏨',cat:'hotel',sub:true,badges:[
+    {id:'ho1',name:'Check In',desc:'Visit 1 historic hotel or inn',icon:'🏨',need:1,xpReward:10},
+    {id:'ho2',name:'Road Traveler',desc:'Visit 10 historic hotels',icon:'🛎',need:10,xpReward:30},
+    {id:'ho3',name:'Grand Tour',desc:'Visit 50 historic hotels',icon:'💎',need:50,xpReward:120},
+  ]},
+  {id:'theaters',title:'Curtain Raiser',icon:'🎭',cat:'theater',sub:true,badges:[
+    {id:'th1',name:'Front Row',desc:'Visit 1 historic theater',icon:'🎭',need:1,xpReward:15},
+    {id:'th2',name:'Showgoer',desc:'Visit 10 theaters',icon:'🎬',need:10,xpReward:40},
+    {id:'th3',name:'Curtain Legend',desc:'Visit 30 theaters',icon:'💎',need:30,xpReward:120},
+  ]},
+  // ── NRHP Base Categories ──
   {id:'buildings',title:'Building Collector',icon:'🏛',cat:'building',sub:true,badges:[
     {id:'bu1',name:'First Building',desc:'Visit 1 historic building',icon:'🏛',need:1,xpReward:10},
     {id:'bu2',name:'Block Walker',desc:'Visit 10 buildings',icon:'🏢',need:10,xpReward:20},
@@ -1422,10 +1537,10 @@ const BADGE_GROUPS=[
     {id:'bu4',name:'Urban Historian',desc:'Visit 200 buildings',icon:'🌆',need:200,xpReward:150},
     {id:'bu5',name:'Building Legend',desc:'Visit 500 buildings',icon:'💎',need:500,xpReward:500},
   ]},
-  {id:'structures',title:'Structure Hunter',icon:'⚙️',cat:'structure',sub:true,badges:[
-    {id:'sf1',name:'First Structure',desc:'Visit 1 historic structure',icon:'⚙️',need:1,xpReward:10},
+  {id:'structures',title:'Structure Hunter',icon:'🔩',cat:'structure',sub:true,badges:[
+    {id:'sf1',name:'First Structure',desc:'Visit 1 historic structure',icon:'🔩',need:1,xpReward:10},
     {id:'sf2',name:"Engineer's Eye",desc:'Visit 10 structures',icon:'🔧',need:10,xpReward:25},
-    {id:'sf3',name:'Infrastructure Explorer',desc:'Visit 40 structures',icon:'⚙️',need:40,xpReward:100},
+    {id:'sf3',name:'Infrastructure Explorer',desc:'Visit 40 structures',icon:'🔩',need:40,xpReward:100},
     {id:'sf4',name:'Structure Master',desc:'Visit 100 structures',icon:'💎',need:100,xpReward:300},
   ]},
   {id:'districts',title:'District Walker',icon:'🏘',cat:'district',sub:true,badges:[
@@ -1668,10 +1783,42 @@ function t3Collected(){return[...found].filter(id=>{const s=SPOTS.find(sp=>sp.id
 function t4Collected(){return[...found].filter(id=>{const s=SPOTS.find(sp=>sp.id==id);return s&&s.tier===4;}).length;}
 
 // Normalize spot from raw NRHP format to internal format
+// ── Name-based sub-category classification ──
+// Priority order: first match wins. More specific terms go first.
+const _CAT_RULES=[
+  ['lighthouse', ['lighthouse','light station','lightship']],
+  ['bridge',     ['bridge','viaduct','aqueduct']],
+  ['military',   ['battlefield','fort ','fortification','armory','arsenal','barracks','military academy','navy yard','air force base','war memorial','soldiers home','veterans home','coast guard']],
+  ['cemetery',   ['cemetery','burial ground','mausoleum','graveyard','burying ground']],
+  ['church',     ['church','chapel','cathedral','basilica','synagogue','mosque','temple ','parish','convent','monastery','abbey','meetinghouse','meeting house','masonic temple']],
+  ['courthouse', ['courthouse','court house','city hall','state capitol','statehouse','state house','post office building','customs house','custom house']],
+  ['school',     ['school','academy','college','university','seminary','library']],
+  ['theater',    ['theater','theatre','opera house','auditorium','playhouse']],
+  ['museum',     ['museum','hall of fame']],
+  ['hospital',   ['hospital','sanatorium','sanitarium','asylum']],
+  ['prison',     ['prison','penitentiary','jail','reformatory','house of correction']],
+  ['mill',       ['grist mill','gristmill','windmill','water mill','watermill','flour mill','sawmill','saw mill']],
+  ['monument',   ['monument','memorial','obelisk','statue','sculpture']],
+  ['hotel',      [' inn ',' inn,','tavern','hotel','lodge']],
+  ['bank',       ['national bank','savings bank','first bank','bank building','state bank']],
+  ['park',       ['national park','state park','city park','county park','historic park','nature preserve','arboretum','botanical garden','wildlife refuge']],
+];
+
+function _classifyByName(name){
+  if(!name) return null;
+  const n=' '+name.toLowerCase()+' ';
+  for(const [cat,kws] of _CAT_RULES){
+    for(const kw of kws){
+      if(n.includes(kw)) return cat;
+    }
+  }
+  return null;
+}
+
 function normalizeSpot(s){
-  // Normalize category → cat
+  // Normalize category → cat (keep original NRHP cat as base)
   s.cat = s.cat || s.category || 'building';
-  // Ensure cat is valid
+  // Ensure base cat is valid
   if(!CATS[s.cat]) s.cat='building';
   // Normalize tier string → int
   if(typeof s.tier==='string'){
@@ -1681,6 +1828,12 @@ function normalizeSpot(s){
   if(!s.tier||typeof s.tier!=='number') s.tier=1;
   // Ensure name fallback
   if(!s.name) s.name='';
+  // ── Sub-category classification by name (only for base NRHP cats) ──
+  // Districts, sites, objects keep their NRHP cat — they're meaningful as-is
+  if(['building','structure'].includes(s.cat) && s.name){
+    const derived=_classifyByName(s.name);
+    if(derived) s.cat=derived;
+  }
   return s;
 }
 
@@ -3001,46 +3154,62 @@ function renderBadges(){
 
 // ═══════════ WEEKLY CHALLENGE ═══════════
 const WEEKLY_CHALLENGES=[
-  // Category-based
-  {id:'w_building',cat:'building',goal:3,label:'Visit 3 historic buildings this week',icon:'🏛',xp:60},
-  {id:'w_building2',cat:'building',goal:5,label:'Visit 5 historic buildings this week',icon:'🏛',xp:90},
-  {id:'w_nature',cat:'site',goal:3,label:'Visit 3 natural sites this week',icon:'🌿',xp:60},
-  {id:'w_nature2',cat:'site',goal:5,label:'Visit 5 historic sites this week',icon:'🌿',xp:90},
-  {id:'w_fort',cat:'fort',goal:2,label:'Visit 2 fortus this week',icon:'🏰',xp:80},
-  {id:'w_fort2',cat:'fort',goal:3,label:'Visit 3 fortus this week',icon:'🏰',xp:110},
-  {id:'w_museum',cat:'museum',goal:2,label:'Visit 2 muziejus this week',icon:'🏛',xp:60},
-  {id:'w_museum2',cat:'museum',goal:4,label:'Visit 4 muziejus this week',icon:'🏛',xp:90},
-  {id:'w_history',cat:'history',goal:4,label:'Visit 4 historic buildings this week',icon:'⚔️',xp:70},
-  {id:'w_history2',cat:'history',goal:7,label:'Visit 7 historic buildings this week',icon:'⚔️',xp:110},
-  {id:'w_structure',cat:'structure',goal:2,label:'Visit 2 historic structures this week',icon:'🔭',xp:60},
-  {id:'w_structure2',cat:'structure',goal:4,label:'Visit 4 historic structures this week',icon:'🔭',xp:90},
-  {id:'w_mound',cat:'mound',goal:2,label:'Visit 2 mounds this week',icon:'⛰️',xp:80},
-  {id:'w_mound2',cat:'mound',goal:4,label:'Visit 4 mounds this week',icon:'⛰️',xp:120},
-  {id:'w_cemetery',cat:'cemetery',goal:2,label:'Visit 2 kapines this week',icon:'⚱️',xp:100},
-  {id:'w_district',cat:'district',goal:3,label:'Visit 3 historic districts this week',icon:'🎨',xp:60},
-  {id:'w_district2',cat:'district',goal:5,label:'Visit 5 historic districts this week',icon:'🎨',xp:90},
-  {id:'w_monument',cat:'monument',goal:3,label:'Visit 3 monumentus this week',icon:'🗿',xp:70},
-  {id:'w_monument2',cat:'monument',goal:5,label:'Visit 5 monumentus this week',icon:'🗿',xp:100},
-  {id:'w_object',cat:'object',goal:2,label:'Visit 2 historic objects this week',icon:'🗼',xp:80},
-  // Any-category challenges
-  {id:'w_any3',cat:null,goal:3,label:'Collect bet kokias 3 vietas this week',icon:'🗺',xp:40},
-  {id:'w_any5',cat:null,goal:5,label:'Collect bet kokias 5 vietas this week',icon:'🗺',xp:60},
-  {id:'w_any8',cat:null,goal:8,label:'Collect bent 8 vietas this week',icon:'🗺',xp:90},
-  {id:'w_any10',cat:null,goal:10,label:'Collect 10 spots this week — the Seeker standard!',icon:'🗺',xp:120},
-  // Tier-based
-  {id:'w_t2a',cat:null,tier:2,goal:2,label:'Collect 2 retas (T2) vietas this week',icon:'🥈',xp:100},
-  {id:'w_t3a',cat:null,tier:3,goal:1,label:'Collect at least 1 National (T3) spot this week',icon:'🥇',xp:120},
-  {id:'w_t3b',cat:null,tier:3,goal:2,label:'Collect 2 legendines (T3) vietas this week',icon:'🥇',xp:180},
-  // Heritage combo
-  {id:'w_heritage',cat:null,cats:['building','structure','district'],goal:4,label:'Visit 4 heritage places (buildings, structures or districts)',icon:'🏛',xp:90},
-  {id:'w_heritage2',cat:null,cats:['fort','mound','history'],goal:3,label:'Visit 3 defensive or historic buildings',icon:'⚔️',xp:90},
-  // Nature combo
-  {id:'w_outdoors',cat:null,cats:['site','structure','district'],goal:4,label:'Visit 4 outdoor heritage places (sites, structures, or districts)',icon:'🌄',xp:80},
-  // Urban combo
-  {id:'w_urban',cat:null,cats:['building','structure','district'],goal:4,label:'Visit 4 urban heritage spots (buildings, structures, or districts)',icon:'🏙',xp:80},
-  // Streak boosters
-  {id:'w_streak3',cat:null,goal:1,streakBonus:3,label:'Visit at least 1 spot and maintain a 3-day streak this week',icon:'🔥',xp:70},
-  {id:'w_daily',cat:null,goal:7,perDay:true,label:'Visit at least 1 spot every day this week',icon:'📅',xp:150},
+  // ── Any category ──
+  {id:'w_any3',  cat:null,goal:3, label:'Collect any 3 spots this week',                          icon:'🗺',xp:40},
+  {id:'w_any5',  cat:null,goal:5, label:'Collect any 5 spots this week',                          icon:'🗺',xp:60},
+  {id:'w_any8',  cat:null,goal:8, label:'Collect any 8 spots this week',                          icon:'🗺',xp:90},
+  {id:'w_any10', cat:null,goal:10,label:'Collect 10 spots this week — the Seeker standard!',       icon:'🗺',xp:120},
+  // ── Tier-based ──
+  {id:'w_t2a',   cat:null,tier:2,goal:2, label:'Collect 2 State (T2) spots this week',            icon:'🔵',xp:100},
+  {id:'w_t3a',   cat:null,tier:3,goal:1, label:'Collect at least 1 National (T3) spot this week', icon:'🟡',xp:120},
+  {id:'w_t3b',   cat:null,tier:3,goal:2, label:'Collect 2 National (T3) spots this week',         icon:'🟡',xp:180},
+  {id:'w_t4a',   cat:null,tier:4,goal:1, label:'Visit a National Historic Landmark this week',    icon:'🔴',xp:200},
+  // ── Churches ──
+  {id:'w_church',  cat:'church',goal:2,label:'Visit 2 historic churches this week',               icon:'⛪',xp:60},
+  {id:'w_church2', cat:'church',goal:5,label:'Visit 5 historic churches this week',               icon:'⛪',xp:100},
+  // ── Bridges ──
+  {id:'w_bridge',  cat:'bridge',goal:2,label:'Visit 2 historic bridges this week',                icon:'🌉',xp:70},
+  {id:'w_bridge2', cat:'bridge',goal:4,label:'Cross 4 historic bridges this week',                icon:'🌉',xp:110},
+  // ── Military ──
+  {id:'w_military', cat:'military',goal:2,label:'Visit 2 military sites this week',               icon:'🪖',xp:80},
+  {id:'w_military2',cat:'military',goal:3,label:'Visit 3 battlefields or forts this week',        icon:'🪖',xp:110},
+  // ── Schools ──
+  {id:'w_school',  cat:'school',goal:2,label:'Visit 2 historic schools this week',                icon:'🏫',xp:60},
+  {id:'w_school2', cat:'school',goal:5,label:'Visit 5 historic schools this week',                icon:'🏫',xp:90},
+  // ── Courthouses ──
+  {id:'w_court',   cat:'courthouse',goal:2,label:'Visit 2 courthouses or city halls this week',   icon:'⚖️',xp:70},
+  {id:'w_court2',  cat:'courthouse',goal:4,label:'Visit 4 courthouses this week',                 icon:'⚖️',xp:110},
+  // ── Cemeteries ──
+  {id:'w_cemetery',cat:'cemetery',goal:2,label:'Visit 2 historic cemeteries this week',           icon:'⚱️',xp:100},
+  // ── Monuments ──
+  {id:'w_monument', cat:'monument',goal:3,label:'Visit 3 monuments or memorials this week',       icon:'🗿',xp:70},
+  {id:'w_monument2',cat:'monument',goal:5,label:'Visit 5 monuments this week',                    icon:'🗿',xp:100},
+  // ── Museums ──
+  {id:'w_museum',  cat:'museum',goal:1,label:'Visit a historic museum this week',                 icon:'🏺',xp:60},
+  {id:'w_museum2', cat:'museum',goal:2,label:'Visit 2 museums this week',                         icon:'🏺',xp:90},
+  // ── Lighthouses ──
+  {id:'w_lighthouse',cat:'lighthouse',goal:1,label:'Find a lighthouse this week',                 icon:'🗼',xp:80},
+  {id:'w_lighthouse2',cat:'lighthouse',goal:2,label:'Visit 2 lighthouses this week',              icon:'🗼',xp:130},
+  // ── Hotels & Theaters ──
+  {id:'w_hotel',   cat:'hotel',goal:2,label:'Visit 2 historic hotels or inns this week',          icon:'🏨',xp:60},
+  {id:'w_theater', cat:'theater',goal:2,label:'Visit 2 historic theaters this week',              icon:'🎭',xp:70},
+  // ── NRHP base ──
+  {id:'w_building', cat:'building',goal:3,label:'Visit 3 historic buildings this week',           icon:'🏛',xp:60},
+  {id:'w_building2',cat:'building',goal:5,label:'Visit 5 historic buildings this week',           icon:'🏛',xp:90},
+  {id:'w_structure',cat:'structure',goal:2,label:'Visit 2 historic structures this week',         icon:'🔩',xp:60},
+  {id:'w_structure2',cat:'structure',goal:4,label:'Visit 4 historic structures this week',        icon:'🔩',xp:90},
+  {id:'w_district', cat:'district',goal:2,label:'Explore 2 historic districts this week',         icon:'🏘',xp:70},
+  {id:'w_district2',cat:'district',goal:4,label:'Explore 4 historic districts this week',         icon:'🏘',xp:110},
+  {id:'w_site',    cat:'site',goal:3,label:'Visit 3 historic sites this week',                    icon:'⛏',xp:60},
+  {id:'w_object',  cat:'object',goal:2,label:'Find 2 historic objects this week',                 icon:'🗿',xp:80},
+  // ── Combo challenges ──
+  {id:'w_heritage',cat:null,cats:['church','courthouse','school'],goal:4,label:'Visit 4 civic places — churches, courthouses, or schools',icon:'🏛',xp:90},
+  {id:'w_explorer',cat:null,cats:['bridge','lighthouse','mill'],goal:3,label:'Visit 3 engineering landmarks — bridges, lighthouses, or mills',icon:'⚙️',xp:100},
+  {id:'w_history', cat:null,cats:['military','monument','cemetery'],goal:4,label:'Visit 4 sites of remembrance — military, monuments, or cemeteries',icon:'🎖',xp:110},
+  {id:'w_urban',   cat:null,cats:['building','district','theater'],goal:4,label:'Explore 4 urban heritage spots — buildings, districts, or theaters',icon:'🏙',xp:80},
+  // ── Streak boosters ──
+  {id:'w_streak3', cat:null,goal:1,streakBonus:3,label:'Visit at least 1 spot and keep a 3-day streak this week',icon:'🔥',xp:70},
+  {id:'w_daily',   cat:null,goal:7,perDay:true,  label:'Visit at least 1 spot every day this week',            icon:'📅',xp:150},
 ];
 
 // Seeded shuffle — produces a stable but year+week unique order
@@ -4408,14 +4577,14 @@ function renderOsmList(){
   const selCount=_osmSelected.size;
   const importBtn=document.getElementById('osmImportBtn');
   if(importBtn) importBtn.textContent=selCount>0?`✅ Import ${selCount} spots`:'✅ Import';
-  if(!filtered.length){list.innerHTML=`<div style="text-align:center;padding:24px;color:var(--td);font-size:.82rem">Nera spots sioje kategorijoje</div>`;return;}
+  if(!filtered.length){list.innerHTML=`<div style="text-align:center;padding:24px;color:var(--td);font-size:.82rem">No spots in this category</div>`;return;}
   list.innerHTML=filtered.map(({item,i})=>`
     <div class="osm-item ${_osmSelected.has(i)?'selected':''} ${item.alreadyIn?'already':''}" onclick="osmToggleItem(${i})">
       <div class="osm-check">${item.alreadyIn?'✓':_osmSelected.has(i)?'✓':''}</div>
       <div class="osm-emoji">${OSM_CAT_EMOJI[item.cat]||'📍'}</div>
       <div class="osm-info">
         <div class="osm-name">${item.name}</div>
-        <div class="osm-meta">${item.cat} · ${item.lat.toFixed(4)}, ${item.lng.toFixed(4)}${item.alreadyIn?' · <span style="color:var(--green)">jau prideta</span>':''}</div>
+        <div class="osm-meta">${item.cat} · ${item.lat.toFixed(4)}, ${item.lng.toFixed(4)}${item.alreadyIn?' · <span style="color:var(--green)">already added</span>':''}</div>
       </div>
     </div>`).join('');
 }
@@ -4423,7 +4592,7 @@ function renderOsmList(){
 async function osmImportSelected(){
   if(_osmSelected.size===0){toast('⚠ No spots selected','info');return;}
   const btn=document.getElementById('osmImportBtn');
-  if(btn){btn.disabled=true;btn.textContent='Importuojama...';}
+  if(btn){btn.disabled=true;btn.textContent='Importing...';}
   const{db,collection,addDoc,serverTimestamp}=window._fb||{};
   if(!db){toast('Firebase nepasiekiamas','info');if(btn)btn.disabled=false;return;}
   let imported=0;
@@ -4459,7 +4628,7 @@ function _getImportCountry(){return 'USA';}
 function _countrySelector(){
   const ic=_getImportCountry();
   return`<div style="display:flex;gap:6px;margin-bottom:10px;align-items:center">
-    <span style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--tm);text-transform:uppercase;letter-spacing:.06em">Import salis:</span>
+    <span style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--tm);text-transform:uppercase;letter-spacing:.06em">Import country:</span>
     ${Object.entries(COUNTRY_CONFIG).map(([code,cfg])=>`<div onclick="_importCountry='${code}';renderOsmImport()" style="padding:4px 10px;border-radius:8px;font-size:.72rem;font-family:'DM Mono',monospace;cursor:pointer;border:1px solid ${ic===code?'var(--gold)':'var(--bdr)'};background:${ic===code?'var(--gold)':'var(--surf2)'};color:${ic===code?'#0e0c09':'var(--td)'};-webkit-user-select:none;user-select:none">${cfg.flag} ${code}</div>`).join('')}
   </div>`;
 }
@@ -4508,18 +4677,18 @@ function renderOsmImport(){
     ${_tabBar()}
     <div style="margin-bottom:10px">
       <div style="font-family:'DM Mono',monospace;font-size:.72rem;color:var(--gold);margin-bottom:4px">${countryLabel} · area filtrais</div>
-      <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm)">⚠ Greitesnis uzklausimas nei anksciau. Patikrink dublikatus pries pridedant.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm)">⚠ Faster query than before. Check for duplicates before importing.</div>
     </div>
     <div class="osm-controls">
-      <button class="osm-ctrl-btn" onclick="fetchOsmData()">🔄 Ikelti is OSM</button>
+      <button class="osm-ctrl-btn" onclick="fetchOsmData()">🔄 Load from OSM</button>
       <button class="osm-ctrl-btn" onclick="_osmForceRefresh=true;fetchOsmData()" title="Clear cache and reload">♻️ Atnaujinti</button>
       <button class="osm-ctrl-btn" onclick="osmToggleManual()" id="osmManualToggle">${_osmManualMode?'🤖 Auto':'🖐 Rankiniu'}</button>
       <button class="osm-ctrl-btn" onclick="osmSelectAll()">☑ Visos</button>
       <button class="osm-ctrl-btn" onclick="osmSelectNone()">☐ Ne viena</button>
       <button class="osm-ctrl-btn pri" id="osmImportBtn" onclick="osmImportSelected()">✅ Import</button>
-      <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red)" onclick="findDuplicateSpots()">🔍 Dublikatai</button>
-      <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red);background:rgba(140,74,74,.1)" onclick="autoDeleteAllDuplicates()">🗑 Istrinti visus</button>
-      <button class="osm-ctrl-btn" style="border-color:#b07aaa;color:#b07aaa" onclick="reclassifyKpdSpots()">🏷 Perrusiuoti KPD</button>
+      <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red)" onclick="findDuplicateSpots()">🔍 Duplicates</button>
+      <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red);background:rgba(140,74,74,.1)" onclick="autoDeleteAllDuplicates()">🗑 Delete all</button>
+      <button class="osm-ctrl-btn" style="border-color:#b07aaa;color:#b07aaa" onclick="reclassifyKpdSpots()">🏷 Reclassify KPD</button>
     </div>
     ${_osmManualMode?`<div id="osmManualGrid" style="margin:8px 0;max-height:260px;overflow-y:auto;padding:0 2px"></div>`:''}
     <div class="osm-filter-row">
@@ -4529,7 +4698,7 @@ function renderOsmImport(){
       <span class="osm-tier-label">Tier:</span>
       ${[1,2,3].map(t=>`<button class="osm-tier-btn ${_osmTier===t?'on':''}" data-t="${t}" onclick="osmSetTier(${t})">T${t}</button>`).join('')}
     </div>
-    <div class="osm-status" id="osmStatus">${_osmImportData.length?`${_osmImportData.length} spots ikeltos (${_osmImportData.filter(x=>x.alreadyIn).length} jau pridetos)`:'Spausk "Ikelti is OSM" pradeti'}</div>
+    <div class="osm-status" id="osmStatus">${_osmImportData.length?`${_osmImportData.length} spots loaded (${_osmImportData.filter(x=>x.alreadyIn).length} already added)`:'Click "Load from OSM" to start'}</div>
     <div class="osm-list" id="osmList"></div>
   </div>`;
   if(_osmImportData.length) renderOsmList();
@@ -4719,7 +4888,7 @@ async function fetchKpdData(forceRefresh){
   try{
     while(true){
       const url=`${KPD_URL}?where=1%3D1&outFields=objectid,unikalus_kodas,pavadinimas,klasifikatorius,statusas,adresas,tipas,istorinis,architekturinis,sakralinis,archeologinis,memorialinis,amzius,reiksmingumas,nuoroda,sav_pav&returnGeometry=true&resultRecordCount=${KPD_BATCH}&resultOffset=${offset}&f=json`;
-      setS(`⏳ Kraunama... ${allFeatures.length} objektu (batch ${Math.floor(offset/KPD_BATCH)+1})`);
+      setS(`⏳ Loading... ${allFeatures.length} objektu (batch ${Math.floor(offset/KPD_BATCH)+1})`);
       const r=await fetch(url,{signal:AbortSignal.timeout(30000)});
       if(!r.ok) throw new Error(`HTTP ${r.status}`);
       const json=await r.json();
@@ -5271,7 +5440,7 @@ function renderWikidataPanel(){
     <div class="osm-filter-row" style="margin-top:6px">
       ${wcats.map(wc=>`<div class="osm-fchip ${_wikiFilter===wc?'on':''}" onclick="_wikiFilter='${wc}';renderOsmImport()">${wcatLabels[wc]||wc}</div>`).join('')}
     </div>
-    <div class="osm-status" id="wikiStatus">${_wikiData.length?`${_wikiData.length} spots · ${_wikiData.filter(x=>x.alreadyIn).length} jau prideta`:'Spausk "Ikelti" pradeti'}</div>
+    <div class="osm-status" id="wikiStatus">${_wikiData.length?`${_wikiData.length} spots · ${_wikiData.filter(x=>x.alreadyIn).length} already added`:'Spausk "Ikelti" pradeti'}</div>
     <div class="osm-list" id="wikiList"></div>
   </div>`;
 }
@@ -5753,7 +5922,7 @@ async function renderMySuggestions(){
     body.innerHTML=`<div style="padding:40px 20px;text-align:center;color:var(--td);font-size:.85rem">Prisijunk noredamas matyti savo siulymus.</div>`;
     return;
   }
-  body.innerHTML=`<div style="padding:20px;text-align:center;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--td)">⏳ Kraunama...</div>`;
+  body.innerHTML=`<div style="padding:20px;text-align:center;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--td)">⏳ Loading...</div>`;
   try{
     const{db,collection,getDocs,query,where}=window._fb;
     const q=query(collection(db,'suggestions'),where('uid','==',user.uid));
@@ -5793,7 +5962,7 @@ async function renderMySuggestions(){
 async function renderAdminSuggestions(){
   const body=document.getElementById('panel-suggestions');
   if(!isAdmin()){body.innerHTML='';return;}
-  body.innerHTML=`<div style="padding:20px;text-align:center;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--td)">⏳ Kraunama...</div>`;
+  body.innerHTML=`<div style="padding:20px;text-align:center;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--td)">⏳ Loading...</div>`;
   try{
     const{db,collection,getDocs,query,where}=window._fb;
     const q=query(collection(db,'suggestions'),where('status','==','pending'));
@@ -6203,7 +6372,7 @@ function renderReviewStars(){
 
 async function renderReviews(){
   const body=document.getElementById('panel-reviews');
-  body.innerHTML=`<div style="padding:20px 16px;text-align:center;font-family:'DM Mono',monospace;font-size:.75rem;color:var(--td)">⏳ Kraunama...</div>`;
+  body.innerHTML=`<div style="padding:20px 16px;text-align:center;font-family:'DM Mono',monospace;font-size:.75rem;color:var(--td)">⏳ Loading...</div>`;
   try{
     const{db,collection,getDocs,query,orderBy,limit}=window._fb;
     const q=query(collection(db,'reviews'),orderBy('ts','desc'),limit(50));
@@ -6766,7 +6935,7 @@ async function importSpotsCSV(input){
   const file=input.files[0];
   if(!file){return;}
   const btn=document.getElementById('csvImportBtn');
-  btn.textContent='⏳ Importuojama...';
+  btn.textContent='⏳ Importing...';
 
   const text=await file.text();
   // Strip BOM if present
