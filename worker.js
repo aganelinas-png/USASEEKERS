@@ -364,8 +364,8 @@ export default {
     }
 
     // ── GET /api/spots/:pack ──
-    // pack = skeleton | free | paid
-    const spotsMatch = url.pathname.match(/^\/api\/spots\/(skeleton|free|paid)$/);
+    // pack = skeleton | names | free | paid
+    const spotsMatch = url.pathname.match(/^\/api\/spots\/(skeleton|names|free|paid)$/);
     if (spotsMatch) {
       const pack = spotsMatch[1];
       const kvKey = `spots_usa_${pack}`;
@@ -387,7 +387,7 @@ export default {
 
     // ── GET /api/spots/status ──
     if (url.pathname === '/api/spots/status') {
-      const packs = ['skeleton', 'free', 'paid'];
+      const packs = ['skeleton', 'names', 'free', 'paid'];
       const results = {};
       for (const pack of packs) {
         const data = await env.SPOTS_KV.get(`spots_usa_${pack}`);
@@ -403,15 +403,15 @@ export default {
       });
     }
 
-    // ── POST /api/admin/rebuild?pack=skeleton|free|paid ──
+    // ── POST /api/admin/rebuild?pack=skeleton|names|free|paid ──
     if (url.pathname === '/api/admin/rebuild' && request.method === 'POST') {
       const secret = request.headers.get('X-Admin-Secret');
       if (secret !== adminSecret) {
         return new Response('Forbidden', { status: 403 });
       }
       const pack = (url.searchParams.get('pack') || '').toLowerCase();
-      if (!['skeleton', 'free', 'paid'].includes(pack)) {
-        return new Response(JSON.stringify({ error: 'Invalid pack. Use: skeleton | free | paid' }), {
+      if (!['skeleton', 'names', 'free', 'paid'].includes(pack)) {
+        return new Response(JSON.stringify({ error: 'Invalid pack. Use: skeleton | names | free | paid' }), {
           status: 400, headers: { 'Content-Type': 'application/json' }
         });
       }

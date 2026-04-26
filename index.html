@@ -22,10 +22,8 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-<!-- Google Identity Services -->
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 <!-- Firebase -->
-<script>window._adminSecret='ADMIN_SECRET_PLACEHOLDER';</script>
+<script>window._adminSecret='usaseekers2026';</script>
 <script type="module">
 // ═══════════ FIREBASE SETUP ═══════════
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
@@ -1022,7 +1020,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
       <div class="dnav-main-item" onclick="openSubPanel('aboutme')">
         <span class="dnmi-icon">🧭</span><span class="dnmi-label">My Progress</span><span class="dnmi-arrow">›</span>
       </div>
-      <div class="dnav-main-item" onclick="openSubPanel('vietos')">
+      <div class="dnav-main-item" onclick="openSubPanel('spots')">
         <span class="dnmi-icon">📋</span><span class="dnmi-label">Spots</span><span class="dnmi-arrow">›</span>
       </div>
       <div class="dnav-main-item" onclick="openSubPanel('zenklai')">
@@ -1077,7 +1075,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
     </div>
     <div class="drawer-sub-body" id="drawerSubBody">
       <div class="panel-section" id="panel-aboutme"></div>
-      <div class="panel-section" id="panel-vietos"></div>
+      <div class="panel-section" id="panel-spots"></div>
       <div class="panel-section" id="panel-favs"></div>
       <div class="panel-section" id="panel-zenklai"></div>
       <div class="panel-section" id="panel-social"></div>
@@ -1339,8 +1337,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
     <div class="auth-name" id="authName">Not signed in</div>
     <div class="auth-sub" id="authSub">Sign in to sync progress</div>
   </div>
-  <button class="auth-btn" id="authBtn" onclick="openEmailModal()">Google</button>
-  <button class="auth-btn" id="authEmailBtn" onclick="openEmailModal()" style="background:var(--surf2);border:1px solid var(--bdr);color:var(--txt)">Email</button>
+  <button class="auth-btn" id="authEmailBtn" onclick="openEmailModal()" style="background:var(--surf2);border:1px solid var(--bdr);color:var(--txt)">Sign In</button>
 </div>
 
 <!-- EMAIL AUTH MODAL -->
@@ -1349,26 +1346,17 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
     <button class="eauth-close" onclick="closeEmailModal()">✕</button>
     <div class="eauth-title" id="eauthTitle">Sign In</div>
     <div class="eauth-error" id="eauthError"></div>
-    <input class="eauth-input" id="eauthName" type="text" placeholder="Slapyvardis" style="display:none" maxlength="30">
+    <input class="eauth-input" id="eauthName" type="text" placeholder="Username" style="display:none" maxlength="30">
     <input class="eauth-input" id="eauthEmail" type="email" placeholder="Email" autocomplete="email">
     <input class="eauth-input" id="eauthPass" type="password" placeholder="Password" autocomplete="current-password">
     <div id="eauthForgotWrap" style="text-align:right;margin:-6px 0 10px 0">
       <span id="eauthForgotLink" onclick="fbForgotPassword()" style="font-size:.75rem;color:var(--td);cursor:pointer;text-decoration:underline;text-underline-offset:2px">Forgot password</span>
     </div>
     <button class="eauth-btn" id="eauthSubmit" onclick="fbLoginEmail()">Sign In</button>
-    <div class="eauth-sep"><span class="eauth-sep-txt">arba</span></div>
-    <!-- GIS Google Sign-In button rendered here -->
-    <div id="gisGoogleBtn" style="display:flex;justify-content:center;margin-bottom:8px"></div>
     <div class="eauth-toggle" id="eauthToggle">Neturi paskyros? <span onclick="toggleEmailMode()">Register</span></div>
   </div>
 </div>
 
-<!-- Google One Tap container -->
-<div id="g_id_onload"
-  data-client_id="241890115444-i97i3pcibutqg9mriqjdd67cqg1suudi.apps.googleusercontent.com"
-  data-callback="handleGisCredential"
-  data-auto_prompt="false">
-</div>
 
 <!-- TOASTS -->
 <div class="toast-wrap" id="toastWrap"></div>
@@ -1778,7 +1766,7 @@ function normalizeSpot(s){
 
 // Is this a paid-pack spot that the current user cannot access?
 function isSpotLocked(spot){
-  return spot.pack==='paid'&&userPack!=='paid';
+  return false; // all spots free for now
 }
 
 // Locked spot count for banner
@@ -2378,7 +2366,7 @@ function checkProximity(){
     const cat=CATS[best.cat]||CATS.history;
     const r=spotRadius(best);
     document.getElementById('proxEmoji').textContent=best.cat==='hidden'?'🔮':cat.emoji;
-    document.getElementById('proxName').textContent=best.cat==='hidden'?'??? Hidden Spot':best.name;
+    document.getElementById('proxName').textContent=best.cat==='hidden'?'??? Hidden Spot':(best.name||`${(CATS[best.cat]||CATS.building).label} #${String(best.id).slice(-4)}`);
     const inZone=bestDist<=r;
     const inForce=bestDist<=250;
     document.getElementById('proxDist').textContent=inZone?`📍 You're in the zone! Collect now`:`📍 ${Math.round(bestDist)}m (zone: ${r}m)`;
@@ -2503,7 +2491,7 @@ function closeDrawer(){
 
 const PANEL_TITLES={
   aboutme:'🧭 My Progress',
-  vietos:'📋 Spots',
+  spots:'📋 Spots',
   favs:'♥ Favorites',
   zenklai:'🏅 Badges',
   social:'👥 Community',
@@ -2514,13 +2502,13 @@ const PANEL_TITLES={
 };
 
 function openSubPanel(name){
-  ['aboutme','vietos','favs','zenklai','social','osm','reviews','suggestions','mysuggestions'].forEach(p=>{
+  ['aboutme','spots','favs','zenklai','social','osm','reviews','suggestions','mysuggestions'].forEach(p=>{
     document.getElementById('panel-'+p).classList.toggle('active',p===name);
   });
   document.getElementById('drawerSubTitle').textContent=PANEL_TITLES[name]||'';
   document.getElementById('drawerSubPanel').classList.add('open');
   if(name==='aboutme') renderAboutMe();
-  if(name==='vietos') renderList();
+  if(name==='spots') renderList();
   if(name==='favs') renderFavorites();
   if(name==='zenklai') renderBadges();
   if(name==='social') renderSocial();
@@ -2572,7 +2560,7 @@ function renderTierProgressHTML(){
     <div class="tier-row" style="margin-bottom:4px">
       <div class="tier-dot" style="background:var(--gold)"></div>
       <div class="tier-info">
-        <div class="tier-name">Lv.${plvl} — Matomos vietos</div>
+        <div class="tier-name">Lv.${plvl} — Matomos spots</div>
         <div class="tier-count">${visibleSpots.length} spots on map · Lv.${plvl+1} unlocks +${nextLvlSpots}</div>
         <div class="tier-bar"><div class="tier-fill" style="background:var(--gold);width:${Math.round(visibleSpots.length/Math.max(1,SPOTS.filter(s=>s.cat!=='hidden').length)*100)}%"></div></div>
       </div>
@@ -2682,7 +2670,7 @@ function openSheet(spot){
   const r=spotRadius(spot);
   // Update sticky header name
   const headerName=document.getElementById('sheetHeaderName');
-  if(headerName) headerName.textContent=locked?'🔒 Locked Spot':(spot.name||cat.label);
+  if(headerName) headerName.textContent=locked?'🔒 Locked Spot':(spot.name||`${cat.label} spot`);
 
   if(locked){
     // Locked spots are invisible on map — this branch only triggers for admin previews
@@ -2707,7 +2695,7 @@ function openSheet(spot){
 
     content.innerHTML=`
       <div class="scat">${(cat.label||'BUILDING').toUpperCase()}</div>
-      <div class="stitle">${spot.name}</div>
+      <div class="stitle">${spot.name||`${cat.label} spot`}</div>
       <div class="tier-badge t${spot.tier||1}">${(TIER_CONFIG[spot.tier||1]||TIER_CONFIG[1]).icon} ${(TIER_CONFIG[spot.tier||1]||TIER_CONFIG[1]).label}</div>
       <div class="schips">
         ${spot.tag?`<span class="chip hi">${spot.tag}</span>`:''}
@@ -3005,7 +2993,7 @@ function renderAboutMe(){
     <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.08em;margin-bottom:-4px">Spots Progress</div>
     <div style="background:var(--surf2);border:1px solid var(--bdr);border-radius:10px;padding:11px 14px">
       <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span style="font-size:.82rem;font-weight:700;color:var(--txt)">Matomos vietos</span>
+        <span style="font-size:.82rem;font-weight:700;color:var(--txt)">Matomos spots</span>
         <span style="font-family:'DM Mono',monospace;font-size:.75rem;color:var(--gold);font-weight:600">${found.size} / ${SPOTS.filter(s=>isSpotVisible(s)&&s.cat!=='hidden').length} matoma</span>
       </div>
       <div style="height:6px;background:var(--bdr);border-radius:3px;overflow:hidden">
@@ -3384,7 +3372,7 @@ function toggleCatList(catId){
 }
 
 function renderList(){
-  const body=document.getElementById('panel-vietos');
+  const body=document.getElementById('panel-spots');
   const visibleSpots=SPOTS.filter(s=>s.cat!=='hidden');
   const pct=visibleSpots.length?Math.round(found.size/visibleSpots.length*100):0;
 
@@ -4394,7 +4382,7 @@ async function fetchOsmData(){
   const cached=JSON.parse(localStorage.getItem(OSM_CACHE_KEY)||'null');
   if(cached&&Date.now()-cached.ts<OSM_CACHE_TTL&&!_osmForceRefresh){
     _osmImportData=cached.data;
-    osmSetStatus(`✅ ${_osmImportData.length} vietų (iš talpyklos · ${new Date(cached.ts).toLocaleDateString('en-US')}). Already added: ${_osmImportData.filter(x=>x.alreadyIn).length}`);
+    osmSetStatus(`✅ ${_osmImportData.length} spots (from cache · ${new Date(cached.ts).toLocaleDateString('en-US')}). Already added: ${_osmImportData.filter(x=>x.alreadyIn).length}`);
     _osmLoading=false;
     renderOsmList();
     return;
@@ -4435,7 +4423,7 @@ async function fetchOsmData(){
       .filter((x,i,arr)=>arr.findIndex(y=>Math.abs(y.lat-x.lat)<0.0002&&Math.abs(y.lng-x.lng)<0.0002&&y.cat===x.cat)===i)
       .sort((a,b)=>a.name.localeCompare(b.name,'lt'));
 
-    osmSetStatus(`✅ Rasta ${_osmImportData.length} vietų iš ${CITY_BBOXES_GLOBAL.length} miestų. Already added: ${_osmImportData.filter(x=>x.alreadyIn).length}`);
+    osmSetStatus(`✅ Found ${_osmImportData.length} spots from ${CITY_BBOXES_GLOBAL.length} regions. Already added: ${_osmImportData.filter(x=>x.alreadyIn).length}`);
 
     try{ localStorage.setItem(OSM_CACHE_KEY,JSON.stringify({ts:Date.now(),data:_osmImportData})); }catch(e){}
     renderOsmList();
@@ -4480,21 +4468,21 @@ function renderOsmList(){
   const filtered=_osmImportData.map((item,i)=>({item,i})).filter(({item})=>_osmFilter==='all'||item.cat===_osmFilter);
   const selCount=_osmSelected.size;
   const importBtn=document.getElementById('osmImportBtn');
-  if(importBtn) importBtn.textContent=selCount>0?`✅ Import ${selCount} vietų`:'✅ Import';
-  if(!filtered.length){list.innerHTML=`<div style="text-align:center;padding:24px;color:var(--td);font-size:.82rem">Nėra vietų šioje kategorijoje</div>`;return;}
+  if(importBtn) importBtn.textContent=selCount>0?`✅ Import ${selCount} spots`:'✅ Import';
+  if(!filtered.length){list.innerHTML=`<div style="text-align:center;padding:24px;color:var(--td);font-size:.82rem">Nera spots sioje kategorijoje</div>`;return;}
   list.innerHTML=filtered.map(({item,i})=>`
     <div class="osm-item ${_osmSelected.has(i)?'selected':''} ${item.alreadyIn?'already':''}" onclick="osmToggleItem(${i})">
       <div class="osm-check">${item.alreadyIn?'✓':_osmSelected.has(i)?'✓':''}</div>
       <div class="osm-emoji">${OSM_CAT_EMOJI[item.cat]||'📍'}</div>
       <div class="osm-info">
         <div class="osm-name">${item.name}</div>
-        <div class="osm-meta">${item.cat} · ${item.lat.toFixed(4)}, ${item.lng.toFixed(4)}${item.alreadyIn?' · <span style="color:var(--green)">jau pridėta</span>':''}</div>
+        <div class="osm-meta">${item.cat} · ${item.lat.toFixed(4)}, ${item.lng.toFixed(4)}${item.alreadyIn?' · <span style="color:var(--green)">jau prideta</span>':''}</div>
       </div>
     </div>`).join('');
 }
 
 async function osmImportSelected(){
-  if(_osmSelected.size===0){toast('⚠ Nepasirinkta jokių vietų','info');return;}
+  if(_osmSelected.size===0){toast('⚠ No spots selected','info');return;}
   const btn=document.getElementById('osmImportBtn');
   if(btn){btn.disabled=true;btn.textContent='Importuojama...';}
   const{db,collection,addDoc,serverTimestamp}=window._fb||{};
@@ -4519,8 +4507,8 @@ async function osmImportSelected(){
   }
   _osmSelected.clear();
   if(btn){btn.disabled=false;}
-  toast(`📍 Importuota ${imported} vietų!`,'success');
-  osmSetStatus(`✅ Importuota ${imported}. Iš viso DB: ${_osmImportData.filter(x=>x.alreadyIn).length} / ${_osmImportData.length}`);
+  toast(`📍 Imported ${imported} spots!`,'success');
+  osmSetStatus(`✅ Imported ${imported}. Total in DB: ${_osmImportData.filter(x=>x.alreadyIn).length} / ${_osmImportData.length}`);
   renderOsmList();
 }
 
@@ -4532,7 +4520,7 @@ function _getImportCountry(){return 'USA';}
 function _countrySelector(){
   const ic=_getImportCountry();
   return`<div style="display:flex;gap:6px;margin-bottom:10px;align-items:center">
-    <span style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--tm);text-transform:uppercase;letter-spacing:.06em">Import šalis:</span>
+    <span style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--tm);text-transform:uppercase;letter-spacing:.06em">Import salis:</span>
     ${Object.entries(COUNTRY_CONFIG).map(([code,cfg])=>`<div onclick="_importCountry='${code}';renderOsmImport()" style="padding:4px 10px;border-radius:8px;font-size:.72rem;font-family:'DM Mono',monospace;cursor:pointer;border:1px solid ${ic===code?'var(--gold)':'var(--bdr)'};background:${ic===code?'var(--gold)':'var(--surf2)'};color:${ic===code?'#0e0c09':'var(--td)'};-webkit-user-select:none;user-select:none">${cfg.flag} ${code}</div>`).join('')}
   </div>`;
 }
@@ -4554,7 +4542,7 @@ function renderOsmImport(){
   if(!body) return;
   const ic=_getImportCountry();
   const cats=['all','church','museum','fort','nature','history','monument','mound','viewpoint','watertower','mural','cemetery'];
-  const catLabels={all:'Visos',church:'⛪ Bažnyčios',museum:'🏛 Muziejai',fort:'🏰 Fortai',nature:'🌿 Gamta',history:'⚔ Istorija',monument:'🗿 Monumentai',mound:'⛰ Piliakalnis',viewpoint:'🔭 Apžvalgos',watertower:'🗼 Van. bokštai',mural:'🎨 Gatvės menas',cemetery:'⚱️ Kapinės'};
+  const catLabels={all:'All',building:'🏛 Building',structure:'⚙️ Structure',district:'🏘 District',site:'⛏ Site',object:'🗿 Object',hidden:'🔮 Hidden'};
 
   if(_importTab==='wikidata'){
     body.innerHTML=`<div class="osm-wrap">${_countrySelector()}${_tabBar()}${renderWikidataPanel()}</div>`;
@@ -4581,18 +4569,18 @@ function renderOsmImport(){
     ${_tabBar()}
     <div style="margin-bottom:10px">
       <div style="font-family:'DM Mono',monospace;font-size:.72rem;color:var(--gold);margin-bottom:4px">${countryLabel} · area filtrais</div>
-      <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm)">⚠ Greitesnis užklausimas nei anksčiau. Patikrink dublikatus prieš pridedant.</div>
+      <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm)">⚠ Greitesnis uzklausimas nei anksciau. Patikrink dublikatus pries pridedant.</div>
     </div>
     <div class="osm-controls">
-      <button class="osm-ctrl-btn" onclick="fetchOsmData()">🔄 Įkelti iš OSM</button>
-      <button class="osm-ctrl-btn" onclick="_osmForceRefresh=true;fetchOsmData()" title="Išvalyti talpyklą ir įkelti iš naujo">♻️ Atnaujinti</button>
+      <button class="osm-ctrl-btn" onclick="fetchOsmData()">🔄 Ikelti is OSM</button>
+      <button class="osm-ctrl-btn" onclick="_osmForceRefresh=true;fetchOsmData()" title="Clear cache and reload">♻️ Atnaujinti</button>
       <button class="osm-ctrl-btn" onclick="osmToggleManual()" id="osmManualToggle">${_osmManualMode?'🤖 Auto':'🖐 Rankiniu'}</button>
       <button class="osm-ctrl-btn" onclick="osmSelectAll()">☑ Visos</button>
-      <button class="osm-ctrl-btn" onclick="osmSelectNone()">☐ Nė viena</button>
+      <button class="osm-ctrl-btn" onclick="osmSelectNone()">☐ Ne viena</button>
       <button class="osm-ctrl-btn pri" id="osmImportBtn" onclick="osmImportSelected()">✅ Import</button>
       <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red)" onclick="findDuplicateSpots()">🔍 Dublikatai</button>
-      <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red);background:rgba(140,74,74,.1)" onclick="autoDeleteAllDuplicates()">🗑 Ištrinti visus</button>
-      <button class="osm-ctrl-btn" style="border-color:#b07aaa;color:#b07aaa" onclick="reclassifyKpdSpots()">🏷 Perrūšiuoti KPD</button>
+      <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red);background:rgba(140,74,74,.1)" onclick="autoDeleteAllDuplicates()">🗑 Istrinti visus</button>
+      <button class="osm-ctrl-btn" style="border-color:#b07aaa;color:#b07aaa" onclick="reclassifyKpdSpots()">🏷 Perrusiuoti KPD</button>
     </div>
     ${_osmManualMode?`<div id="osmManualGrid" style="margin:8px 0;max-height:260px;overflow-y:auto;padding:0 2px"></div>`:''}
     <div class="osm-filter-row">
@@ -4602,7 +4590,7 @@ function renderOsmImport(){
       <span class="osm-tier-label">Tier:</span>
       ${[1,2,3].map(t=>`<button class="osm-tier-btn ${_osmTier===t?'on':''}" data-t="${t}" onclick="osmSetTier(${t})">T${t}</button>`).join('')}
     </div>
-    <div class="osm-status" id="osmStatus">${_osmImportData.length?`${_osmImportData.length} vietų įkeltos (${_osmImportData.filter(x=>x.alreadyIn).length} jau pridėtos)`:'Spausk "Įkelti iš OSM" pradėti'}</div>
+    <div class="osm-status" id="osmStatus">${_osmImportData.length?`${_osmImportData.length} spots ikeltos (${_osmImportData.filter(x=>x.alreadyIn).length} jau pridetos)`:'Spausk "Ikelti is OSM" pradeti'}</div>
     <div class="osm-list" id="osmList"></div>
   </div>`;
   if(_osmImportData.length) renderOsmList();
@@ -4610,7 +4598,7 @@ function renderOsmImport(){
 }
 
 
-// ═══════════ KPD IMPORT (Kultūros vertybių registras) ═══════════
+// ═══════════ KPD IMPORT (Kulturos vertybiu registras) ═══════════
 
 const KPD_CACHE_KEY='usa_kpd_cache_v1';
 const KPD_CACHE_TTL=Infinity; // permanent — KPD data changes rarely
@@ -4656,46 +4644,46 @@ function lks94toWGS84(x,y){
 const KPD_CAT_MAP={
   // Churches / sacred
   // TODO: update OSM LT category map for USA NRHP (admin-only)
-  'cerkvė':'church','sinagoga':'church','mečetė':'church',
-  'vienuolynas':'church','bažnyčios kompleksas':'church',
+  'church':'church','cathedral':'church','chapel':'church',
+  'monastery':'church','basilica':'church',
   // Museums
   'muziejus':'museum','muziejaus pastatas':'museum',
   // Forts / castles / military
-  'pilis':'fort','pilies griuvėsiai':'fort','fortas':'fort',
-  'tvirtovė':'fort','bunkeris':'fort','gynybinis įrenginys':'fort',
-  'pilies bokštas':'fort','pilies kompleksas':'fort',
+  'castle':'fort','fortress':'fort','fort':'fort',
+  'tvirtove':'fort','bunkeris':'fort','gynybinis irenginys':'fort',
+  'pilies bokstas':'fort','pilies kompleksas':'fort',
   // Mounds
   'piliakalnis':'mound','gynybinis piliakalnis':'mound',
   'piliakalnio kompleksas':'mound',
   // Monuments / sculptures
-  'paminklas':'monument','skulptūra':'monument','obeliskas':'monument',
-  'stela':'monument','kolona':'monument','varpinė':'monument',
+  'paminklas':'monument','skulptura':'monument','obeliskas':'monument',
+  'stela':'monument','kolona':'monument','varpine':'monument',
   // History / heritage
   'sodyba':'history','dvaro sodyba':'history','dvaras':'history',
-  'palivarkas':'history','malūnas':'history','karčema':'history',
-  'kalvė':'history','smuklė':'history','spirito varykla':'history',
-  'lentpjūvė':'history','vandens malūnas':'history','vėjo malūnas':'history',
-  'alaus darykla':'history','aliejinė':'history',
+  'palivarkas':'history','malunas':'history','karcema':'history',
+  'kalve':'history','smukle':'history','spirito varykla':'history',
+  'lentpjuve':'history','vandens malunas':'history','vejo malunas':'history',
+  'alaus darykla':'history','aliejine':'history',
   // Cemeteries
-  'kapinės':'cemetery','kapinynas':'cemetery','kapas':'cemetery',
-  'senosios kapinės':'cemetery','žydų kapinės':'cemetery',
-  'karių kapinės':'cemetery','karo kapinės':'cemetery',
+  'kapines':'cemetery','kapinynas':'cemetery','kapas':'cemetery',
+  'senosios kapines':'cemetery','zydu kapines':'cemetery',
+  'kariu kapines':'cemetery','karo kapines':'cemetery',
   // Nature / parks
   'parkas':'nature','dendrologinis parkas':'nature',
   'botanikos sodas':'nature','gamtos paminklas':'nature',
   // Archaeological
-  'gyvenvietė':'history','pilkapiai':'history','pilkapis':'history',
+  'gyvenviete':'history','pilkapiai':'history','pilkapis':'history',
   'senkapis':'cemetery','akmuo':'monument','riedulys':'monument',
   // Urban / architecture
-  'namas':'history','pastatas':'history','rūmai':'history',
-  'rezidencija':'history','viešbutis':'history','teatro pastatas':'museum',
-  'mokyklos pastatas':'history','ligoninės pastatas':'history',
+  'namas':'history','pastatas':'history','rumai':'history',
+  'rezidencija':'history','viesbutis':'history','teatro pastatas':'museum',
+  'mokyklos pastatas':'history','ligonines pastatas':'history',
   // Bridges
   'tiltas':'bridge',
   // Viewpoints
-  'apžvalgos bokštas':'viewpoint',
+  'apzvalgos bokstas':'viewpoint',
   // Water towers
-  'vandens bokštas':'watertower',
+  'vandens bokstas':'watertower',
 };
 
 function kpdMapCat(klasifikatorius){
@@ -4736,7 +4724,7 @@ function kpdProcessFeature(f){
   // Build description from available fields
   const desc=[];
   if(a.klasifikatorius) desc.push(a.klasifikatorius.charAt(0).toUpperCase()+a.klasifikatorius.slice(1));
-  if(a.reiksmingumas) desc.push(`${a.reiksmingumas} reikšmingumo objektas`);
+  if(a.reiksmingumas) desc.push(`${a.reiksmingumas} reiksmingumo objektas`);
   if(a.adresas) desc.push(a.adresas);
   return{
     name:a.pavadinimas,
@@ -4775,7 +4763,7 @@ async function fetchKpdData(forceRefresh){
             ||(Math.abs(s.lat-x.lat)<0.0001&&Math.abs(s.lng-x.lng)<0.0001)
           );
         });
-        setS(`✅ ${_kpdData.length} objektų (talpykla · ${new Date(c.ts).toLocaleDateString('en-US')})`);
+        setS(`✅ ${_kpdData.length} objektu (talpykla · ${new Date(c.ts).toLocaleDateString('en-US')})`);
         renderOsmImport();
         setTimeout(()=>renderKpdList(),0);
         _kpdLoading=false;
@@ -4784,7 +4772,7 @@ async function fetchKpdData(forceRefresh){
     }catch(e){}
   }
 
-  setS('⏳ Kraunama iš KPD registro...');
+  setS('⏳ Kraunama is KPD registro...');
   const allFeatures=[];
   let offset=0;
   let total=null;
@@ -4792,7 +4780,7 @@ async function fetchKpdData(forceRefresh){
   try{
     while(true){
       const url=`${KPD_URL}?where=1%3D1&outFields=objectid,unikalus_kodas,pavadinimas,klasifikatorius,statusas,adresas,tipas,istorinis,architekturinis,sakralinis,archeologinis,memorialinis,amzius,reiksmingumas,nuoroda,sav_pav&returnGeometry=true&resultRecordCount=${KPD_BATCH}&resultOffset=${offset}&f=json`;
-      setS(`⏳ Kraunama... ${allFeatures.length} objektų (batch ${Math.floor(offset/KPD_BATCH)+1})`);
+      setS(`⏳ Kraunama... ${allFeatures.length} objektu (batch ${Math.floor(offset/KPD_BATCH)+1})`);
       const r=await fetch(url,{signal:AbortSignal.timeout(30000)});
       if(!r.ok) throw new Error(`HTTP ${r.status}`);
       const json=await r.json();
@@ -4808,7 +4796,7 @@ async function fetchKpdData(forceRefresh){
       await new Promise(r=>setTimeout(r,300));
     }
 
-    setS(`⏳ Apdorojama ${allFeatures.length} objektų...`);
+    setS(`⏳ Apdorojama ${allFeatures.length} objektu...`);
     const processed=allFeatures
       .map(f=>kpdProcessFeature(f))
       .filter(Boolean)
@@ -4838,7 +4826,7 @@ async function fetchKpdData(forceRefresh){
     }
     const newCount=_kpdData.filter(x=>!x.alreadyIn).length;
     const alreadyCount=_kpdData.filter(x=>x.alreadyIn).length;
-    setS(`✅ ${_kpdData.length} objektų įkelti · ${alreadyCount} jau DB · ${newCount} naujų`);
+    setS(`✅ ${_kpdData.length} objektu ikelti · ${alreadyCount} jau DB · ${newCount} nauju`);
     // Rebuild panel then list
     renderOsmImport();
     // Give DOM time to rebuild before populating list
@@ -4863,7 +4851,7 @@ function renderKpdPanel(){
   const sigs=['all','Nacionalinis','Regioninis','Vietinis'];
   // Categories present
   const cats=['all','church','fort','mound','history','monument','cemetery','nature','museum','bridge','viewpoint','watertower'];
-  const catLabels={all:'Visos',church:'⛪',fort:'🏰',mound:'⛰',history:'⚔',monument:'🗿',cemetery:'⚱️',nature:'🌿',museum:'🏛',bridge:'🌉',viewpoint:'🔭',watertower:'🗼'};
+  const catLabels={all:'All',church:'⛪',fort:'🏰',mound:'⛰',history:'⚔',monument:'🗿',cemetery:'⚱️',nature:'🌿',museum:'🏛',bridge:'🌉',viewpoint:'🔭',watertower:'🗼'};
 
   // Cities with KPD spots
   const citiesWithKpd=total>0
@@ -4887,7 +4875,7 @@ function renderKpdPanel(){
 
   return`<div>
     <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);margin-bottom:6px">
-      Kultūros vertybių registras · osp-sdg.stat.gov.lt · Nekomerciniam naudojimui
+      Kulturos vertybiu registras · osp-sdg.stat.gov.lt · Nekomerciniam naudojimui
     </div>
     ${total>0?`<div style="background:var(--surf2);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-family:'DM Mono',monospace;font-size:.68rem;display:flex;gap:12px;flex-wrap:wrap">
       <span>📦 Viso: <strong style="color:var(--txt)">${total}</strong></span>
@@ -4896,15 +4884,15 @@ function renderKpdPanel(){
       ${_kpdFilter!=='all'||_kpdSigFilter!=='all'||_kpdCityFilter!=='all'?`<span>🔍 Filtruota: <strong style="color:var(--gold)">${filteredNew}</strong></span>`:''}
     </div>`:''}
     <div class="osm-controls">
-      <button class="osm-ctrl-btn" onclick="fetchKpdData(false)">🔄 Įkelti</button>
+      <button class="osm-ctrl-btn" onclick="fetchKpdData(false)">🔄 Ikelti</button>
       <button class="osm-ctrl-btn" onclick="fetchKpdData(true)">♻️ Atnaujinti</button>
-      <button class="osm-ctrl-btn" onclick="clearKpdCache()">🗑 Išvalyti talpyklą</button>
+      <button class="osm-ctrl-btn" onclick="clearKpdCache()">🗑 Isvalyti talpykla</button>
       <button class="osm-ctrl-btn" onclick="kpdSelectAll()">☑ Visos</button>
-      <button class="osm-ctrl-btn" onclick="kpdSelectNone()">☐ Nė viena</button>
+      <button class="osm-ctrl-btn" onclick="kpdSelectNone()">☐ Ne viena</button>
       <button class="osm-ctrl-btn pri" onclick="kpdImportSelected()">✅ Import</button>
     </div>
     ${total>0?`
-    <div style="margin:8px 0 4px;font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.07em">Reikšmingumas</div>
+    <div style="margin:8px 0 4px;font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.07em">Reiksmingumas</div>
     <div class="osm-filter-row" style="flex-wrap:wrap;gap:4px;margin-bottom:6px">
       ${sigs.map(s=>`<div class="osm-fchip ${_kpdSigFilter===s?'on':''}" onclick="setKpdSigFilter('${s}')">${s==='all'?'Visi':s}</div>`).join('')}
     </div>
@@ -4919,7 +4907,7 @@ function renderKpdPanel(){
       ${citiesWithKpd.map(c=>`<div class="osm-fchip ${_kpdCityFilter===c?'on':''}" onclick="setKpdCityFilter('${c}')">${c}</div>`).join('')}
     </div>`:''}
     `:''}
-    <div class="osm-status" id="kpdStatus">${total?`${total} objektų · ${alreadyIn} jau DB · ${newOnes} naujų`:'Spausk "Įkelti" pradėti — kraunama ~10-20k objektų'}</div>
+    <div class="osm-status" id="kpdStatus">${total?`${total} objektu · ${alreadyIn} jau DB · ${newOnes} nauju`:'Spausk "Ikelti" pradeti — kraunama ~10-20k objektu'}</div>
     <div class="osm-list" id="kpdList"></div>
   </div>`;
 }
@@ -4927,7 +4915,7 @@ function renderKpdPanel(){
 function clearKpdCache(){
   localStorage.removeItem(KPD_CACHE_KEY);
   _kpdData=[];_kpdSelected.clear();
-  toast('🗑 KPD talpykla išvalyta','info');
+  toast('🗑 KPD talpykla isvalyta','info');
   renderOsmImport();
 }
 function setKpdSigFilter(v){_kpdSigFilter=v;renderOsmImport();setTimeout(()=>renderKpdList(),0);}
@@ -4954,7 +4942,7 @@ function renderKpdList(){
   const newOnes=filtered.filter(({item})=>!item.alreadyIn);
 
   if(!filtered.length){
-    el.innerHTML=`<div style="padding:24px;text-align:center;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--td)">${_kpdData.length?'Nerasta objektų pagal šiuos filtrus':'Spausk "Įkelti" norėdamas gauti KPD duomenis'}</div>`;
+    el.innerHTML=`<div style="padding:24px;text-align:center;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--td)">${_kpdData.length?'Nerasta objektu pagal siuos filtrus':'Spausk "Ikelti" noredamas gauti KPD duomenis'}</div>`;
     return;
   }
   if(!newOnes.length){
@@ -4965,7 +4953,7 @@ function renderKpdList(){
   const sigColor={Nacionalinis:'var(--t3)',Regioninis:'var(--t2)',Vietinis:'var(--t1)'};
 
   el.innerHTML=`
-    <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);padding:6px 0">${newOnes.length} naujų · ${filtered.length-newOnes.length} jau DB</div>
+    <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);padding:6px 0">${newOnes.length} nauju · ${filtered.length-newOnes.length} jau DB</div>
     ${filtered.map(({item,i})=>{
       if(item.alreadyIn) return'';
       const sel=_kpdSelected.has(i);
@@ -5010,14 +4998,14 @@ async function kpdImportSelected(){
   if(!db){toast('Firebase nepasiekiamas','info');return;}
 
   const items=[..._kpdSelected].map(i=>_kpdData[i]).filter(x=>x&&!x.alreadyIn);
-  if(!items.length){toast('Visos pasirinktos vietos jau yra DB','info');return;}
+  if(!items.length){toast('Visos pasirinktos spots jau yra DB','info');return;}
 
   const BATCH_SIZE=400; // Firestore max is 500, use 400 for safety
   let imported=0;
   let failed=0;
   const colRef=collection(db,'spots');
 
-  setS(`⏳ Importuojama ${items.length} objektų (partijomis po ${BATCH_SIZE})...`);
+  setS(`⏳ Importuojama ${items.length} objektu (partijomis po ${BATCH_SIZE})...`);
 
   for(let batchStart=0;batchStart<items.length;batchStart+=BATCH_SIZE){
     const batchItems=items.slice(batchStart,batchStart+BATCH_SIZE);
@@ -5057,7 +5045,7 @@ async function kpdImportSelected(){
     }catch(e){
       console.error('KPD batch failed',e);
       failed+=batchItems.length;
-      setS(`⚠ Klaida partijoje ${Math.floor(batchStart/BATCH_SIZE)+1}: ${e.message}. Tęsiama...`);
+      setS(`⚠ Klaida partijoje ${Math.floor(batchStart/BATCH_SIZE)+1}: ${e.message}. Tesiama...`);
     }
     // Pause between batches to avoid rate limiting
     if(batchStart+BATCH_SIZE<items.length){
@@ -5069,8 +5057,8 @@ async function kpdImportSelected(){
   if(imported>0){refreshMarkers();updateAll();}
 
   const msg=failed>0
-    ?`✅ Importuota ${imported}, nepavyko ${failed}. Atnaujinkite KV talpyklą!`
-    :`✅ Importuota ${imported} objektų! Atnaujinkite KV talpyklą.`;
+    ?`✅ Importuota ${imported}, nepavyko ${failed}. Atnaujinkite KV talpykla!`
+    :`✅ Importuota ${imported} objektu! Atnaujinkite KV talpykla.`;
   setS(msg);
   toast(msg,'success');
   renderKpdList();
@@ -5085,7 +5073,7 @@ const DEG_50M=0.00045; // ~50 metres in degrees
 function findDuplicateSpots(){
   const ic=_getImportCountry();
   const countrySpots=SPOTS.filter(s=>s.country===ic||(ic==='LT'&&!s.country));
-  osmSetStatus(`🔍 Ieškoma dublikatų (${ic})...`);
+  osmSetStatus(`🔍 Ieskoma dublikatu (${ic})...`);
   const groups=[];
   const used=new Set();
   for(let i=0;i<countrySpots.length;i++){
@@ -5109,21 +5097,21 @@ function findDuplicateSpots(){
     }
   }
   if(!groups.length){
-    osmSetStatus('✅ Dublikatų nerasta!');
+    osmSetStatus('✅ Dublikatu nerasta!');
     return;
   }
-  osmSetStatus(`⚠ Rasta ${groups.length} dublikatų grupių — pažymėtos žemiau`);
+  osmSetStatus(`⚠ Rasta ${groups.length} dublikatu grupiu — pazymetos zemiau`);
   // Show results in osmList
   const list=document.getElementById('osmList');
   if(!list) return;
   const cat=s=>CATS[s.cat]||CATS.history;
   list.innerHTML=`
     <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--red);padding:8px 0;margin-bottom:4px">
-      ⚠ ${groups.length} dublikatų grupių · Spausk 🗑 norėdamas ištrinti
+      ⚠ ${groups.length} dublikatu grupiu · Spausk 🗑 noredamas istrinti
     </div>
     ${groups.map((group,gi)=>`
       <div style="background:rgba(140,74,74,.1);border:1px solid var(--red);border-radius:10px;padding:10px;margin-bottom:8px">
-        <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--red);margin-bottom:6px">Grupė ${gi+1} · ${cat(group[0]).emoji} ${cat(group[0]).label}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--red);margin-bottom:6px">Grupe ${gi+1} · ${cat(group[0]).emoji} ${cat(group[0]).label}</div>
         ${group.map(s=>`
           <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(140,74,74,.2)">
             <div style="flex:1;min-width:0">
@@ -5153,9 +5141,9 @@ function _spotScore(s){
 
 async function autoDeleteAllDuplicates(){
   if(!isAdmin()) return;
-  if(!confirm(`Automatiškai ištrinti visus dublikatus?\n\nAlgoritmas paliks geriausią kiekvienos grupės vietą (KPD > Wikidata > OSM, ilgesnis aprašas = geriau).\n\nTęsti?`)) return;
+  if(!confirm(`Automatiskai istrinti visus dublikatus?\n\nAlgoritmas paliks geriausia kiekvienos grupes a spot (KPD > Wikidata > OSM, ilgesnis aprasas = geriau).\n\nTesti?`)) return;
 
-  osmSetStatus('🔍 Ieškoma dublikatų...');
+  osmSetStatus('🔍 Ieskoma dublikatu...');
   const groups=[];
   const used=new Set();
   for(let i=0;i<SPOTS.length;i++){
@@ -5178,12 +5166,12 @@ async function autoDeleteAllDuplicates(){
   }
 
   if(!groups.length){
-    osmSetStatus('✅ Dublikatų nerasta!');
-    toast('✅ Dublikatų nerasta!','success');
+    osmSetStatus('✅ Dublikatu nerasta!');
+    toast('✅ Dublikatu nerasta!','success');
     return;
   }
 
-  osmSetStatus(`⏳ Rasta ${groups.length} grupių. Trinami dublikatai...`);
+  osmSetStatus(`⏳ Rasta ${groups.length} grupiu. Trinami dublikatai...`);
 
   // For each group — keep highest score, delete the rest
   const toDelete=[];
@@ -5197,7 +5185,7 @@ async function autoDeleteAllDuplicates(){
     }
   }
 
-  osmSetStatus(`⏳ Trinami ${toDelete.length} dublikatų...`);
+  osmSetStatus(`⏳ Trinami ${toDelete.length} dublikatu...`);
 
   let deleted=0;
   let failed=0;
@@ -5206,7 +5194,7 @@ async function autoDeleteAllDuplicates(){
       await fbDeleteSpot(fid);
       SPOTS=SPOTS.filter(s=>s._fid!==fid&&String(s.id)!==String(fid));
       deleted++;
-      if(deleted%10===0) osmSetStatus(`⏳ Ištrinta ${deleted}/${toDelete.length}...`);
+      if(deleted%10===0) osmSetStatus(`⏳ Istrinta ${deleted}/${toDelete.length}...`);
     }catch(e){
       failed++;
       console.error('autoDelete failed',fid,e);
@@ -5215,7 +5203,7 @@ async function autoDeleteAllDuplicates(){
   }
 
   refreshMarkers();updateAll();
-  const msg=`✅ Ištrinta ${deleted} dublikatų${failed>0?`, nepavyko ${failed}`:''} iš ${groups.length} grupių. Atnaujinkite KV talpyklą!`;
+  const msg=`✅ Istrinta ${deleted} dublikatu${failed>0?`, nepavyko ${failed}`:''} is ${groups.length} grupiu. Atnaujinkite KV talpykla!`;
   osmSetStatus(msg);
   toast(msg,'success');
   const list=document.getElementById('osmList');
@@ -5224,7 +5212,7 @@ async function autoDeleteAllDuplicates(){
 
 async function deleteDuplicateSpot(fid){
   if(!isAdmin()) return;
-  if(!confirm('Ištrinti šią vietą?')) return;
+  if(!confirm('Istrinti sia a spot?')) return;
   try{
     await fbDeleteSpot(fid);
     SPOTS=SPOTS.filter(s=>s._fid!==fid&&s.id!==fid);
@@ -5248,9 +5236,9 @@ function resolveKpdCatFromName(name){
   // Church objects
   // TODO: update KPD category regex for USA (admin-only)
   // Monument/sculpture
-  if(/koplytstulpis|skulptūra|obeliskas/.test(n)) return 'monument';
+  if(/koplytstulpis|skulptura|obeliskas/.test(n)) return 'monument';
   // Fort/bunker
-  if(/slėptuvė|bunkeris|tvirtovės/.test(n)) return 'fort';
+  if(/sleptuve|bunkeris|tvirtoves/.test(n)) return 'fort';
   return null; // no change
 }
 
@@ -5266,10 +5254,10 @@ async function reclassifyKpdSpots(){
     if(newCat) toReclassify.push({spot:s,newCat});
   });
 
-  osmSetStatus(`🔍 Rasta ${toReclassify.length} vietų perrūšiavimui iš ${candidates.length} istorinių...`);
-  if(!toReclassify.length){toast('Nieko perrūšiuoti','info');return;}
+  osmSetStatus(`🔍 Rasta ${toReclassify.length} spots perrusiavimui is ${candidates.length} istoriniu...`);
+  if(!toReclassify.length){toast('Nieko perrusiuoti','info');return;}
 
-  if(!confirm(`Perrūšiuoti ${toReclassify.length} vietų?\n\nPavyzdžiai:\n${toReclassify.slice(0,5).map(x=>`${x.spot.name.slice(0,40)} → ${x.newCat}`).join('\n')}\n\nTęsti?`)) return;
+  if(!confirm(`Perrusiuoti ${toReclassify.length} spots?\n\nPavyzdziai:\n${toReclassify.slice(0,5).map(x=>`${x.spot.name.slice(0,40)} → ${x.newCat}`).join('\n')}\n\nTesti?`)) return;
 
   let done=0,failed=0;
   for(const{spot,newCat} of toReclassify){
@@ -5278,7 +5266,7 @@ async function reclassifyKpdSpots(){
       await updateDoc(doc(db,'spots',fid),{cat:newCat});
       spot.cat=newCat; // update local
       done++;
-      if(done%20===0) osmSetStatus(`⏳ Perrūšiuota ${done}/${toReclassify.length}...`);
+      if(done%20===0) osmSetStatus(`⏳ Perrusiuota ${done}/${toReclassify.length}...`);
     }catch(e){
       failed++;
       console.error('reclassify fail',spot.name,e);
@@ -5289,7 +5277,7 @@ async function reclassifyKpdSpots(){
   // Rebuild spot level map after category changes
   _spotLevelMap=null;
   refreshMarkers();updateAll();
-  const msg=`✅ Perrūšiuota ${done} vietų${failed>0?`, klaida ${failed}`:''}.`;
+  const msg=`✅ Perrusiuota ${done} spots${failed>0?`, klaida ${failed}`:''}.`;
   osmSetStatus(msg);
   toast(msg,'success');
 }
@@ -5329,22 +5317,22 @@ function renderWikidataPanel(){
   const cached=JSON.parse(localStorage.getItem(wikiCacheKey())||'null');
   const cacheInfo=cached?`<span style="color:var(--tm);font-size:.6rem">· ${_wikiData.length} (${new Date(cached.ts).toLocaleDateString('en-US')})</span>`:'';
   const wcats=['all','church','museum','fort','mound','history','monument','nature','viewpoint','bridge','cemetery'];
-  const wcatLabels={all:'Visos',church:'⛪',museum:'🏛',fort:'🏰',mound:'⛰',history:'⚔',monument:'🗿',nature:'🌿',viewpoint:'🔭',bridge:'🌉',cemetery:'⚱️'};
+  const wcatLabels={all:'All',church:'⛪',museum:'🏛',fort:'🏰',mound:'⛰',history:'⚔',monument:'🗿',nature:'🌿',viewpoint:'🔭',bridge:'🌉',cemetery:'⚱️'};
   const ic=_getImportCountry();
   const cfg=COUNTRY_CONFIG[ic];
   return`<div>
     <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);margin-bottom:8px">${cfg?cfg.flag:''} Wikidata · USA. ${cacheInfo}</div>
     <div class="osm-controls">
-      <button class="osm-ctrl-btn" onclick="fetchWikidata(false)">🔄 Įkelti</button>
+      <button class="osm-ctrl-btn" onclick="fetchWikidata(false)">🔄 Ikelti</button>
       <button class="osm-ctrl-btn" onclick="fetchWikidata(true)">♻️ Atnaujinti</button>
       <button class="osm-ctrl-btn" onclick="wikiSelectAll()">☑ Visos</button>
-      <button class="osm-ctrl-btn" onclick="wikiSelectNone()">☐ Nė viena</button>
+      <button class="osm-ctrl-btn" onclick="wikiSelectNone()">☐ Ne viena</button>
       <button class="osm-ctrl-btn pri" onclick="wikiImportSelected()">✅ Import</button>
     </div>
     <div class="osm-filter-row" style="margin-top:6px">
       ${wcats.map(wc=>`<div class="osm-fchip ${_wikiFilter===wc?'on':''}" onclick="_wikiFilter='${wc}';renderOsmImport()">${wcatLabels[wc]||wc}</div>`).join('')}
     </div>
-    <div class="osm-status" id="wikiStatus">${_wikiData.length?`${_wikiData.length} vietų · ${_wikiData.filter(x=>x.alreadyIn).length} jau pridėta`:'Spausk "Įkelti" pradėti'}</div>
+    <div class="osm-status" id="wikiStatus">${_wikiData.length?`${_wikiData.length} spots · ${_wikiData.filter(x=>x.alreadyIn).length} jau prideta`:'Spausk "Ikelti" pradeti'}</div>
     <div class="osm-list" id="wikiList"></div>
   </div>`;
 }
@@ -5357,7 +5345,7 @@ async function fetchWikidata(forceRefresh){
   if(!forceRefresh){
     const cached=JSON.parse(localStorage.getItem(wikiCacheKey())||'null');
     if(cached&&Date.now()-cached.ts<WIKI_CACHE_TTL){
-      _wikiData=cached.data;setS(`✅ ${_wikiData.length} vietų (talpykla)`);
+      _wikiData=cached.data;setS(`✅ ${_wikiData.length} spots (talpykla)`);
       _wikiLoading=false;renderWikidataList();return;
     }
   }
@@ -5382,13 +5370,13 @@ async function fetchWikidata(forceRefresh){
   SERVICE wikibase:label { bd:serviceParam wikibase:language "${cc.wpLang},en". }
 } LIMIT 3000`;
   const url='https://query.wikidata.org/sparql?format=json&query='+encodeURIComponent(sparql);
-  setS('⏳ Kraunama iš Wikidata (iki 30s)...');
+  setS('⏳ Kraunama is Wikidata (iki 30s)...');
   try{
     const r=await fetch(url,{headers:{'Accept':'application/sparql-results+json','User-Agent':'SpotSeekers/1.0'},signal:AbortSignal.timeout(30000)});
     if(!r.ok) throw new Error('HTTP '+r.status);
     const json=await r.json();
     const rows=json.results.bindings;
-    setS(`⏳ Apdorojama ${rows.length} įrašų...`);
+    setS(`⏳ Apdorojama ${rows.length} irasu...`);
     const byItem={};
     for(const row of rows){
       const id=row.item.value.split('/').pop();
@@ -5404,7 +5392,7 @@ async function fetchWikidata(forceRefresh){
       .sort((a,b)=>a.name.localeCompare(b.name));
     _wikiData=processed;
     try{localStorage.setItem(wikiCacheKey(),JSON.stringify({ts:Date.now(),data:_wikiData}));}catch(e){}
-    setS(`✅ ${_wikiData.length} vietų. Already added: ${_wikiData.filter(x=>x.alreadyIn).length}`);
+    setS(`✅ ${_wikiData.length} spots. Already added: ${_wikiData.filter(x=>x.alreadyIn).length}`);
     renderWikidataList();
   }catch(e){setS('❌ Klaida: '+e.message);}
   _wikiLoading=false;
@@ -5456,7 +5444,7 @@ async function wikiImportSelected(){
   }
   _wikiSelected.clear();
   if(imported>0){refreshMarkers();updateAll();}
-  setS(`✅ Importuota ${imported}.${toEnrich.length?' Kraunami Wikipedia aprašymai...':''}`);
+  setS(`✅ Importuota ${imported}.${toEnrich.length?' Kraunami Wikipedia aprasymai...':''}`);
   renderWikidataList();
   if(toEnrich.length) enrichWithWikipedia(toEnrich,setS);
 }
@@ -5481,7 +5469,7 @@ async function enrichWithWikipedia(items,setS){
     if(setS) setS(`⏳ Wikipedia: ${done}/${items.length}...`);
     await new Promise(r=>setTimeout(r,350));
   }
-  if(setS) setS(`✅ Wikipedia aprašymai pridėti (${done}/${items.length})`);
+  if(setS) setS(`✅ Wikipedia aprasymai prideti (${done}/${items.length})`);
 }
 
 // ═══════════ ZABYTEK IMPORTER (Poland heritage register) ═══════════
@@ -5517,7 +5505,7 @@ function renderZabytekPanel(){
   const cached=JSON.parse(localStorage.getItem(ZABYTEK_CACHE_KEY)||'null');
   const cacheInfo=cached?`<span style="color:var(--tm);font-size:.6rem">· ${_zabytekData.length} (${new Date(cached.ts).toLocaleDateString('pl-PL')})</span>`:'';
   const cats=['all','church','fort','cemetery','monument','history','museum','nature','bridge'];
-  const catLabels={all:'Wszystkie',church:'⛪',fort:'🏰',cemetery:'⚱️',monument:'🗿',history:'⚔',museum:'🏛',nature:'🌿',bridge:'🌉'};
+  const catLabels={all:'All',church:'⛪',fort:'🏰',cemetery:'⚱️',monument:'🗿',history:'⚔',museum:'🏛',nature:'🌿',bridge:'🌉'};
 
   const citiesWithZab=_zabytekData.length>0
     ?[...new Set(_zabytekData.map(x=>x.miejscowosc).filter(Boolean))].sort()
@@ -5551,9 +5539,9 @@ function renderZabytekPanel(){
       ${cats.map(c=>`<div class="osm-fchip ${_zabytekFilter===c?'on':''}" onclick="_zabytekFilter='${c}';renderOsmImport()">${catLabels[c]||c}</div>`).join('')}
     </div>
     ${total>0?`<div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);margin:6px 0">
-      Łącznie: ${total} · Nowych: <strong style="color:var(--gold)">${filteredNew}</strong> · Już dodanych: ${_zabytekData.filter(x=>x.alreadyIn).length}
+      Łacznie: ${total} · Nowych: <strong style="color:var(--gold)">${filteredNew}</strong> · Już dodanych: ${_zabytekData.filter(x=>x.alreadyIn).length}
     </div>`:''}
-    <div class="osm-status" id="zabytekStatus">${total?'Wybierz i importuj':'Kliknij "Załaduj" aby rozpocząć'}</div>
+    <div class="osm-status" id="zabytekStatus">${total?'Wybierz i importuj':'Kliknij "Załaduj" aby rozpoczać'}</div>
     <div class="osm-list" id="zabytekList"></div>
   </div>`;
 }
@@ -5628,7 +5616,7 @@ async function fetchZabytek(forceRefresh){
     setS(`✅ ${_zabytekData.length} zabytków. Już dodanych: ${_zabytekData.filter(x=>x.alreadyIn).length}`);
     renderOsmImport(); // re-render to show city list
   }catch(e){
-    setS('❌ Błąd: '+e.message+'. Spróbuj ponownie.');
+    setS('❌ Bład: '+e.message+'. Spróbuj ponownie.');
     console.error('fetchZabytek',e);
   }
   _zabytekLoading=false;
@@ -5691,7 +5679,7 @@ function osmToggleManual(){
 }
 
 // ═══════════ ADMIN HELPER ═══════════
-const ADMIN_UIDS=['Q0pPckRvI7e6T0kylcpfCsKV61x1','wHLbJaH5zYNLlKRLBTYnlahsWQ73'];
+const ADMIN_UIDS=['K9DGewbvOKZsidYDaiAk2pc0J0m1'];
 function isAdmin(){return window._fbUser&&ADMIN_UIDS.includes(window._fbUser.uid);}
 
 // ═══════════ USERNAME PROMPT ═══════════
@@ -5733,7 +5721,7 @@ function skipUsername(){
 let _sugLat=null,_sugLng=null;
 
 function openSuggestModal(){
-  if(!window._fbUser){toast('⚠ Prisijunk norėdamas siūlyti vietas','info');return;}
+  if(!window._fbUser){toast('⚠ Prisijunk noredamas siulyti vietas','info');return;}
   _sugLat=null;_sugLng=null;
   document.getElementById('sugName').value='';
   document.getElementById('sugCat').value='history';
@@ -5752,7 +5740,7 @@ function suggestUseGPS(){
   if(userLat!==null&&userLng!==null){
     _sugLat=userLat;_sugLng=userLng;
     document.getElementById('sugCoords').textContent=`📍 ${_sugLat.toFixed(5)}, ${_sugLng.toFixed(5)}`;
-    toast('📡 GPS koordinatės panaudotos','success');
+    toast('📡 GPS koordinates panaudotos','success');
   } else {
     toast('⚠ GPS dar nepasiekiamas','info');
   }
@@ -5763,12 +5751,12 @@ function suggestPickOnMap(){
   // Close modal, enter pick mode
   document.getElementById('suggestOverlay').classList.remove('show');
   _sugPickMode=true;
-  toast('🗺 Bakstelėk žemėlapyje norimą vietą','info');
+  toast('🗺 Bakstelek zemelapyje norima a spot','info');
   // Show a banner on map
   const banner=document.createElement('div');
   banner.id='sugPickBanner';
   banner.style.cssText='position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:500;background:var(--gold);color:#0e0c09;border-radius:20px;padding:8px 18px;font-family:"DM Sans",sans-serif;font-size:.85rem;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.3);pointer-events:none';
-  banner.textContent='📍 Bakstelėk žemėlapyje → vieta bus parinkta';
+  banner.textContent='📍 Bakstelek zemelapyje → vieta bus parinkta';
   document.body.appendChild(banner);
 }
 
@@ -5787,15 +5775,15 @@ function _handleSuggestMapPick(e){
 
 async function submitSuggestion(){
   const user=window._fbUser;
-  if(!user){toast('⚠ Prisijunk norėdamas siūlyti vietas','info');return;}
+  if(!user){toast('⚠ Prisijunk noredamas siulyti vietas','info');return;}
   const name=document.getElementById('sugName').value.trim();
   const cat=document.getElementById('sugCat').value;
   const desc=document.getElementById('sugDesc').value.trim();
   const errEl=document.getElementById('sugErr');
   errEl.textContent='';
-  if(!name){errEl.textContent='Įveskite vietos pavadinimą.';return;}
-  if(_sugLat===null){errEl.textContent='Pasirinkite vietą (naudok GPS mygtuką).';return;}
-  if(!desc){errEl.textContent='Parašykite trumpą aprašymą.';return;}
+  if(!name){errEl.textContent='Iveskite spots pavadinima.';return;}
+  if(_sugLat===null){errEl.textContent='Pasirinkite a spot (naudok GPS mygtuka).';return;}
+  if(!desc){errEl.textContent='Parasykite trumpa aprasyma.';return;}
   const btn=document.getElementById('sugSubmitBtn');
   btn.disabled=true;btn.textContent='Sending...';
   try{
@@ -5810,9 +5798,9 @@ async function submitSuggestion(){
       rejectionReason:null,
     });
     closeSuggestModal();
-    toast('✅ Siūlymas išsiųstas! Laukite patvirtinimo.','success');
+    toast('✅ Siulymas issiustas! Laukite patvirtinimo.','success');
   } catch(e){
-    errEl.textContent='Klaida. Bandykite vėliau.';
+    errEl.textContent='Klaida. Bandykite veliau.';
     console.error('submitSuggestion',e);
   }
   btn.disabled=false;btn.textContent='Submit suggestion →';
@@ -5823,7 +5811,7 @@ async function renderMySuggestions(){
   const body=document.getElementById('panel-mysuggestions');
   const user=window._fbUser;
   if(!user){
-    body.innerHTML=`<div style="padding:40px 20px;text-align:center;color:var(--td);font-size:.85rem">Prisijunk norėdamas matyti savo siūlymus.</div>`;
+    body.innerHTML=`<div style="padding:40px 20px;text-align:center;color:var(--td);font-size:.85rem">Prisijunk noredamas matyti savo siulymus.</div>`;
     return;
   }
   body.innerHTML=`<div style="padding:20px;text-align:center;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--td)">⏳ Kraunama...</div>`;
@@ -5834,8 +5822,8 @@ async function renderMySuggestions(){
     if(snap.empty){
       body.innerHTML=`<div style="padding:40px 20px;text-align:center">
         <div style="font-size:40px;margin-bottom:12px">📍</div>
-        <div style="font-family:'Playfair Display',serif;font-size:1rem;color:var(--txt);margin-bottom:8px">Dar nėra siūlymų</div>
-        <div style="font-size:.8rem;color:var(--td);line-height:1.6">Siūlyk vietas naudodamas mygtuką žemėlapyje.</div>
+        <div style="font-family:'Playfair Display',serif;font-size:1rem;color:var(--txt);margin-bottom:8px">Dar nera siulymu</div>
+        <div style="font-size:.8rem;color:var(--td);line-height:1.6">Siulyk vietas naudodamas mygtuka zemelapyje.</div>
         <button onclick="closeSuggestModal();closeDrawer();openSuggestModal()" style="margin-top:16px;background:var(--gold);color:#0e0c09;border:none;border-radius:10px;padding:10px 20px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.85rem;cursor:pointer">📍 Suggest a Spot</button>
       </div>`;
       return;
@@ -5852,7 +5840,7 @@ async function renderMySuggestions(){
         <div class="sug-card-name">${cat.emoji} ${s.name}</div>
         <div class="sug-card-meta">${cat.label} · ${dateStr} · <span style="color:${statusColor[s.status]||'var(--td)'}">${statusLabel[s.status]||s.status}</span></div>
         <div class="sug-card-desc">${s.description||''}</div>
-        ${s.rejectionReason?`<div style="font-size:.75rem;color:var(--red);font-family:'DM Mono',monospace">Priežastis: ${s.rejectionReason}</div>`:''}
+        ${s.rejectionReason?`<div style="font-size:.75rem;color:var(--red);font-family:'DM Mono',monospace">Priezastis: ${s.rejectionReason}</div>`:''}
       </div>`;
     });
     html+='</div>';
@@ -5872,7 +5860,7 @@ async function renderAdminSuggestions(){
     const q=query(collection(db,'suggestions'),where('status','==','pending'));
     const snap=await getDocs(q);
     if(snap.empty){
-      body.innerHTML=`<div style="padding:30px 16px;text-align:center;color:var(--td);font-size:.85rem">✅ Nėra laukiančių siūlymų</div>`;
+      body.innerHTML=`<div style="padding:30px 16px;text-align:center;color:var(--td);font-size:.85rem">✅ Nera laukianciu siulymu</div>`;
       return;
     }
     let html=`<div style="padding:12px 14px"><div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);margin-bottom:10px">${snap.size} laukia patvirtinimo</div>`;
@@ -5883,7 +5871,7 @@ async function renderAdminSuggestions(){
       const dateStr=d2.toLocaleDateString('en-US',{month:'short',day:'numeric'});
       html+=`<div class="sug-card">
         <div class="sug-card-name">${cat.emoji} ${s.name}</div>
-        <div class="sug-card-meta">Siūlė: ${s.displayName||'Anon'} · ${cat.label} · ${dateStr}</div>
+        <div class="sug-card-meta">Siule: ${s.displayName||'Anon'} · ${cat.label} · ${dateStr}</div>
         <div class="sug-card-meta" style="color:var(--gold)">📍 ${s.lat?.toFixed(5)}, ${s.lng?.toFixed(5)}</div>
         <div class="sug-card-desc">${s.description||''}</div>
         <div class="sug-card-btns">
@@ -5906,14 +5894,14 @@ async function approveSuggestion(suggId,suggUid,btn){
     const{db,collection,addDoc,doc,updateDoc,getDoc,setDoc,serverTimestamp}=window._fb;
     // Get suggestion data
     const suggSnap=await getDoc(doc(db,'suggestions',suggId));
-    if(!suggSnap.exists()){toast('Siūlymas nerastas','info');return;}
+    if(!suggSnap.exists()){toast('Siulymas nerastas','info');return;}
     const s=suggSnap.data();
     // Publish to spots
     await addDoc(collection(db,'spots'),{
       name:s.name,cat:s.cat,lat:s.lat,lng:s.lng,
       history:s.description||'',
       tier:1,radius:CAT_DEFAULT_RADIUS[s.cat]||DEFAULT_RADIUS,
-      time:'',price:'',year:'',tag:'Vartotojo siūlymas',bring:[],
+      time:'',price:'',year:'',tag:'Vartotojo siulymas',bring:[],
       suggestedBy:s.uid,
       suggestedByName:s.displayName||'Anon',
       createdAt:serverTimestamp(),
@@ -5936,7 +5924,7 @@ async function approveSuggestion(suggId,suggUid,btn){
 
 async function rejectSuggestion(suggId,suggUid,btn){
   if(!isAdmin()) return;
-  const reason=prompt('Atmetimo priežastis (neprivaloma):');
+  const reason=prompt('Atmetimo priezastis (neprivaloma):');
   if(reason===null) return; // user pressed Cancel
   btn.disabled=true;btn.textContent='...';
   try{
@@ -5946,7 +5934,7 @@ async function rejectSuggestion(suggId,suggUid,btn){
       rejectionReason:reason||'',
       rejectedAt:serverTimestamp(),
     });
-    toast('❌ Siūlymas atmestas','info');
+    toast('❌ Siulymas atmestas','info');
     renderAdminSuggestions();
   } catch(e){
     toast('Error: '+e.message,'info');
@@ -5964,11 +5952,11 @@ function checkContributorBadges(count,isCurrentUser){
 
 const INTRO_STEPS=[
   {glyph:'🗺',title:'Labas, Seeker\'i!',sub:'SpotSeekers — explore the USA in real time. Collect spots by physically visiting them.'},
-  {glyph:'📍',title:'Kaip surinkti vietą?',sub:'Prieik prie žymeklio žemėlapyje ir paspausk "Collect". GPS aptiks tavo buvimo vietą automatiškai.'},
+  {glyph:'📍',title:'Kaip surinkti a spot?',sub:'Prieik prie zymeklio zemelapyje ir paspausk "Collect". GPS aptiks tavo buvimo a spot automatiskai.'},
   {glyph:'🔓',title:'Levels & Unlocks',sub:'You start with ~16k spots visible. Each level unlocks more — up to all 67k across the USA.'},
   {glyph:'🏅',title:'XP, Badges & Streaks',sub:'Every spot earns you XP. Collect badges by category — buildings, structures, districts and more.'},
-  {glyph:'🏆',title:'Lyderių lentelė',sub:'Lenktyniauk su kitais Seeker\'iais. Prisijunk kad sinchronizuoti pažangą tarp įrenginių.'},
-  {glyph:'🚀',title:'Start Exploring!',sub:'GPS veikia fone. Matai vietas 50 km spinduliu. Sėkmės, Seeker\'i!',isLast:true},
+  {glyph:'🏆',title:'Lyderiu lentele',sub:'Lenktyniauk su kitais Seeker\'iais. Prisijunk kad sinchronizuoti pazanga tarp irenginiu.'},
+  {glyph:'🚀',title:'Start Exploring!',sub:'GPS veikia fone. Matai vietas 50 km spinduliu. Sekmes, Seeker\'i!',isLast:true},
 ];
 let _introStep=0;
 
@@ -6005,7 +5993,7 @@ const MOB_PANEL_TITLES={
   zenklai:'🏅 Badges',
 
   favs:'♥ Favorites',
-  vietos:'📋 Vietos',
+  spots:'📋 Vietos',
 };
 
 function mobNavTo(panel){
@@ -6032,7 +6020,7 @@ function mobNavTo(panel){
     // Clone the panel element approach — render then copy innerHTML
     if(panel==='zenklai') renderBadgesInto(body);
     else if(panel==='favs') renderFavoritesInto(body);
-    else if(panel==='vietos') renderListInto(body);
+    else if(panel==='spots') renderListInto(body);
   }
 
   overlay.classList.add('open');
@@ -6062,7 +6050,7 @@ function renderFavoritesInto(target){
   orig.innerHTML=saved;
 }
 function renderListInto(target){
-  const orig=document.getElementById('panel-vietos');
+  const orig=document.getElementById('panel-spots');
   const saved=orig.innerHTML;
   renderList();
   target.innerHTML=orig.innerHTML;
@@ -6304,7 +6292,7 @@ async function renderReviews(){
           </div>
           <div style="font-size:1rem;margin-bottom:4px">${stars(r.rating)}</div>
           ${r.text?`<div style="font-size:.8rem;color:var(--td);line-height:1.55;font-style:italic">"${r.text}"</div>`:''}
-          <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);margin-top:4px">📍 ${r.foundCount||0} vietos · ⭐ ${r.totalXP||0} XP</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);margin-top:4px">📍 ${r.foundCount||0} spots · ⭐ ${r.totalXP||0} XP</div>
         </div>`;
       }).join('')}`;
   } catch(e){
@@ -6545,7 +6533,7 @@ window.onFbAuthReady=async function(user){
 
 function drawerAuthAction(){
   if(window._fbUser) fbLogout();
-  else fbLogin();
+  else openEmailModal();
 }
 
 function updateAuthUI(user){
@@ -6562,8 +6550,8 @@ function updateAuthUI(user){
 
   if(user){
     if(nameEl) nameEl.textContent=user.displayName||user.email||'Vartotojas';
-    if(subEl) subEl.textContent='Sinchronizuota ✓';
-    if(btn){btn.textContent='Atsijungti';btn.className='auth-btn out';btn.onclick=fbLogout;}
+    if(subEl) subEl.textContent='Synced ✓';
+    if(btn){btn.textContent='Sign Out';btn.className='auth-btn out';btn.onclick=fbLogout;}
     const emailBtn=document.getElementById('authEmailBtn');
     if(emailBtn) emailBtn.style.display='none';
     if(avatar){
@@ -6571,13 +6559,13 @@ function updateAuthUI(user){
       else avatar.textContent='👤';
     }
     if(drawerAvatar) drawerAvatar.textContent=user.photoURL?'':'👤';
-    if(drawerLabel) drawerLabel.textContent=`${user.displayName||'Vartotojas'} · Atsijungti`;
+    if(drawerLabel) drawerLabel.textContent=`${user.displayName||user.email||'User'} · Atsijungti`;
     if(drawerBtn) drawerBtn.style.borderColor='var(--green)';
     if(mobPill) mobPill.style.display='none';
   } else {
     if(nameEl) nameEl.textContent='Not signed in';
     if(subEl) subEl.textContent='Sign in to sync progress';
-    if(btn){btn.textContent='Google';btn.className='auth-btn';btn.onclick=fbLogin;}
+    if(btn){btn.textContent='Sign In';btn.className='auth-btn';btn.onclick=openEmailModal;}
     const emailBtn=document.getElementById('authEmailBtn');
     if(emailBtn) emailBtn.style.display='';
     if(avatar) avatar.innerHTML='👤';
@@ -6597,48 +6585,6 @@ function fbLogin(){
   }
 }
 
-// Called by GIS when user picks a Google account
-function handleGisCredential(response){
-  const{auth,signInWithCredential,GoogleAuthProvider}=window._fb||{};
-  if(!auth||!response?.credential){toast('Prisijungimas nepavyko','info');return;}
-  const cred=GoogleAuthProvider.credential(response.credential);
-  signInWithCredential(auth,cred)
-    .then(result=>{
-      closeEmailModal();
-      toast(`👋 Sveiki, ${result.user.displayName||''}!`,'success');
-    })
-    .catch(e=>{
-      console.error(e);
-      toast('Prisijungimas nepavyko: '+e.message,'info');
-    });
-}
-
-// Initialise GIS once the library loads
-function initGIS(){
-  if(!window.google?.accounts?.id) return;
-  google.accounts.id.initialize({
-    client_id:'241890115444-i97i3pcibutqg9mriqjdd67cqg1suudi.apps.googleusercontent.com',
-    callback:handleGisCredential,
-    auto_select:false,
-    cancel_on_tap_outside:true,
-  });
-  // Render the standard Google button inside the modal
-  const btnEl=document.getElementById('gisGoogleBtn');
-  if(btnEl){
-    google.accounts.id.renderButton(btnEl,{
-      type:'standard',
-      theme:'outline',
-      size:'large',
-      text:'signin_with',
-      shape:'pill',
-      logo_alignment:'left',
-      width:280,
-    });
-  }
-}
-// GIS loads async — try after DOM ready and also on load event
-if(document.readyState==='complete') initGIS();
-else window.addEventListener('load',initGIS);
 
 // ── EMAIL AUTH ──
 let _emailRegisterMode=false;
@@ -6762,84 +6708,59 @@ const SPOTS_CACHE_TTL=7*24*60*60*1000; // 7 days
 async function fbLoadSpots(){
   setSyncDot('syncing');
 
-  // 1. Try localStorage cache first (fast, zero reads)
-  try{
-    const cached=JSON.parse(localStorage.getItem(spotsCacheKey())||'null');
-    if(cached&&cached.ts&&Date.now()-cached.ts<SPOTS_CACHE_TTL&&Array.isArray(cached.spots)&&cached.spots.length>0){
-      SPOTS=cached.spots;
-      refreshMarkers();
-      updateAll();
-      setSyncDot('synced');
-      updateLockedBanner();
-      const sub=document.getElementById('authSub');
-      if(sub) sub.textContent=`${SPOTS.filter(s=>s.pack!=='paid'||userPack==='paid').length} spots (cached)`;
-      return;
-    }
-  }catch(e){console.warn('Cache read error',e);}
-
-  // 2. Load skeleton — all 67k spots, lightweight (lat/lng/tier/pack/cat only)
-  let skeleton=null;
+  // 1. Skeleton — lightweight lat/lng/cat/tier for all 67k spots
+  //    Renders pins immediately, then names load in background
   try{
     const res=await fetch('/api/spots/skeleton');
     if(res.ok){
-      skeleton=await res.json();
+      const skeleton=await res.json();
       if(Array.isArray(skeleton)&&skeleton.length>0){
         SPOTS=skeleton.map(normalizeSpot);
+        _spotLevelMap=null;
         refreshMarkers();
         updateAll();
         setSyncDot('synced');
-        updateLockedBanner();
+        const sub=document.getElementById('authSub');
+        if(sub) sub.textContent=`${SPOTS.length.toLocaleString()} spots loaded`;
       }
     }
-  }catch(e){console.warn('Skeleton load failed',e);}
-
-  if(!skeleton){setSyncDot('');toast('Spots temporarily unavailable — try again later','info');return;}
-
-  // 3. Load free pack full data (replaces skeleton entries for free spots)
-  try{
-    const res=await fetch('/api/spots/free');
-    if(res.ok){
-      const freePack=await res.json();
-      if(Array.isArray(freePack)){
-        const freeMap=new Map(freePack.map(s=>[s.id,normalizeSpot(s)]));
-        SPOTS=SPOTS.map(s=>freeMap.has(s.id)?freeMap.get(s.id):s);
-        refreshMarkers();
-        updateAll();
-      }
-    }
-  }catch(e){console.warn('Free pack load failed',e);}
-
-  // 4. If user owns paid pack, load paid data too
-  if(userPack==='paid'){
-    try{
-      const res=await fetch('/api/spots/paid');
-      if(res.ok){
-        const paidPack=await res.json();
-        if(Array.isArray(paidPack)){
-          const paidMap=new Map(paidPack.map(s=>[s.id,normalizeSpot(s)]));
-          SPOTS=SPOTS.map(s=>paidMap.has(s.id)?paidMap.get(s.id):s);
-          refreshMarkers();
-          updateAll();
-        }
-      }
-    }catch(e){console.warn('Paid pack load failed',e);}
+  }catch(e){
+    console.warn('Skeleton load failed',e);
+    setSyncDot('');
+    toast('Spots temporarily unavailable — try again later','info');
+    return;
   }
 
-  // 5. Save merged to cache
-  try{localStorage.setItem(spotsCacheKey(),JSON.stringify({ts:Date.now(),spots:SPOTS}));}catch(e){}
-  updateLockedBanner();
+  if(!SPOTS.length){setSyncDot('');return;}
+
+  // 2. Names pack — id+name+state+year+url for all spots, loads in background
+  //    Silently enriches SPOTS without re-rendering the whole map
+  try{
+    const res=await fetch('/api/spots/names');
+    if(res.ok){
+      const names=await res.json();
+      if(Array.isArray(names)){
+        // Build lookup map
+        const nameMap=new Map(names.map(n=>[String(n.id),n]));
+        // Enrich existing SPOTS in place (no full re-render needed)
+        let enriched=0;
+        SPOTS=SPOTS.map(s=>{
+          const n=nameMap.get(String(s.id));
+          if(n){enriched++;return{...s,...n};}
+          return s;
+        });
+        _spotLevelMap=null;
+        // Only re-render current viewport since markers already exist
+        renderViewportMarkers();
+        const sub=document.getElementById('authSub');
+        if(sub) sub.textContent=`${SPOTS.length.toLocaleString()} spots ready`;
+      }
+    }
+  }catch(e){console.warn('Names pack load failed — spots visible but names missing',e);}
+
   setSyncDot('synced');
-  const sub=document.getElementById('authSub');
-  if(sub) sub.textContent=`${SPOTS.length} spots loaded`;
 }
 
-function updateLockedBanner(){
-  const n=lockedSpotCount();
-  const banner=document.getElementById('lockedBanner');
-  if(banner) banner.style.display=n>0?'flex':'none';
-  const cnt=document.getElementById('lockedBannerCount');
-  if(cnt) cnt.textContent=n.toLocaleString();
-}
 
 // Direct Firestore load — used as fallback and for initial cache rebuild
 let _fbSeeding=false;
@@ -6870,7 +6791,7 @@ async function fbLoadSpotsFromFirestore(){
     updateAll();
     setSyncDot('synced');
     const sub=document.getElementById('authSub');
-    if(sub) sub.textContent=`${SPOTS.length} vietos (Firestore)`;
+    if(sub) sub.textContent=`${SPOTS.length} spots (Firestore)`;
   }catch(e){
     console.error('fbLoadSpotsFromFirestore',e);
     setSyncDot('');
