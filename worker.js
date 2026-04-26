@@ -1,4 +1,4 @@
-// SpotSeekers USA — Cloudflare Worker
+// SpotSeekers USA — Cloudflare Worker 
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
