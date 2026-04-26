@@ -6873,7 +6873,16 @@ async function fbLoadSpots(){
         let enriched=0;
         SPOTS=SPOTS.map(s=>{
           const n=nameMap.get(String(s.id));
-          if(n){enriched++;return{...s,...n};}
+          if(n){
+            const merged={...s,...n};
+            // Re-run classification now that we have the name
+            if(['building','structure','site','object'].includes(merged.cat) && merged.name){
+              const derived=_classifyByName(merged.name);
+              if(derived) merged.cat=derived;
+            }
+            enriched++;
+            return merged;
+          }
           return s;
         });
         _spotLevelMap=null;
