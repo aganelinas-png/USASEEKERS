@@ -1566,115 +1566,25 @@ function seededHash(str){
 // Build the spotLevel assignment table. Called once after SPOTS loaded.
 // Returns a Map<spotId, spotLevel>
 function buildSpotLevelMap(spots){
-  // Filter out hidden/special
-  const eligible=spots.filter(s=>s.cat!=='hidden'&&s.id!==99);
-
-  // Geo regions for spread guarantee
-  function geoRegion(s){
-    const lat=s.lat,lng=s.lng;
-    if(lng<=-100&&lat>=44) return 'northwest';
-    if(lng<=-100&&lat<44)  return 'southwest';
-    if(lng>=-82&&lat>=40)  return 'northeast';
-    if(lng>=-82&&lat<40)   return 'southeast';
-    return 'midwest';
-  }
-
-  // Sort spots deterministically by seeded hash so assignment is stable across all clients
-  const sorted=[...eligible].sort((a,b)=>seededHash(String(a.id)+'v1')-seededHash(String(b.id)+'v1'));
-
-  // LOGARITHMIC scaling: L1=25%, L50=100%.
-  // Log curve: fast unlock early, slower mid, tiny batches at end.
-  // Formula: visible(l) = total * (log(l+1)/log(51))^0.7
-  const totalEligible=eligible.length;
-  function logVisible(lvl){
-    return Math.round(totalEligible*Math.pow(Math.log(lvl+1)/Math.log(51),1.5));
-  }
-  const batchSizes=[];
-  // Enforce minimum 25% at L1
-  const l1Target=Math.max(Math.round(totalEligible*0.25),logVisible(1));
-  let prev=0;
-  for(let l=1;l<=50;l++){
-    let target=l===1?l1Target:(l===50?totalEligible:logVisible(l));
-    batchSizes.push(Math.max(1,target-prev));
-    prev=Math.min(target,totalEligible);
-  }
-
-  // Tier weighting per level: [T1%, T2%, T3%]
-  // Linear batches — tier mix creates quality curve: T3-heavy early, rarities at high levels
-  // [T1(local)%, T2(state)%, T3(national)%, T4(landmark)%]
-  // Early levels: mostly local/state; later: more national/landmark
-  function tierWeight(lvl){
-    if(lvl===1)  return[0.55,0.30,0.12,0.03];
-    if(lvl<=5)   return[0.52,0.30,0.14,0.04];
-    if(lvl<=10)  return[0.48,0.30,0.16,0.06];
-    if(lvl<=15)  return[0.43,0.30,0.20,0.07];
-    if(lvl<=20)  return[0.38,0.28,0.24,0.10];
-    if(lvl<=25)  return[0.30,0.28,0.28,0.14];
-    if(lvl<=30)  return[0.22,0.26,0.32,0.20];
-    if(lvl<=38)  return[0.14,0.22,0.36,0.28];
-    if(lvl<=45)  return[0.08,0.16,0.38,0.38];
-    return[0.04,0.10,0.36,0.50];
-  }
-
-  // Separate pools by tier and geo region
-  const regions=['northwest','southwest','northeast','southeast','midwest'];
-  const pools={};
-  regions.forEach(r=>{
-    pools[r]={1:[],2:[],3:[],4:[]};
-  });
-  sorted.forEach(s=>{
-    const r=geoRegion(s);
-    const t=s.tier||1;
-    if(pools[r][t]) pools[r][t].push(s);
-  });
-
+  // Fast O(n) level assignment using seeded hash
+  // Tier influences level: T4(landmark)=low level, T1(local)=high level
+  // This ensures quality spots unlock early
+  const tierBase={4:1,3:8,2:20,1:30}; // base level for each tier
+  const tierRange={4:15,3:15,2:15,1:20}; // spread across levels
   const levelMap=new Map();
-  const assigned=new Set();
-
-  function pickFromPools(count,wt,lvl){
-    const picked=[];
-    const t1n=Math.round(count*wt[0]);
-    const t2n=Math.round(count*wt[1]);
-    const t3n=Math.round(count*wt[2]);
-    const t4n=count-t1n-t2n-t3n;
-    const tierNeeds={1:t1n,2:t2n,3:t3n,4:t4n};
-
-    [1,2,3,4].forEach(tier=>{
-      let need=tierNeeds[tier];
-      if(need<=0) return;
-      const regionOrder=['midwest','northeast','southeast','northwest','southwest'];
-      let ri=0;
-      while(need>0){
-        const r=regionOrder[ri%regionOrder.length];
-        const pool=pools[r][tier];
-        const avail=pool.filter(s=>!assigned.has(s.id));
-        if(avail.length>0){
-          const s=avail[0];
-          picked.push(s);
-          assigned.add(s.id);
-          need--;
-        }
-        ri++;
-        if(regionOrder.every(rr=>pools[rr][tier].filter(s=>!assigned.has(s.id)).length===0)) break;
-      }
-    });
-    return picked;
-  }
-
-  for(let lvl=1;lvl<=50;lvl++){
-    const batchSize=batchSizes[lvl-1];
-    const wt=tierWeight(lvl);
-    const batch=lvl<50
-      ? pickFromPools(Math.min(batchSize,eligible.length-assigned.size),wt,lvl)
-      : eligible.filter(s=>!assigned.has(s.id)); // L50: all remaining
-    batch.forEach(s=>levelMap.set(s.id,lvl));
-  }
-
-  // Any unassigned (shouldn't happen) → L50
-  eligible.forEach(s=>{if(!levelMap.has(s.id)) levelMap.set(s.id,50);});
-
+  spots.forEach(s=>{
+    if(s.cat==='hidden'){levelMap.set(s.id,99);return;}
+    const tier=s.tier||1;
+    const base=tierBase[tier]||1;
+    const range=tierRange[tier]||20;
+    // deterministic spread within tier's level range
+    const h=seededHash(String(s.id)+'v2');
+    const lvl=base+Math.floor((h/2147483647)*range);
+    levelMap.set(s.id,Math.min(Math.max(lvl,1),50));
+  });
   return levelMap;
 }
+
 
 let _spotLevelMap=null;
 function getSpotLevelMap(){
@@ -1689,11 +1599,7 @@ function getSpotLevel(spot){
 }
 function isSpotVisible(spot){
   if(spot.cat==='hidden') return false;
-  if(isSpotLocked(spot)) return false;
-  if(isAdmin()) return true;
-  // At low zoom just show everything — level system kicks in when zoomed in
-  if(map&&map.getZoom()<8) return true;
-  return getSpotLevel(spot)<=getPlayerLevel(totalXP);
+  return true; // all spots visible — level perks unlock XP bonuses, not visibility
 }
 
 // ═══════════ STREAK MILESTONES ═══════════
@@ -2162,8 +2068,7 @@ function renderViewportMarkers(){
     if(activeFilter!=='all'&&activeFilter!==s.cat) continue;
     if(activeCity!=='all'&&!spotInCity(s,activeCity)) continue;
     if(!bounds.contains([s.lat,s.lng])) continue;
-    // Level check only when zoomed in (expensive at 67k)
-    if(zoom>=8&&!isAdmin()&&getSpotLevel(s)>getPlayerLevel(totalXP)) continue;
+    // All spots visible
     visible.push(s);
     if(visible.length>=MAX_VIEWPORT_MARKERS) break; // hard cap
   }
@@ -2595,7 +2500,7 @@ function renderTierProgressHTML(){
       <div class="tier-dot" style="background:var(--gold)"></div>
       <div class="tier-info">
         <div class="tier-name">Lv.${plvl} — Matomos spots</div>
-        <div class="tier-count">${visibleSpots.length} spots on map · Lv.${plvl+1} unlocks +${nextLvlSpots}</div>
+        <div class="tier-count">${visibleCount.toLocaleString()} spots total · Lv.${plvl+1} unlocks more</div>
         <div class="tier-bar"><div class="tier-fill" style="background:var(--gold);width:${Math.round(visibleSpots.length/Math.max(1,SPOTS.filter(s=>s.cat!=='hidden').length)*100)}%"></div></div>
       </div>
     </div>
@@ -3033,7 +2938,7 @@ function renderAboutMe(){
       <div style="height:6px;background:var(--bdr);border-radius:3px;overflow:hidden">
         <div style="height:100%;width:${Math.round(found.size/Math.max(1,SPOTS.filter(s=>isSpotVisible(s)&&s.cat!=='hidden').length)*100)}%;background:linear-gradient(90deg,var(--gd),var(--gold));border-radius:3px;transition:width .5s"></div>
       </div>
-      <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--td);margin-top:5px">Next level unlocks +${SPOTS.filter(s=>getSpotLevel(s)===lv.level+1&&!isSpotLocked(s)).length} new spots</div>
+      <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--td);margin-top:5px">Next level unlocks more spots</div>
     </div>
     <div style="background:var(--surf2);border:1px solid var(--bdr);border-radius:10px;padding:11px 14px">
       <div style="display:flex;justify-content:space-between;margin-bottom:5px">
