@@ -1,5 +1,11 @@
 // SpotSeekers USA — Cloudflare Worker
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Secret',
+};
+
 const GITHUB_HTML_PROD = 'https://raw.githubusercontent.com/aganelinas-png/USASEEKERS/main/index.html';
 
 const ADMIN_SECRET_PLACEHOLDER = `window._adminSecret='ADMIN_SECRET_PLACEHOLDER';`;
@@ -306,12 +312,6 @@ function toggleCard(id) {
 </body>
 </html>`;
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Secret',
-};
-
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -364,7 +364,7 @@ export default {
     }
 
     // ── GET /api/spots/:pack ──
-    // pack = skeleton | names | free | paid
+    // pack = skeleton | free | paid
     const spotsMatch = url.pathname.match(/^\/api\/spots\/(skeleton|names|free|paid)$/);
     if (spotsMatch) {
       const pack = spotsMatch[1];
@@ -380,7 +380,7 @@ export default {
         headers: {
           'Content-Type': 'application/json',
           'Cache-Control': 'public, max-age=300',
-          'Access-Control-Allow-Origin': '*'
+          ...CORS_HEADERS
         }
       });
     }
@@ -403,7 +403,7 @@ export default {
       });
     }
 
-    // ── POST /api/admin/rebuild?pack=skeleton|names|free|paid ──
+    // ── POST /api/admin/rebuild?pack=skeleton|free|paid ──
     if (url.pathname === '/api/admin/rebuild' && request.method === 'POST') {
       const secret = request.headers.get('X-Admin-Secret');
       if (secret !== adminSecret) {
@@ -453,6 +453,10 @@ export default {
 
     // Inject admin secret
     html = html.replace(ADMIN_SECRET_PLACEHOLDER, `window._adminSecret='${adminSecret}';`);
+
+    // Inject ADMIN_UIDS
+    const adminUid = env.ADMIN_UID || 'K9DGewbvOKZsidYDaiAk2pc0J0m1';
+    html = html.replace("const ADMIN_UIDS=['Q0pPckRvI7e6T0kylcpfCsKV61x1','wHLbJaH5zYNLlKRLBTYnlahsWQ73'];", `const ADMIN_UIDS=['${adminUid}'];`);
 
     return new Response(html, {
       headers: { 'Content-Type': 'text/html;charset=utf-8' }
