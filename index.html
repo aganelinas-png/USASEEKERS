@@ -1683,8 +1683,10 @@ function getSpotLevel(spot){
 }
 function isSpotVisible(spot){
   if(spot.cat==='hidden') return false;
-  if(isSpotLocked(spot)) return false; // paid pack — not owned
+  if(isSpotLocked(spot)) return false;
   if(isAdmin()) return true;
+  // At low zoom just show everything — level system kicks in when zoomed in
+  if(map&&map.getZoom()<8) return true;
   return getSpotLevel(spot)<=getPlayerLevel(totalXP);
 }
 
@@ -1952,6 +1954,9 @@ function initMap(){
 
   // ── Marker cluster group — gold themed, disables at zoom 16+ ──
   clusterGroup=L.markerClusterGroup({
+    chunkedLoading:true,
+    chunkSize:200,
+    chunkDelay:50,
     disableClusteringAtZoom:16,
     maxClusterRadius:60,
     spiderfyOnMaxZoom:true,
@@ -1975,6 +1980,7 @@ function initMap(){
   [100,400,900,1800].forEach(ms=>setTimeout(()=>map.invalidateSize(),ms));
   window.addEventListener('resize',()=>map.invalidateSize());
   map.on('moveend',scheduleViewportRender);
+  map.on('zoomend',()=>{_spotLevelMap=null;scheduleViewportRender();});
   map.on('zoomend',scheduleViewportRender);
   map.on('click',e=>{
     // Close city filter if open
@@ -2123,19 +2129,36 @@ let _viewportRenderPending=false;
 function scheduleViewportRender(){
   if(_viewportRenderPending) return;
   _viewportRenderPending=true;
-  setTimeout(()=>{_viewportRenderPending=false;renderViewportMarkers();},200);
+  const delay=map&&map.getZoom()<6?500:200;
+  setTimeout(()=>{_viewportRenderPending=false;renderViewportMarkers();},delay);
 }
+// Max markers to render at once — keeps UI responsive
+const MAX_VIEWPORT_MARKERS = 2000;
+
 function renderViewportMarkers(){
   if(!map||!clusterGroup) return;
-  const bounds=map.getBounds().pad(0.5); // 50% padding beyond viewport
+  const zoom=map.getZoom();
+  const bounds=map.getBounds().pad(zoom>=10?0.3:zoom>=8?0.5:0.1);
   clusterGroup.clearLayers();
-  SPOTS.forEach(s=>{
-    if(!isSpotVisible(s)||s.cat==='hidden'||isSpotLocked(s)) return;
-    if(hideCollected&&found.has(s.id)) return;
-    const show=activeFilter==='all'||activeFilter===s.cat;
-    if(!show) return;
-    if(activeCity!=='all'&&!spotInCity(s,activeCity)) return;
-    if(!bounds.contains([s.lat,s.lng])) return;
+
+  // At very low zoom just cluster everything — no individual marker logic
+  // Only build full list when zoomed enough to matter
+  const visible=[];
+  for(let i=0;i<SPOTS.length;i++){
+    const s=SPOTS[i];
+    if(s.cat==='hidden'||isSpotLocked(s)) continue;
+    if(hideCollected&&found.has(s.id)) continue;
+    if(activeFilter!=='all'&&activeFilter!==s.cat) continue;
+    if(activeCity!=='all'&&!spotInCity(s,activeCity)) continue;
+    if(!bounds.contains([s.lat,s.lng])) continue;
+    // Level check only when zoomed in (expensive at 67k)
+    if(zoom>=8&&!isAdmin()&&getSpotLevel(s)>getPlayerLevel(totalXP)) continue;
+    visible.push(s);
+    if(visible.length>=MAX_VIEWPORT_MARKERS) break; // hard cap
+  }
+
+  // Build/update markers and add to cluster
+  visible.forEach(s=>{
     if(!markers[s.id]){
       const m=L.marker([s.lat,s.lng],{icon:makeIcon(s)});
       m._isMarker=true;
@@ -6721,7 +6744,7 @@ async function fbLoadSpots(){
         updateAll();
         setSyncDot('synced');
         const sub=document.getElementById('authSub');
-        if(sub) sub.textContent=`${SPOTS.length.toLocaleString()} spots loaded`;
+        if(sub) sub.textContent=`${SPOTS.length.toLocaleString()} spots — zoom in to explore`;
       }
     }
   }catch(e){
