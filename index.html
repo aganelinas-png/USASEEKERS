@@ -933,8 +933,11 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
   <!-- FILTERS inline in topbar -->
   <div class="tb-filters" id="filterBar">
     <div class="fcap on" data-cat="all" onclick="setFilter('all')">All</div>
-    <div class="fgroup" data-group="built" onclick="toggleFilterGroup('built')">🏛 Built <span class="fg-arr">▾</span></div>
-    <div class="fgroup" data-group="place" onclick="toggleFilterGroup('place')">⛏ Place <span class="fg-arr">▾</span></div>
+    <div class="fcap sub" data-cat="building" onclick="setFilter('building')">🏛 Buildings</div>
+    <div class="fcap sub" data-cat="structure" onclick="setFilter('structure')">⚙️ Structures</div>
+    <div class="fcap sub" data-cat="district" onclick="setFilter('district')">🏘 Districts</div>
+    <div class="fcap sub" data-cat="site" onclick="setFilter('site')">⛏ Sites</div>
+    <div class="fcap sub" data-cat="object" onclick="setFilter('object')">🗿 Objects</div>
   </div>
   <div class="tb-right">
     <div class="ib wx-ib" id="wxBtn" onclick="toggleWeather()" title="Weather"><span id="wxIcon">🌤</span></div>
@@ -1375,8 +1378,11 @@ const CATS={
 };
 
 const FILTER_GROUPS=[
-  {id:'built',label:'Built',emoji:'🏛',cats:['building','structure','district']},
-  {id:'place',label:'Place',emoji:'⛏',cats:['site','object']},
+  {id:'building',label:'Buildings',emoji:'🏛',cats:['building']},
+  {id:'structure',label:'Structures',emoji:'⚙️',cats:['structure']},
+  {id:'district',label:'Districts',emoji:'🏘',cats:['district']},
+  {id:'site',label:'Sites',emoji:'⛏',cats:['site']},
+  {id:'object',label:'Objects',emoji:'🗿',cats:['object']},
 ];
 
 // 4-tier system: 1=Local, 2=State, 3=National, 4=Landmark
@@ -1750,19 +1756,25 @@ let approvedSuggestions=0; // loaded from Firestore user doc
 
 // ═══════════ TIER HELPERS (display only) ═══════════
 
-function t1Collected(){return[...found].filter(id=>SPOTS.find(s=>s.id===id&&s.tier===1)).length;}
-function t2Collected(){return[...found].filter(id=>SPOTS.find(s=>s.id===id&&s.tier===2)).length;}
-function t3Collected(){return[...found].filter(id=>SPOTS.find(s=>s.id===id&&s.tier===3)).length;}
-function t4Collected(){return[...found].filter(id=>SPOTS.find(s=>s.id===id&&s.tier===4)).length;}
+function t1Collected(){return[...found].filter(id=>{const s=SPOTS.find(sp=>sp.id==id);return s&&s.tier===1;}).length;}
+function t2Collected(){return[...found].filter(id=>{const s=SPOTS.find(sp=>sp.id==id);return s&&s.tier===2;}).length;}
+function t3Collected(){return[...found].filter(id=>{const s=SPOTS.find(sp=>sp.id==id);return s&&s.tier===3;}).length;}
+function t4Collected(){return[...found].filter(id=>{const s=SPOTS.find(sp=>sp.id==id);return s&&s.tier===4;}).length;}
 
 // Normalize spot from raw NRHP format to internal format
 function normalizeSpot(s){
-  if(!s.cat&&s.category) s.cat=s.category;
+  // Normalize category → cat
+  s.cat = s.cat || s.category || 'building';
+  // Ensure cat is valid
+  if(!CATS[s.cat]) s.cat='building';
+  // Normalize tier string → int
   if(typeof s.tier==='string'){
     const tierMap={local:1,state:2,national:3,landmark:4};
-    s.tier=tierMap[s.tier]||1;
+    s.tier=tierMap[s.tier.toLowerCase()]||1;
   }
-  if(!s.tier) s.tier=1;
+  if(!s.tier||typeof s.tier!=='number') s.tier=1;
+  // Ensure name fallback
+  if(!s.name) s.name='';
   return s;
 }
 
@@ -2069,8 +2081,8 @@ function parseCSVLine(line){
 }
 
 function makeIcon(spot){
-  const cat=CATS[spot.cat]||CATS.history;
-  const locked=!isSpotUnlocked(spot);
+  const cat=CATS[spot.cat]||CATS.building;
+  const locked=false; // all free
   const isF=found.has(spot.id);
   const tc=TIER_CONFIG[spot.tier||1];
 
@@ -2092,7 +2104,6 @@ function makeIcon(spot){
 
 function addMarker(spot){
   if(spot.cat==='hidden') return;
-  if(!isSpotUnlocked(spot)) return; // locked T2/T3 — not shown on map
   const m=L.marker([spot.lat,spot.lng],{icon:makeIcon(spot)});
   m._isMarker=true;
   m.on('click',()=>openSheet(spot));
@@ -2558,7 +2569,7 @@ function switchDrawerPanel(name){openSubPanel(name);}
 function renderCurrentPanel(name){if(name) openSubPanel(name);}
 
 function updateDrawerHeader(){
-  document.getElementById('drawerSub').textContent=`🇺🇸 ${found.size} / ${SPOTS.filter(s=>s.cat!=='hidden'&&!isSpotLocked(s)).length} · ${getLevel(totalXP).icon} Lv.${getLevel(totalXP).level} · ⭐ ${totalXP} XP`;
+  document.getElementById('drawerSub').textContent=`🇺🇸 ${found.size} / ${SPOTS.filter(s=>s&&s.cat&&s.cat!=='hidden').length} · ${getLevel(totalXP).icon} Lv.${getLevel(totalXP).level} · ⭐ ${totalXP} XP`;
   const streakEl=document.getElementById('drawerStreak');
   if(streakEl) streakEl.textContent=streak>0?`🔥 ${streak} d. serija`:'Start a streak!';
 }
@@ -2685,15 +2696,15 @@ function openSheet(spot){
     return;
   }
   selectedSpot=spot;
-  const locked=!isSpotUnlocked(spot);
-  const cat=CATS[spot.cat]||CATS.history;
+  const locked=false; // all free
+  const cat=CATS[spot.cat]||CATS.building;
   const isF=found.has(spot.id);
   const tc=TIER_CONFIG[spot.tier||1];
   const content=document.getElementById('sheetContent');
   const r=spotRadius(spot);
   // Update sticky header name
   const headerName=document.getElementById('sheetHeaderName');
-  if(headerName) headerName.textContent=locked?'🔒 Locked Spot':(spot.name||`${cat.label} spot`);
+  if(headerName) headerName.textContent=locked?'🔒 Locked Spot':(spot.name||(spot.id?`${(CATS[spot.cat]||CATS.building).label} #${String(spot.id).slice(-5)}`:'Unknown spot'));
 
   if(locked){
     // Locked spots are invisible on map — this branch only triggers for admin previews
@@ -2718,7 +2729,7 @@ function openSheet(spot){
 
     content.innerHTML=`
       <div class="scat">${(cat.label||'BUILDING').toUpperCase()}</div>
-      <div class="stitle">${spot.name||`${cat.label} spot`}</div>
+      <div class="stitle">${spot.name||(spot.id?`${(CATS[spot.cat]||CATS.building).label} #${String(spot.id).slice(-5)}`:'Unknown spot')}</div>
       <div class="tier-badge t${spot.tier||1}">${(TIER_CONFIG[spot.tier||1]||TIER_CONFIG[1]).icon} ${(TIER_CONFIG[spot.tier||1]||TIER_CONFIG[1]).label}</div>
       <div class="schips">
         ${spot.tag?`<span class="chip hi">${spot.tag}</span>`:''}
@@ -3008,7 +3019,7 @@ function renderAboutMe(){
 
     <!-- Quick stats row -->
     <div style="display:flex;gap:8px">
-      ${statCard('Collected',found.size,`of ${SPOTS.filter(s=>s.cat!=='hidden'&&!isSpotLocked(s)).length}`,'var(--gold)')}
+      ${statCard('Collected',found.size,`of ${SPOTS.filter(s=>s&&s.cat&&s.cat!=='hidden').length}`,'var(--gold)')}
       ${statCard('Streak',streak>0?streak+'d':'—',streak>0?'days in a row':'start today',streak>=2?'var(--gold)':'var(--txt)')}
     </div>
 
