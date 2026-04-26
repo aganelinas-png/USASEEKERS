@@ -66,7 +66,7 @@ getRedirectResult(auth).then(result=>{
   if(result?.user){
     window._fbUser=result.user;
     if(typeof window.updateAuthUI==='function') window.updateAuthUI(result.user);
-    if(typeof window.toast==='function') window.toast(`👋 Sveiki, ${result.user.displayName||''}!`,'success');
+    if(typeof window.toast==='function') window.toast(`👋 Welcome, ${result.user.displayName||''}!`,'success');
     if(typeof window.onFbAuthReady==='function') window.onFbAuthReady(result.user);
   }
 }).catch(e=>{
@@ -933,11 +933,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
   <!-- FILTERS inline in topbar -->
   <div class="tb-filters" id="filterBar">
     <div class="fcap on" data-cat="all" onclick="setFilter('all')">All</div>
-    <div class="fcap sub" data-cat="building" onclick="setFilter('building')">🏛 Buildings</div>
-    <div class="fcap sub" data-cat="structure" onclick="setFilter('structure')">⚙️ Structures</div>
-    <div class="fcap sub" data-cat="district" onclick="setFilter('district')">🏘 Districts</div>
-    <div class="fcap sub" data-cat="site" onclick="setFilter('site')">⛏ Sites</div>
-    <div class="fcap sub" data-cat="object" onclick="setFilter('object')">🗿 Objects</div>
+
   </div>
   <div class="tb-right">
     <div class="ib wx-ib" id="wxBtn" onclick="toggleWeather()" title="Weather"><span id="wxIcon">🌤</span></div>
@@ -1011,7 +1007,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
           <!-- Login/logout button always visible -->
           <button id="drawerAuthBtn" onclick="drawerAuthAction()" style="margin-top:10px;width:100%;background:var(--surf3);border:1px solid var(--bdr);border-radius:8px;padding:7px;font-family:'DM Sans',sans-serif;font-size:.78rem;color:var(--td);cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px">
             <span id="drawerAuthAvatar">👤</span>
-            <span id="drawerAuthLabel">Prisijungti su Google</span>
+            <span id="drawerAuthLabel">Sign in with Google</span>
           </button>
           <!-- City switcher -->
 
@@ -1208,7 +1204,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
       <div class="mob-filter-close" onclick="closeMobFilterSheet()">✕</div>
     </div>
     <div class="mob-filter-chips">
-      <div class="mob-filter-chip on" data-cat="all" onclick="mobSetFilter('all')">🗺 Visos</div>
+      <div class="mob-filter-chip on" data-cat="all" onclick="mobSetFilter('all')">🗺 All</div>
     </div>
     <div id="mobFilterGroups"></div>
   </div>
@@ -1219,7 +1215,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
   <div class="settings-bg" onclick="closeSettings()"></div>
   <div class="settings-panel">
     <div class="settings-header">
-      <div class="settings-title">⚙️ Nustatymai</div>
+      <div class="settings-title">⚙️ Settings</div>
       <div class="settings-close" onclick="closeSettings()">✕</div>
     </div>
     <div class="settings-row" onclick="toggleTheme();updateSettingsUI()">
@@ -1787,7 +1783,7 @@ function t4Collected(){return[...found].filter(id=>{const s=SPOTS.find(sp=>sp.id
 // Priority order: first match wins. More specific terms go first.
 const _CAT_RULES=[
   ['lighthouse', ['lighthouse','light station','lightship']],
-  ['bridge',     ['bridge','viaduct','aqueduct']],
+  ['bridge',     ['bridge','viaduct','aqueduct','swing bridge','drawbridge','covered bridge','suspension bridge']],
   ['military',   ['battlefield','fort ','fortification','armory','arsenal','barracks','military academy','navy yard','air force base','war memorial','soldiers home','veterans home','coast guard']],
   ['cemetery',   ['cemetery','burial ground','mausoleum','graveyard','burying ground']],
   ['church',     ['church','chapel','cathedral','basilica','synagogue','mosque','temple ','parish','convent','monastery','abbey','meetinghouse','meeting house','masonic temple']],
@@ -1828,9 +1824,10 @@ function normalizeSpot(s){
   if(!s.tier||typeof s.tier!=='number') s.tier=1;
   // Ensure name fallback
   if(!s.name) s.name='';
-  // ── Sub-category classification by name (only for base NRHP cats) ──
-  // Districts, sites, objects keep their NRHP cat — they're meaningful as-is
-  if(['building','structure'].includes(s.cat) && s.name){
+  // ── Sub-category classification by name ──
+  // Districts keep their NRHP cat (they're meaningful area designations)
+  // Buildings, structures, sites, objects all get classified
+  if(['building','structure','site','object'].includes(s.cat) && s.name){
     const derived=_classifyByName(s.name);
     if(derived) s.cat=derived;
   }
@@ -2268,7 +2265,7 @@ function toggleFilterGroup(gid){
     renderFilterSub();
   }
   document.querySelectorAll('.fgroup').forEach(el=>el.classList.toggle('on',el.dataset.group===activeGroup));
-  // Also sync the "Visos" pill
+  // Also sync the "All" pill
   document.querySelector('.fcap[data-cat="all"]')?.classList.toggle('on',activeFilter==='all');
   refreshMarkers();
 }
@@ -2302,6 +2299,14 @@ function setFilter(cat){
     else{const c=CATS[cat];mobLabel.textContent=c?c.emoji+' '+c.label:'Filtered';mobBtn.classList.add('active-filter');}
   }
   refreshMarkers();
+}
+
+function renderDesktopFilterBar(){
+  const bar=document.getElementById('filterBar');
+  if(!bar) return;
+  // Build group buttons from FILTER_GROUPS
+  const groups=FILTER_GROUPS.map(grp=>`<div class="fgroup" data-group="${grp.id}" onclick="toggleFilterGroup('${grp.id}')">${grp.emoji} ${grp.label}<span class="fg-arr" style="margin-left:3px;font-size:.6rem;transition:transform .2s">▾</span></div>`).join('');
+  bar.innerHTML=`<div class="fcap on" data-cat="all" onclick="setFilter('all')">All</div>${groups}`;
 }
 
 // ═══════════ CITY FILTER ═══════════
@@ -2720,7 +2725,7 @@ function renderQuestCard(){
         <div class="quest-title">Visit ${target} spot${target===1?'':'s'} today</div>
       </div>
     </div>
-    <div class="quest-reward">🌟 Atlygis: +10 XP</div>
+    <div class="quest-reward">🌟 Reward: +10 XP</div>
     <div class="quest-pbar"><div class="quest-pfill" style="width:${done?100:pct}%"></div></div>
     <div class="quest-status">${done?'Awesome! Come back tomorrow.':`${prog} / ${target} collected today`}</div>
   </div>`;
@@ -2796,7 +2801,7 @@ function openSheet(spot){
         const yr=spot.year;
         const long=yr.length>30;
         return long
-          ?`<div class="year-block"><span class="year-label">📅</span><span class="year-text year-clamp" id="yrText">${yr}</span><button class="year-toggle" id="yrBtn" onclick="toggleYear()">Rodyti daugiau ↓</button></div>`
+          ?`<div class="year-block"><span class="year-label">📅</span><span class="year-text year-clamp" id="yrText">${yr}</span><button class="year-toggle" id="yrBtn" onclick="toggleYear()">Show more ↓</button></div>`
           :`<div class="year-block"><span class="year-label">📅</span><span class="year-text">${yr}</span></div>`;
       })():''}
       <div class="sinfo">
@@ -3319,7 +3324,7 @@ function renderWeeklyChallenge(){
         <div class="quest-title">${ch.label}</div>
       </div>
     </div>
-    <div class="quest-reward">🌟 Atlygis: +${ch.xp} XP</div>
+    <div class="quest-reward">🌟 Reward: +${ch.xp} XP</div>
     <div class="quest-pbar"><div class="quest-pfill" style="width:${done?100:pct}%"></div></div>
     <div class="quest-status">${done?'Great! New challenge next Monday.':`${prog} / ${ch.goal} collected`}</div>
   </div>`;
@@ -3419,7 +3424,7 @@ function renderCityCompletion(){
 
   const restRows=rest.map(cityRow).join('');
   const restHtml=hasMore?`<div id="cityRestRows" style="display:none">${restRows}</div>
-    <button onclick="this.style.display='none';document.getElementById('cityRestRows').style.display='block'" style="background:none;border:1px solid var(--bdr);border-radius:8px;padding:4px 10px;font-family:'DM Mono',monospace;font-size:.62rem;color:var(--td);cursor:pointer;margin-top:4px">+ Rodyti dar ${rest.length}</button>`:'';
+    <button onclick="this.style.display='none';document.getElementById('cityRestRows').style.display='block'" style="background:none;border:1px solid var(--bdr);border-radius:8px;padding:4px 10px;font-family:'DM Mono',monospace;font-size:.62rem;color:var(--td);cursor:pointer;margin-top:4px">+ Show ${rest.length}</button>`:'';
 
   return`<div class="streak-card" style="margin-bottom:8px">
     <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--gold);margin-bottom:10px">📍 State Progress</div>
@@ -3473,9 +3478,15 @@ function renderDrawerStats(){
 
 // ═══════════ SPOT LIST (collapsed by category) ═══════════
 let _catExpanded=new Set();
+let _catPage={};
+function loadMoreCat(catId){
+  _catPage[catId]=(_catPage[catId]||1)+1;
+  renderList();
+  // Restore scroll position to bottom of current list
+}
 function toggleCatList(catId){
-  if(_catExpanded.has(catId)) _catExpanded.delete(catId);
-  else _catExpanded.add(catId);
+  if(_catExpanded.has(catId)){_catExpanded.delete(catId);delete _catPage[catId];}
+  else{_catExpanded.add(catId);_catPage[catId]=1;}
   renderList();
 }
 
@@ -3547,7 +3558,11 @@ function renderList(){
         <span style="color:var(--tm);font-size:.8rem;transition:transform .2s;display:inline-block;transform:rotate(${expanded?90:0}deg)">›</span>
       </div>`;
       if(expanded){
-        catSpots.forEach(s=>{
+        const CAT_PAGE_SIZE=150;
+        const pageKey=`_page_${catId}`;
+        const page=_catPage[catId]||1;
+        const pageSpots=catSpots.slice(0,page*CAT_PAGE_SIZE);
+        pageSpots.forEach(s=>{
           const isF=found.has(s.id);
           const isFav=favorites.has(String(s.id));
           let ds='';
@@ -3561,6 +3576,10 @@ function renderList(){
             </div>
           </div>`;
         });
+        if(catSpots.length>pageSpots.length){
+          const remaining=catSpots.length-pageSpots.length;
+          h+=`<div onclick="loadMoreCat('${catId}')" style="text-align:center;padding:10px;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--gold);cursor:pointer;border-top:1px solid var(--bdr)">Show ${Math.min(remaining,CAT_PAGE_SIZE)} more of ${remaining} remaining ›</div>`;
+        }
       }
     });
 
@@ -3931,7 +3950,7 @@ function saveName(){
   playerName=n;
   save();
   renderSocial();
-  toast(`👤 Vardas: ${n}`,'success');
+  toast(`👤 Name: ${n}`,'success');
 }
 
 // ═══════════ EDITOR ═══════════
@@ -4056,7 +4075,7 @@ function checkLevelUp(){
       const el=document.getElementById('levelUpOverlay');
       if(!el) return;
       document.getElementById('luGlyph').textContent=lv.icon;
-      document.getElementById('luLevel').textContent=`Lygis ${lv.level}`;
+      document.getElementById('luLevel').textContent=`Level ${lv.level}`;
       document.getElementById('luName').textContent=lv.name;
       document.getElementById('luReward').textContent=`${lv.icon} ${lv.name} — new rank!`;
       el.classList.add('show');
@@ -4198,7 +4217,7 @@ function osmPick(lat,lng,name){
   document.getElementById('osmSearch').value='';
   document.getElementById('edHint').textContent=`✅ ${parseFloat(lat).toFixed(4)}, ${parseFloat(lng).toFixed(4)}`;
   map.setView([lat,lng],17);
-  toast('📍 Vieta parinkta','success');
+  toast('📍 Location selected','success');
 }
 
 // ═══════════ OSM BULK IMPORT ═══════════
@@ -4683,7 +4702,7 @@ function renderOsmImport(){
       <button class="osm-ctrl-btn" onclick="fetchOsmData()">🔄 Load from OSM</button>
       <button class="osm-ctrl-btn" onclick="_osmForceRefresh=true;fetchOsmData()" title="Clear cache and reload">♻️ Atnaujinti</button>
       <button class="osm-ctrl-btn" onclick="osmToggleManual()" id="osmManualToggle">${_osmManualMode?'🤖 Auto':'🖐 Rankiniu'}</button>
-      <button class="osm-ctrl-btn" onclick="osmSelectAll()">☑ Visos</button>
+      <button class="osm-ctrl-btn" onclick="osmSelectAll()">☑ All</button>
       <button class="osm-ctrl-btn" onclick="osmSelectNone()">☐ Ne viena</button>
       <button class="osm-ctrl-btn pri" id="osmImportBtn" onclick="osmImportSelected()">✅ Import</button>
       <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red)" onclick="findDuplicateSpots()">🔍 Duplicates</button>
@@ -4880,7 +4899,7 @@ async function fetchKpdData(forceRefresh){
     }catch(e){}
   }
 
-  setS('⏳ Kraunama is KPD registro...');
+  setS('⏳ Loading from KPD registry...');
   const allFeatures=[];
   let offset=0;
   let total=null;
@@ -4995,7 +5014,7 @@ function renderKpdPanel(){
       <button class="osm-ctrl-btn" onclick="fetchKpdData(false)">🔄 Ikelti</button>
       <button class="osm-ctrl-btn" onclick="fetchKpdData(true)">♻️ Atnaujinti</button>
       <button class="osm-ctrl-btn" onclick="clearKpdCache()">🗑 Isvalyti talpykla</button>
-      <button class="osm-ctrl-btn" onclick="kpdSelectAll()">☑ Visos</button>
+      <button class="osm-ctrl-btn" onclick="kpdSelectAll()">☑ All</button>
       <button class="osm-ctrl-btn" onclick="kpdSelectNone()">☐ Ne viena</button>
       <button class="osm-ctrl-btn pri" onclick="kpdImportSelected()">✅ Import</button>
     </div>
@@ -5050,7 +5069,7 @@ function renderKpdList(){
   const newOnes=filtered.filter(({item})=>!item.alreadyIn);
 
   if(!filtered.length){
-    el.innerHTML=`<div style="padding:24px;text-align:center;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--td)">${_kpdData.length?'Nerasta objektu pagal siuos filtrus':'Spausk "Ikelti" noredamas gauti KPD duomenis'}</div>`;
+    el.innerHTML=`<div style="padding:24px;text-align:center;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--td)">${_kpdData.length?'No results for selected filters':'Click "Load" to fetch KPD data'}</div>`;
     return;
   }
   if(!newOnes.length){
@@ -5106,7 +5125,7 @@ async function kpdImportSelected(){
   if(!db){toast('Firebase nepasiekiamas','info');return;}
 
   const items=[..._kpdSelected].map(i=>_kpdData[i]).filter(x=>x&&!x.alreadyIn);
-  if(!items.length){toast('Visos pasirinktos spots jau yra DB','info');return;}
+  if(!items.length){toast('All selected spots are already in DB','info');return;}
 
   const BATCH_SIZE=400; // Firestore max is 500, use 400 for safety
   let imported=0;
@@ -5433,7 +5452,7 @@ function renderWikidataPanel(){
     <div class="osm-controls">
       <button class="osm-ctrl-btn" onclick="fetchWikidata(false)">🔄 Ikelti</button>
       <button class="osm-ctrl-btn" onclick="fetchWikidata(true)">♻️ Atnaujinti</button>
-      <button class="osm-ctrl-btn" onclick="wikiSelectAll()">☑ Visos</button>
+      <button class="osm-ctrl-btn" onclick="wikiSelectAll()">☑ All</button>
       <button class="osm-ctrl-btn" onclick="wikiSelectNone()">☐ Ne viena</button>
       <button class="osm-ctrl-btn pri" onclick="wikiImportSelected()">✅ Import</button>
     </div>
@@ -5478,7 +5497,7 @@ async function fetchWikidata(forceRefresh){
   SERVICE wikibase:label { bd:serviceParam wikibase:language "${cc.wpLang},en". }
 } LIMIT 3000`;
   const url='https://query.wikidata.org/sparql?format=json&query='+encodeURIComponent(sparql);
-  setS('⏳ Kraunama is Wikidata (iki 30s)...');
+  setS('⏳ Loading from Wikidata (up to 30s)...');
   try{
     const r=await fetch(url,{headers:{'Accept':'application/sparql-results+json','User-Agent':'SpotSeekers/1.0'},signal:AbortSignal.timeout(30000)});
     if(!r.ok) throw new Error('HTTP '+r.status);
@@ -5818,7 +5837,7 @@ function submitUsername(){
   playerName=n;
   save();
   document.getElementById('unameOverlay').classList.remove('show');
-  toast(`👤 Sveiki, ${n}!`,'success');
+  toast(`👤 Welcome, ${n}!`,'success');
 }
 
 function skipUsername(){
@@ -5864,7 +5883,7 @@ function suggestPickOnMap(){
   const banner=document.createElement('div');
   banner.id='sugPickBanner';
   banner.style.cssText='position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:500;background:var(--gold);color:#0e0c09;border-radius:20px;padding:8px 18px;font-family:"DM Sans",sans-serif;font-size:.85rem;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.3);pointer-events:none';
-  banner.textContent='📍 Bakstelek zemelapyje → vieta bus parinkta';
+  banner.textContent='📍 Tap on the map → location will be selected';
   document.body.appendChild(banner);
 }
 
@@ -5878,7 +5897,7 @@ function _handleSuggestMapPick(e){
   // Reopen modal with coords filled
   document.getElementById('sugCoords').textContent=`📍 ${_sugLat.toFixed(5)}, ${_sugLng.toFixed(5)}`;
   document.getElementById('suggestOverlay').classList.add('show');
-  toast('📍 Vieta parinkta!','success');
+  toast('📍 Location selected!','success');
 }
 
 async function submitSuggestion(){
@@ -5983,7 +6002,7 @@ async function renderAdminSuggestions(){
         <div class="sug-card-meta" style="color:var(--gold)">📍 ${s.lat?.toFixed(5)}, ${s.lng?.toFixed(5)}</div>
         <div class="sug-card-desc">${s.description||''}</div>
         <div class="sug-card-btns">
-          <button class="sug-approve" onclick="approveSuggestion('${d.id}','${s.uid}',this)">✅ Patvirtinti</button>
+          <button class="sug-approve" onclick="approveSuggestion('${d.id}','${s.uid}',this)">✅ Approve</button>
           <button class="sug-reject" onclick="rejectSuggestion('${d.id}','${s.uid}',this)">❌ Atmesti</button>
         </div>
       </div>`;
@@ -6021,12 +6040,12 @@ async function approveSuggestion(suggId,suggUid,btn){
     const userSnap=await getDoc(userRef);
     const prev=userSnap.exists()?(userSnap.data().approvedSuggestions||0):0;
     await setDoc(userRef,{approvedSuggestions:prev+1},{merge:true});
-    toast('✅ Vieta patvirtinta ir paskelbta!','success');
+    toast('✅ Spot approved and published!','success');
     renderAdminSuggestions();
     checkContributorBadges(prev+1,suggUid===window._fbUser?.uid);
   } catch(e){
     toast('Error: '+e.message,'info');
-    btn.disabled=false;btn.textContent='✅ Patvirtinti';
+    btn.disabled=false;btn.textContent='✅ Approve';
   }
 }
 
@@ -6060,7 +6079,7 @@ function checkContributorBadges(count,isCurrentUser){
 
 const INTRO_STEPS=[
   {glyph:'🗺',title:'Labas, Seeker\'i!',sub:'SpotSeekers — explore the USA in real time. Collect spots by physically visiting them.'},
-  {glyph:'📍',title:'Kaip surinkti a spot?',sub:'Prieik prie zymeklio zemelapyje ir paspausk "Collect". GPS aptiks tavo buvimo a spot automatiskai.'},
+  {glyph:'📍',title:'How do I collect a spot?',sub:'Walk up to the marker on the map and tap "Collect". GPS will detect your presence automatically.'},
   {glyph:'🔓',title:'Levels & Unlocks',sub:'You start with ~16k spots visible. Each level unlocks more — up to all 67k across the USA.'},
   {glyph:'🏅',title:'XP, Badges & Streaks',sub:'Every spot earns you XP. Collect badges by category — buildings, structures, districts and more.'},
   {glyph:'🏆',title:'Lyderiu lentele',sub:'Lenktyniauk su kitais Seeker\'iais. Prisijunk kad sinchronizuoti pazanga tarp irenginiu.'},
@@ -6522,7 +6541,7 @@ function finishOnboarding(){
   setTimeout(()=>openEmailModal(),400);
 }
 
-load();initMap();updateAll();startGPS();checkRefParam();
+load();initMap();updateAll();startGPS();checkRefParam();renderDesktopFilterBar();
 maybeShowOnboarding();
 
 // ═══════════ PWA SETUP ═══════════
@@ -6667,7 +6686,7 @@ function updateAuthUI(user){
       else avatar.textContent='👤';
     }
     if(drawerAvatar) drawerAvatar.textContent=user.photoURL?'':'👤';
-    if(drawerLabel) drawerLabel.textContent=`${user.displayName||user.email||'User'} · Atsijungti`;
+    if(drawerLabel) drawerLabel.textContent=`${user.displayName||user.email||'User'} · Sign out`;
     if(drawerBtn) drawerBtn.style.borderColor='var(--green)';
     if(mobPill) mobPill.style.display='none';
   } else {
@@ -6719,7 +6738,7 @@ function closeEmailModal(){
 function toggleEmailMode(){
   _emailRegisterMode=!_emailRegisterMode;
   const nameEl=document.getElementById('eauthName');
-  document.getElementById('eauthTitle').textContent=_emailRegisterMode?'Registruotis':'Sign in';
+  document.getElementById('eauthTitle').textContent=_emailRegisterMode?'Register':'Sign in';
   document.getElementById('eauthSubmit').textContent=_emailRegisterMode?'Create account':'Sign in';
   nameEl.style.display=_emailRegisterMode?'block':'none';
   document.getElementById('eauthToggle').innerHTML=_emailRegisterMode
@@ -6749,10 +6768,10 @@ async function fbLoginEmail(){
       const cred=await createUserWithEmailAndPassword(auth,email,pass);
       await updateProfile(cred.user,{displayName:name});
       playerName=name; save(); // set immediately so maybePromptUsername() skips
-      toast(`👋 Sveiki, ${name}!`,'success');
+      toast(`👋 Welcome, ${name}!`,'success');
     } else {
       const cred=await signInWithEmailAndPassword(auth,email,pass);
-      toast(`👋 Sveiki, ${cred.user.displayName||cred.user.email}!`,'success');
+      toast(`👋 Welcome, ${cred.user.displayName||cred.user.email}!`,'success');
     }
     closeEmailModal();
   } catch(e){
