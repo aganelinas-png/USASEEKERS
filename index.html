@@ -1371,7 +1371,7 @@ const CATS={
   bridge:    {label:'Bridges',      emoji:'🌉',color:'#4a6fa5'},
   courthouse:{label:'Courthouses',  emoji:'⚖️',color:'#8a6a3a'},
   hotel:     {label:'Hotels & Inns',emoji:'🏨',color:'#7a8a4a'},
-  military:  {label:'Military',     emoji:'🪖',color:'#5a7a5a'},
+  military:  {label:'Military',     emoji:'🎖',color:'#5a7a5a'},
   cemetery:  {label:'Cemeteries',   emoji:'⚱️',color:'#6a6a7a'},
   theater:   {label:'Theaters',     emoji:'🎭',color:'#8a4a6a'},
   museum:    {label:'Museums',      emoji:'🏺',color:'#6a4a8a'},
@@ -1399,7 +1399,7 @@ const FILTER_GROUPS=[
   {id:'bridge',     label:'Bridges',       emoji:'🌉', cats:['bridge']},
   {id:'lighthouse', label:'Lighthouses',   emoji:'🗼', cats:['lighthouse']},
   {id:'mill',       label:'Mills',         emoji:'⚙️', cats:['mill']},
-  {id:'military',   label:'Military',      emoji:'🪖', cats:['military']},
+  {id:'military',   label:'Military',      emoji:'🎖', cats:['military']},
   {id:'monument',   label:'Monuments',     emoji:'🗿', cats:['monument']},
   {id:'cemetery',   label:'Cemeteries',    emoji:'⚱️', cats:['cemetery']},
   {id:'hotel',      label:'Hotels & Inns', emoji:'🏨', cats:['hotel']},
@@ -1497,8 +1497,8 @@ const BADGE_GROUPS=[
     {id:'ml3',name:'Mill Master',desc:'Visit 20 mills',icon:'💎',need:20,xpReward:150},
   ]},
   // ── History & Military ──
-  {id:'military',title:'Battlefield Walker',icon:'🪖',cat:'military',sub:true,badges:[
-    {id:'mi1',name:'At Ease',desc:'Visit 1 military site',icon:'🪖',need:1,xpReward:15},
+  {id:'military',title:'Battlefield Walker',icon:'🎖',cat:'military',sub:true,badges:[
+    {id:'mi1',name:'At Ease',desc:'Visit 1 military site',icon:'🎖',need:1,xpReward:15},
     {id:'mi2',name:'Enlisted',desc:'Visit 10 military sites',icon:'🎖',need:10,xpReward:40},
     {id:'mi3',name:'Veteran Explorer',desc:'Visit 30 military sites',icon:'🏅',need:30,xpReward:120},
     {id:'mi4',name:'General of History',desc:'Visit 75 military sites',icon:'💎',need:75,xpReward:300},
@@ -1907,6 +1907,7 @@ function save(){
 }
 
 function load(){
+  renderDesktopFilterBar();
   // Do NOT load spots from localStorage — KV Worker is the source of truth
   const _fraw=localStorage.getItem('usa_found');
   if(_fraw){
@@ -2304,7 +2305,8 @@ function setFilter(cat){
 function renderDesktopFilterBar(){
   const bar=document.getElementById('filterBar');
   if(!bar) return;
-  // Build group buttons from FILTER_GROUPS
+  // Only render on non-mobile (mobile uses sheet instead)
+  if(window.innerWidth<=600) return;
   const groups=FILTER_GROUPS.map(grp=>`<div class="fgroup" data-group="${grp.id}" onclick="toggleFilterGroup('${grp.id}')">${grp.emoji} ${grp.label}<span class="fg-arr" style="margin-left:3px;font-size:.6rem;transition:transform .2s">▾</span></div>`).join('');
   bar.innerHTML=`<div class="fcap on" data-cat="all" onclick="setFilter('all')">All</div>${groups}`;
 }
@@ -3176,8 +3178,8 @@ const WEEKLY_CHALLENGES=[
   {id:'w_bridge',  cat:'bridge',goal:2,label:'Visit 2 historic bridges this week',                icon:'🌉',xp:70},
   {id:'w_bridge2', cat:'bridge',goal:4,label:'Cross 4 historic bridges this week',                icon:'🌉',xp:110},
   // ── Military ──
-  {id:'w_military', cat:'military',goal:2,label:'Visit 2 military sites this week',               icon:'🪖',xp:80},
-  {id:'w_military2',cat:'military',goal:3,label:'Visit 3 battlefields or forts this week',        icon:'🪖',xp:110},
+  {id:'w_military', cat:'military',goal:2,label:'Visit 2 military sites this week',               icon:'🎖',xp:80},
+  {id:'w_military2',cat:'military',goal:3,label:'Visit 3 battlefields or forts this week',        icon:'🎖',xp:110},
   // ── Schools ──
   {id:'w_school',  cat:'school',goal:2,label:'Visit 2 historic schools this week',                icon:'🏫',xp:60},
   {id:'w_school2', cat:'school',goal:5,label:'Visit 5 historic schools this week',                icon:'🏫',xp:90},
@@ -3541,45 +3543,34 @@ function renderList(){
   } else {
     // Collapsed category headers
     orderedCats.forEach(catId=>{
-      const catSpots=unlockedSpots.filter(s=>s.cat===catId).sort((a,b)=>(a.name||'').localeCompare(b.name||'','lt'));
+      const catSpots=unlockedSpots.filter(s=>s.cat===catId);
       if(!catSpots.length) return;
       const cat=CATS[catId];
       if(!cat) return;
-      const collectedInCat=catSpots.filter(s=>found.has(s.id)).length;
-      const expanded=_catExpanded.has(catId);
-      const pct2=catSpots.length?Math.round(collectedInCat/catSpots.length*100):0;
-      h+=`<div onclick="toggleCatList('${catId}')" style="display:flex;align-items:center;gap:8px;padding:10px 4px;border-bottom:1px solid var(--bdr);cursor:pointer;user-select:none">
+      const collectedInCat=catSpots.filter(s=>found.has(s.id));
+      const pct2=catSpots.length?Math.round(collectedInCat.length/catSpots.length*100):0;
+      // Category row — no expand, just progress
+      h+=`<div style="display:flex;align-items:center;gap:8px;padding:10px 4px;border-bottom:1px solid var(--bdr)">
         <span style="font-size:1.1rem">${cat.emoji}</span>
         <div style="flex:1;min-width:0">
           <div style="font-size:.78rem;color:var(--txt);font-weight:600">${cat.label}</div>
           <div style="height:3px;background:var(--surf2);border-radius:2px;margin-top:4px;overflow:hidden"><div style="height:100%;width:${pct2}%;background:${pct2===100?'var(--gold)':'var(--gd)'};border-radius:2px"></div></div>
         </div>
-        <span style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);white-space:nowrap">${collectedInCat}/${catSpots.length}</span>
-        <span style="color:var(--tm);font-size:.8rem;transition:transform .2s;display:inline-block;transform:rotate(${expanded?90:0}deg)">›</span>
+        <span style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);white-space:nowrap">${collectedInCat.length}/${catSpots.length}</span>
       </div>`;
-      if(expanded){
-        const CAT_PAGE_SIZE=150;
-        const pageKey=`_page_${catId}`;
-        const page=_catPage[catId]||1;
-        const pageSpots=catSpots.slice(0,page*CAT_PAGE_SIZE);
-        pageSpots.forEach(s=>{
-          const isF=found.has(s.id);
+      // Show only collected spots in this category
+      if(collectedInCat.length>0){
+        collectedInCat.sort((a,b)=>(a.name||'').localeCompare(b.name||'')).forEach(s=>{
           const isFav=favorites.has(String(s.id));
-          let ds='';
-          if(userLat!==null){const d=dist(userLat,userLng,s.lat,s.lng);ds=d<1000?`${Math.round(d)}m`:`${(d/1000).toFixed(1)}km`;}
-          h+=`<div class="sr ${isF?'col':''}" onclick="closeDrawer();goToSpot('${s.id}')" style="padding-left:16px">
-            <div class="sri">${isF?'✓':cat.emoji}</div>
-            <div style="flex:1;min-width:0"><div class="srn">${s.name||'—'}</div><div class="srm">${cat.label}</div></div>
+          h+=`<div class="sr col" onclick="closeDrawer();goToSpot('${s.id}')" style="padding-left:16px">
+            <div class="sri">✓</div>
+            <div style="flex:1;min-width:0"><div class="srn">${s.name||'—'}</div><div class="srm">${s.state||cat.label}</div></div>
             <div style="display:flex;align-items:center;gap:6px">
               ${isFav?'<span style="color:var(--gold);font-size:13px">♥</span>':''}
-              <div class="srr">${isF?'★':ds}</div>
+              <div class="srr">★</div>
             </div>
           </div>`;
         });
-        if(catSpots.length>pageSpots.length){
-          const remaining=catSpots.length-pageSpots.length;
-          h+=`<div onclick="loadMoreCat('${catId}')" style="text-align:center;padding:10px;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--gold);cursor:pointer;border-top:1px solid var(--bdr)">Show ${Math.min(remaining,CAT_PAGE_SIZE)} more of ${remaining} remaining ›</div>`;
-        }
       }
     });
 
@@ -6888,6 +6879,7 @@ async function fbLoadSpots(){
         _spotLevelMap=null;
         // Only re-render current viewport since markers already exist
         renderViewportMarkers();
+        renderList();
         const sub=document.getElementById('authSub');
         if(sub) sub.textContent=`${SPOTS.length.toLocaleString()} spots ready`;
       }
