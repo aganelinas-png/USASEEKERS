@@ -1382,6 +1382,8 @@ const CATS={
   park:      {label:'Parks',        emoji:'🌿',color:'#4a8c5c'},
   lighthouse:{label:'Lighthouses',  emoji:'🗼',color:'#4a7a9b'},
   bank:      {label:'Banks',        emoji:'🏦',color:'#6a8a4a'},
+  mural:     {label:'Murals & Public Art',emoji:'🎨',color:'#9a4a7a'},
+  viewpoint: {label:'Viewpoints',         emoji:'🔭',color:'#4a7a8a'},
   // ── NRHP base categories (fallback) ──
   building:  {label:'Buildings',    emoji:'🏛',color:'#4a6fa5'},
   structure: {label:'Structures',   emoji:'🔩',color:'#5a7a6a'},
@@ -1408,6 +1410,8 @@ const FILTER_GROUPS=[
   {id:'hospital',   label:'Hospitals',     emoji:'🏥', cats:['hospital']},
   {id:'prison',     label:'Prisons',       emoji:'🔒', cats:['prison']},
   {id:'park',       label:'Parks',         emoji:'🌿', cats:['park']},
+  {id:'mural',      label:'Murals',         emoji:'🎨', cats:['mural']},
+  {id:'viewpoint',  label:'Viewpoints',     emoji:'🔭', cats:['viewpoint']},
   {id:'building',   label:'Buildings',     emoji:'🏛', cats:['building']},
   {id:'structure',  label:'Structures',    emoji:'🔩', cats:['structure']},
   {id:'district',   label:'Districts',     emoji:'🏘', cats:['district']},
@@ -1449,6 +1453,8 @@ const CAT_DEFAULT_RADIUS={
   cemetery:120,
   district:150,
   park:180,
+  mural:55,
+  viewpoint:60,
 };
 
 const DEFAULT_SPOTS=[]; // removed — KV/Firestore is always populated
@@ -1592,6 +1598,20 @@ const BADGE_GROUPS=[
     {id:'hid3',name:'Secret Explorer',desc:'Find 7 hidden spots',icon:'🕵️',need:7,xpReward:20},
     {id:'hid4',name:'Shadow Master',desc:'Find 15 hidden spots',icon:'🌑',need:15,xpReward:50},
     {id:'hid5',name:'???',desc:'???',icon:'👁️',need:30,xpReward:50},
+  ]},
+  // ── Murals & Public Art ──
+  {id:'murals',title:'Street Art Hunter',icon:'🎨',cat:'mural',sub:true,badges:[
+    {id:'mu1',name:'Graffiti Tourist',desc:'Visit 1 mural or public artwork',icon:'🎨',need:1,xpReward:10},
+    {id:'mu2',name:'Art Walk',desc:'Visit 10 murals',icon:'🖌️',need:10,xpReward:30},
+    {id:'mu3',name:'Gallery Streets',desc:'Visit 30 murals',icon:'🎨',need:30,xpReward:80},
+    {id:'mu4',name:'Public Art Legend',desc:'Visit 75 murals',icon:'💎',need:75,xpReward:200},
+  ]},
+  // ── Viewpoints ──
+  {id:'viewpoints',title:'Sky Gazer',icon:'🔭',cat:'viewpoint',sub:true,badges:[
+    {id:'vp1',name:'First Overlook',desc:'Visit 1 viewpoint or observation deck',icon:'🔭',need:1,xpReward:10},
+    {id:'vp2',name:'Horizon Chaser',desc:'Visit 5 viewpoints',icon:'🌅',need:5,xpReward:25},
+    {id:'vp3',name:'Summit Collector',desc:'Visit 15 viewpoints',icon:'🏔️',need:15,xpReward:75},
+    {id:'vp4',name:'Above the Clouds',desc:'Visit 30 viewpoints',icon:'💎',need:30,xpReward:150},
   ]},
   // ── Contributor ──
   {id:'contributor',title:'Community Builder',icon:'🗺️',cat:null,badges:[
@@ -3214,6 +3234,14 @@ const WEEKLY_CHALLENGES=[
   {id:'w_explorer',cat:null,cats:['bridge','lighthouse','mill'],goal:3,label:'Visit 3 engineering landmarks — bridges, lighthouses, or mills',icon:'⚙️',xp:100},
   {id:'w_history', cat:null,cats:['military','monument','cemetery'],goal:4,label:'Visit 4 sites of remembrance — military, monuments, or cemeteries',icon:'🎖',xp:110},
   {id:'w_urban',   cat:null,cats:['building','district','theater'],goal:4,label:'Explore 4 urban heritage spots — buildings, districts, or theaters',icon:'🏙',xp:80},
+  // ── Murals & Public Art ──
+  {id:'w_mural',   cat:'mural',goal:1,label:'Find a street mural or public artwork this week',     icon:'🎨',xp:50},
+  {id:'w_mural2',  cat:'mural',goal:3,label:'Discover 3 murals or public artworks this week',      icon:'🎨',xp:90},
+  // ── Viewpoints ──
+  {id:'w_vp',      cat:'viewpoint',goal:1,label:'Climb to a viewpoint or observation deck this week',icon:'🔭',xp:60},
+  {id:'w_vp2',     cat:'viewpoint',goal:2,label:'Visit 2 viewpoints or overlooks this week',        icon:'🔭',xp:100},
+  // ── Combo: OSM-sourced types ──
+  {id:'w_artview', cat:null,cats:['mural','viewpoint','monument'],goal:3,label:'Visit 3 artistic or scenic spots — murals, viewpoints, or monuments',icon:'🎨',xp:90},
   // ── Streak boosters ──
   {id:'w_streak3', cat:null,goal:1,streakBonus:3,label:'Visit at least 1 spot and keep a 3-day streak this week',icon:'🔥',xp:70},
   {id:'w_daily',   cat:null,goal:7,perDay:true,  label:'Visit at least 1 spot every day this week',            icon:'📅',xp:150},
@@ -4213,93 +4241,94 @@ function osmPick(lat,lng,name){
 
 // ═══════════ OSM BULK IMPORT ═══════════
 
-// Smart OSM category resolver — handles tag priority and Lithuanian-specific quirks
-function resolveOsmCat(t){
-  const name=(t.name||'').toLowerCase();
+const COUNTRY_CONFIG={
+  USA:{name:'United States',flag:'🇺🇸'},
+};
 
-  // ── HISTORIC namespace (most specific first) ──
+const DEG_100M=0.00090; // ~100 metres in degrees (for alreadyIn preview check)
+
+// OSM tag → USA game category resolver (outputs USA game cats directly)
+function resolveOsmCat(t){
+  const name=(t.name||t['name:en']||'').toLowerCase();
+
+  // ── HISTORIC namespace ──
   if(t.historic){
     const h=t.historic;
-    // Mounds: explicit tag OR archaeological_site + site_type=mound OR name contains piliakalnis
-    if(h==='mound') return 'mound';
-    if(h==='archaeological_site'&&(t.site_type==='mound'||name.includes('piliakalnis')||name.includes('pilis'))) return 'mound';
-    if(h==='castle'||h==='fort') return 'fort';
-    if(h==='bunker') return 'fort';
-    if(h==='monument'||h==='wayside_shrine'||h==='stone') return 'monument';
+    if(h==='castle'||h==='fort'||h==='bunker') return 'military';
+    if(h==='monument'||h==='stone'||h==='wayside_shrine'||h==='memorial') return 'monument';
     if(h==='bridge') return 'bridge';
     if(h==='artwork') return 'mural';
-    if(h==='memorial'||h==='ruins'||h==='archaeological_site') return 'history';
-    return 'history';
+    if(h==='lighthouse') return 'lighthouse';
+    if(h==='mill') return 'mill';
+    if(h==='archaeological_site'||h==='mound'||h==='ruins') return 'site';
+    return 'building'; // generic historic building
   }
 
   // ── TOURISM namespace ──
   if(t.tourism){
-    if(t.tourism==='museum') return 'museum';
-    if(t.tourism==='gallery') return 'museum';
+    if(t.tourism==='museum'||t.tourism==='gallery') return 'museum';
     if(t.tourism==='viewpoint') return 'viewpoint';
     if(t.tourism==='artwork'){
-      // Try to distinguish murals from sculptures
       const at=(t.artwork_type||'').toLowerCase();
       if(at==='mural'||at==='graffiti'||at==='street_art') return 'mural';
-      if(at==='sculpture'||at==='statue') return 'monument';
-      return 'mural'; // artwork default → mural
+      return 'monument'; // sculpture/statue → monument
     }
-    if(t.tourism==='attraction') return 'history'; // broad fallback
-    return 'history';
+    return 'building';
   }
 
   // ── AMENITY namespace ──
   if(t.amenity){
     if(t.amenity==='place_of_worship') return 'church';
     if(t.amenity==='grave_yard') return 'cemetery';
-    return 'history';
+    if(t.amenity==='courthouse') return 'courthouse';
+    if(t.amenity==='prison') return 'prison';
+    if(t.amenity==='theatre'||t.amenity==='cinema') return 'theater';
+    if(t.amenity==='bank') return 'bank';
+    if(t.amenity==='hospital') return 'hospital';
+    if(t.amenity==='school'||t.amenity==='university'||t.amenity==='college') return 'school';
+    if(t.amenity==='library') return 'school';
+    return 'building';
   }
 
   // ── LEISURE namespace ──
   if(t.leisure){
-    if(t.leisure==='park'||t.leisure==='garden') return 'nature';
-    if(t.leisure==='nature_reserve') return 'nature';
-    return 'nature';
+    if(t.leisure==='park'||t.leisure==='garden'||t.leisure==='nature_reserve') return 'park';
+    return 'park';
   }
 
   // ── MILITARY namespace ──
-  if(t.military){
-    return 'fort';
-  }
+  if(t.military) return 'military';
 
   // ── MAN_MADE namespace ──
   if(t.man_made){
-    if(t.man_made==='water_tower') return 'watertower';
-    if(t.man_made==='chimney') return 'history'; // chimneys → history now
-    return 'history';
+    if(t.man_made==='lighthouse') return 'lighthouse';
+    if(t.man_made==='water_tower') return 'structure';
+    if(t.man_made==='observation_tower') return 'viewpoint';
+    if(t.man_made==='windmill'||t.man_made==='watermill') return 'mill';
+    return 'structure';
   }
 
   // ── NATURAL namespace ──
   if(t.natural){
-    if(t.natural==='cliff') return 'nature'; // cliffs → nature
-    return 'nature';
+    if(t.natural==='cliff'||t.natural==='peak') return 'viewpoint';
+    return 'site';
   }
 
   // ── LANDUSE namespace ──
   if(t.landuse){
     if(t.landuse==='cemetery') return 'cemetery';
-    return 'history';
+    return 'site';
   }
 
-  // ── ROUTE namespace (hiking trails) ──
-  if(t.route==='hiking'||t.route==='foot') return 'trail';
-  if(t.highway==='trailhead') return 'trail';
-
-  // ── BRIDGE property on highway/railway ways ──
+  // ── HIGHWAY / ROUTE ──
+  if(t.highway==='trailhead') return 'park';
   if(t.bridge==='yes') return 'bridge';
+  if(t.artwork_type) return 'mural';
 
-  return 'history';
+  return 'building';
 }
-const OSM_CAT_EMOJI={
-  church:'⛪',museum:'🏛',fort:'🏰',nature:'🌿',history:'⚔',
-  monument:'🗿',mound:'⛰',viewpoint:'🔭',watertower:'🗼',
-  trail:'🥾',mural:'🎨',cemetery:'⚱️',
-};
+// OSM import category emoji (mirrors CATS for display in the import panel)
+const OSM_CAT_EMOJI=Object.fromEntries(Object.entries(CATS).map(([k,v])=>[k,v.emoji]));
 
 let _osmImportData=[];
 let _osmSelected=new Set();
@@ -4315,38 +4344,45 @@ function osmGenerateName(t, cat){
   const district=t['addr:suburb']||t['addr:district']||'';
   const suffix=street||district||(ref?'ref '+ref:'');
   switch(cat){
-    case 'watertower': return 'Structure'+(suffix?' · '+suffix:'');
-    case 'industrial':  return (t.man_made==='chimney'?'Chimney':'Industrial object')+(suffix?' · '+suffix:'');
-    case 'bridge':      return t.name||(ref?'Tiltas '+ref:'Tiltas')+(suffix?' · '+suffix:'');
-    case 'cliff':       return t.name||t['name:en']||(suffix?'Skardis · '+suffix:'Skardis');
-    default:            return t.name||t['name:en']||'Unknown';
+    case 'structure':   return 'Structure'+(suffix?' · '+suffix:'');
+    case 'bridge':      return t.name||(ref?'Bridge '+ref:'Bridge')+(suffix?' · '+suffix:'');
+    case 'viewpoint':   return t.name||t['name:en']||(suffix?'Viewpoint · '+suffix:'Viewpoint');
+    case 'lighthouse':  return t.name||t['name:en']||(suffix?'Lighthouse · '+suffix:'Lighthouse');
+    default:            return t.name||t['name:en']||'';
   }
 }
 
 function makeOsmQuery(bbox){
-  return `data=[out:json][timeout:25];
+  return `data=[out:json][timeout:30];
 (
   node["amenity"="place_of_worship"]["name"](${bbox});
+  node["amenity"="courthouse"]["name"](${bbox});
+  node["amenity"="theatre"]["name"](${bbox});
+  node["amenity"="grave_yard"]["name"](${bbox});
   node["tourism"="museum"]["name"](${bbox});
   node["tourism"="gallery"]["name"](${bbox});
   node["tourism"="viewpoint"]["name"](${bbox});
   node["tourism"="artwork"]["name"](${bbox});
-  node["historic"~"castle|monument|memorial|ruins|fort|archaeological_site|artwork"]["name"](${bbox});
-  node["historic"~"mound|wayside_shrine|stone"]["name"](${bbox});
-  node["historic"="bridge"]["name"](${bbox});
+  node["historic"~"castle|monument|memorial|ruins|fort|archaeological_site|artwork|lighthouse|mill"]["name"](${bbox});
+  node["historic"~"mound|wayside_shrine|stone|bridge"]["name"](${bbox});
   node["leisure"~"park|garden|nature_reserve"]["name"](${bbox});
   node["military"~"bunker|fort"]["name"](${bbox});
-  node["amenity"="grave_yard"]["name"](${bbox});
   node["highway"="trailhead"]["name"](${bbox});
   node["man_made"="water_tower"](${bbox});
-  node["man_made"="chimney"](${bbox});
-  node["natural"="cliff"](${bbox});
+  node["man_made"="lighthouse"](${bbox});
+  node["man_made"="observation_tower"]["name"](${bbox});
+  node["man_made"="windmill"]["name"](${bbox});
+  node["natural"="cliff"]["name"](${bbox});
   way["amenity"="place_of_worship"]["name"](${bbox});
+  way["amenity"="courthouse"]["name"](${bbox});
+  way["amenity"="theatre"]["name"](${bbox});
   way["tourism"="museum"]["name"](${bbox});
-  way["historic"~"castle|monument|memorial|ruins|fort"]["name"](${bbox});
-  way["historic"="mound"]["name"](${bbox});
+  way["tourism"="artwork"]["name"](${bbox});
+  way["historic"~"castle|monument|memorial|ruins|fort|lighthouse"]["name"](${bbox});
   way["leisure"~"park|garden|nature_reserve"]["name"](${bbox});
   way["landuse"="cemetery"]["name"](${bbox});
+  way["man_made"="lighthouse"](${bbox});
+  way["man_made"="observation_tower"]["name"](${bbox});
 );
 out center;`;
 }
@@ -4356,20 +4392,57 @@ function processOsmElement(e){
   const lng=parseFloat((e.lon||(e.center&&e.center.lon)||0).toFixed(6));
   if(!lat||!lng) return null;
   const t=e.tags||{};
-  const cat=resolveOsmCat(t);
+  let cat=resolveOsmCat(t);
   const name=t['name:en']||t.name||osmGenerateName(t,cat);
-  if(!name||name==='Unknown') return null;
+  if(!name) return null;
+  // Try name-based reclassification (same logic as NRHP normalizeSpot)
+  // Only for generic fallback cats — specific OSM tag cats take priority
+  if(['building','structure','site'].includes(cat)&&name){
+    const derived=_classifyByName(name);
+    if(derived) cat=derived;
+  }
   const typeKey=t.historic||t.tourism||t.amenity||t.leisure||t.military||t.man_made||t.natural||t.landuse||t.route||t.highway||t.bridge||'';
-  const alreadyIn=SPOTS.some(s=>Math.abs(s.lat-lat)<0.0005&&Math.abs(s.lng-lng)<0.0005);
-  return{name,nameLt:t['name:en']||'',cat,lat,lng,typeKey,alreadyIn,tags:t};
+  // 100m proximity check (no cat requirement) — loose preview flag so admin can see near-dupes
+  const alreadyIn=SPOTS.some(s=>Math.abs(s.lat-lat)<DEG_100M&&Math.abs(s.lng-lng)<DEG_100M);
+  // Auto-tier: wikipedia tag = State (T2), everything else = Local (T1)
+  const tier=t.wikipedia?2:1;
+  return{name,cat,tier,lat,lng,typeKey,alreadyIn,tags:t};
 }
 
 let _osmManualMode=false;
 
-// TODO: Add USA city/region bboxes for OSM manual import when ready
+// ~30 curated USA cities — historically rich OSM data
 const CITY_BBOXES_GLOBAL=[
-  // ['New York','40.49,-74.26,40.92,-73.70'],
-  // ['Chicago','41.64,-87.94,42.02,-87.52']
+  ['New York, NY',        '40.49,-74.26,40.92,-73.70'],
+  ['Philadelphia, PA',    '39.87,-75.28,40.14,-74.95'],
+  ['Boston, MA',          '42.22,-71.18,42.40,-70.99'],
+  ['Washington, DC',      '38.79,-77.12,38.99,-76.91'],
+  ['Chicago, IL',         '41.64,-87.94,42.02,-87.52'],
+  ['New Orleans, LA',     '29.90,-90.14,30.05,-89.93'],
+  ['Savannah, GA',        '31.95,-81.16,32.13,-81.04'],
+  ['Charleston, SC',      '32.70,-79.98,32.84,-79.88'],
+  ['Baltimore, MD',       '39.24,-76.73,39.38,-76.53'],
+  ['Richmond, VA',        '37.48,-77.52,37.62,-77.41'],
+  ['Annapolis, MD',       '38.94,-76.54,38.99,-76.47'],
+  ['Providence, RI',      '41.79,-71.47,41.86,-71.36'],
+  ['Hartford, CT',        '41.73,-72.73,41.79,-72.65'],
+  ['Pittsburgh, PA',      '40.39,-80.10,40.50,-79.89'],
+  ['Cincinnati, OH',      '39.07,-84.64,39.20,-84.40'],
+  ['Louisville, KY',      '38.17,-85.82,38.30,-85.70'],
+  ['Detroit, MI',         '42.25,-83.29,42.44,-83.00'],
+  ['St. Louis, MO',       '38.53,-90.32,38.74,-90.17'],
+  ['Nashville, TN',       '36.10,-86.86,36.24,-86.74'],
+  ['Memphis, TN',         '35.08,-90.10,35.22,-89.99'],
+  ['Atlanta, GA',         '33.64,-84.55,33.88,-84.30'],
+  ['Mobile, AL',          '30.63,-88.09,30.72,-88.00'],
+  ['San Antonio, TX',     '29.36,-98.58,29.57,-98.43'],
+  ['Santa Fe, NM',        '35.65,-106.00,35.71,-105.93'],
+  ['Denver, CO',          '39.68,-104.99,39.78,-104.97'],
+  ['Los Angeles, CA',     '33.95,-118.52,34.17,-118.10'],
+  ['San Francisco, CA',   '37.70,-122.52,37.83,-122.35'],
+  ['Portland, OR',        '45.46,-122.74,45.59,-122.60'],
+  ['Seattle, WA',         '47.49,-122.44,47.74,-122.22'],
+  ['Honolulu, HI',        '21.24,-157.93,21.37,-157.78'],
 ];
 
 const OSM_CACHE_KEY_MANUAL='usa_osm_manual_regions_v1';
@@ -4401,17 +4474,17 @@ async function fetchOsmRegion(cityName, bbox, btnId){
     }catch(e){
       console.warn(`OSM mirror ${mi+1} failed for ${cityName}:`,e.message);
       if(mi<MIRRORS.length-1){
-        osmSetStatus(`⚠ ${cityName} · mirror ${mi+1} klaida, bandau mirror ${mi+2}...`);
+        osmSetStatus(`⚠ ${cityName} · mirror ${mi+1} failed, trying mirror ${mi+2}...`);
         await new Promise(r=>setTimeout(r,1500));
       } else {
-        osmSetStatus(`❌ ${cityName}: visi ${MIRRORS.length} serveriai nepasiekiami`);
+        osmSetStatus(`❌ ${cityName}: all ${MIRRORS.length} servers unreachable`);
         if(btn){ btn.disabled=false; btn.textContent='🔄 Retry'; }
         return;
       }
     }
   }
   if(!text){
-    osmSetStatus(`❌ ${cityName}: negauta atsakymo`);
+    osmSetStatus(`❌ ${cityName}: no response received`);
     if(btn){ btn.disabled=false; btn.textContent='🔄 Retry'; }
     return;
   }
@@ -4429,7 +4502,7 @@ async function fetchOsmRegion(cityName, bbox, btnId){
   cache[cityName]={ts:Date.now(),count:deduped.length};
   osmSaveManualCache(cache);
   // save merged to main cache
-  try{ localStorage.setItem('usa_osm_cache_lt_v3',JSON.stringify({ts:Date.now(),data:_osmImportData})); }catch(e){}
+  try{ localStorage.setItem('usa_osm_cache_v1',JSON.stringify({ts:Date.now(),data:_osmImportData})); }catch(e){}
   osmSetStatus(`✅ ${cityName}: +${added} new. Total: ${_osmImportData.length}`);
   renderOsmManualUI();
   renderOsmList();
@@ -4441,9 +4514,9 @@ function renderOsmManualUI(){
   const cache=osmGetManualCache();
   el.innerHTML=`
     <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
-      <button class="osm-ctrl-btn" onclick="osmCheckAll(true)">☑ Visi</button>
-      <button class="osm-ctrl-btn" onclick="osmCheckAll(false)">☐ Jokie</button>
-      <button class="osm-ctrl-btn pri" onclick="osmFetchChecked()" id="osmFetchCheckedBtn">🔄 Fetch pasirinktus</button>
+      <button class="osm-ctrl-btn" onclick="osmCheckAll(true)">☑ All</button>
+      <button class="osm-ctrl-btn" onclick="osmCheckAll(false)">☐ None</button>
+      <button class="osm-ctrl-btn pri" onclick="osmFetchChecked()" id="osmFetchCheckedBtn">🔄 Fetch Selected</button>
     </div>
     ${CITY_BBOXES_GLOBAL.map(([city,bbox],i)=>{
       const c=cache[city];
@@ -4485,7 +4558,7 @@ async function osmFetchChecked(){
     await fetchOsmRegion(city,bbox,tmpId);
     if(i<selected.length-1) await new Promise(r=>setTimeout(r,1200));
   }
-  if(btn){btn.disabled=false;btn.textContent='🔄 Fetch pasirinktus';}
+  if(btn){btn.disabled=false;btn.textContent='🔄 Fetch Selected';}
   toast(`✅ Done! ${selected.length} regions imported`,'success');
 }
 
@@ -4495,7 +4568,7 @@ async function fetchOsmData(){
   _osmForceRefresh=false;
 
   // ── OSM CACHE ──
-  const OSM_CACHE_KEY=`usa_osm_cache_lt_v3`;
+  const OSM_CACHE_KEY=`usa_osm_cache_v1`;
   const OSM_CACHE_TTL=24*60*60*1000;
   const cached=JSON.parse(localStorage.getItem(OSM_CACHE_KEY)||'null');
   if(cached&&Date.now()-cached.ts<OSM_CACHE_TTL&&!_osmForceRefresh){
@@ -4522,12 +4595,12 @@ async function fetchOsmData(){
           text=t; break;
         }catch(e){
           if(mi<MIRRORS.length-1){osmSetStatus(`⏳ ${i+1}/${CITY_BBOXES_GLOBAL.length} · ${cityName} · mirror ${mi+2}...`);await new Promise(r=>setTimeout(r,1500));}
-          else throw new Error(`${cityName}: visi serveriai nepasiekiami`);
+          else throw new Error(`${cityName}: all servers unreachable`);
         }
       }
       if(text.trim().startsWith('<')){
-        if(text.includes('Too Many Requests')) throw new Error('429 — palaukite ~2 min. 🕐');
-        const remark=text.match(/<remark>(.*?)<\/remark>/s)?.[1]?.trim()||'Serverio klaida';
+        if(text.includes('Too Many Requests')) throw new Error('429 — wait ~2 min. 🕐');
+        const remark=text.match(/<remark>(.*?)<\/remark>/s)?.[1]?.trim()||'Server error';
         throw new Error(`${cityName}: ${remark}`);
       }
       allElements.push(...(JSON.parse(text).elements||[]));
@@ -4539,14 +4612,14 @@ async function fetchOsmData(){
 
     _osmImportData=processed
       .filter((x,i,arr)=>arr.findIndex(y=>Math.abs(y.lat-x.lat)<0.0002&&Math.abs(y.lng-x.lng)<0.0002&&y.cat===x.cat)===i)
-      .sort((a,b)=>a.name.localeCompare(b.name,'lt'));
+      .sort((a,b)=>a.name.localeCompare(b.name,'en'));
 
     osmSetStatus(`✅ Found ${_osmImportData.length} spots from ${CITY_BBOXES_GLOBAL.length} regions. Already added: ${_osmImportData.filter(x=>x.alreadyIn).length}`);
 
     try{ localStorage.setItem(OSM_CACHE_KEY,JSON.stringify({ts:Date.now(),data:_osmImportData})); }catch(e){}
     renderOsmList();
   }catch(e){
-    osmSetStatus('❌ Klaida: '+e.message);
+    osmSetStatus('❌ Error: '+e.message);
   }
   _osmLoading=false;
 }
@@ -4594,7 +4667,7 @@ function renderOsmList(){
       <div class="osm-emoji">${OSM_CAT_EMOJI[item.cat]||'📍'}</div>
       <div class="osm-info">
         <div class="osm-name">${item.name}</div>
-        <div class="osm-meta">${item.cat} · ${item.lat.toFixed(4)}, ${item.lng.toFixed(4)}${item.alreadyIn?' · <span style="color:var(--green)">already added</span>':''}</div>
+        <div class="osm-meta">${item.cat} · T${item.tier||1}${item.tags?.wikipedia?' 🔵':''}  · ${item.lat.toFixed(4)}, ${item.lng.toFixed(4)}${item.alreadyIn?' · <span style="color:var(--green)">already added</span>':''}</div>
       </div>
     </div>`).join('');
 }
@@ -4611,7 +4684,7 @@ async function osmImportSelected(){
     if(!item||item.alreadyIn) continue;
     try{
       const spot={
-        name:item.name,cat:item.cat,tier:_osmTier,
+        name:item.name,cat:item.cat,tier:item.tier||1,
         lat:item.lat,lng:item.lng,
         country:_getImportCountry(),
         radius:CAT_DEFAULT_RADIUS[item.cat]||DEFAULT_RADIUS,time:'',price:'',year:'',tag:item.typeKey,
@@ -4635,78 +4708,46 @@ let _importCountry=null; // null = follows activeCountry; set by admin selector
 
 function _getImportCountry(){return 'USA';}
 
-function _countrySelector(){
-  const ic=_getImportCountry();
-  return`<div style="display:flex;gap:6px;margin-bottom:10px;align-items:center">
-    <span style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--tm);text-transform:uppercase;letter-spacing:.06em">Import country:</span>
-    ${Object.entries(COUNTRY_CONFIG).map(([code,cfg])=>`<div onclick="_importCountry='${code}';renderOsmImport()" style="padding:4px 10px;border-radius:8px;font-size:.72rem;font-family:'DM Mono',monospace;cursor:pointer;border:1px solid ${ic===code?'var(--gold)':'var(--bdr)'};background:${ic===code?'var(--gold)':'var(--surf2)'};color:${ic===code?'#0e0c09':'var(--td)'};-webkit-user-select:none;user-select:none">${cfg.flag} ${code}</div>`).join('')}
-  </div>`;
-}
+function _countrySelector(){return'';} // USA-only
 
 function _tabBar(){
-  const ic=_getImportCountry();
-  const heritageTab=ic==='PL'?['zabytek','🏛 ZABYTEK']:['kpd','🏛 KPD'];
-  const tabs=[['osm','🗺 OSM'],['wikidata','📚 Wikidata'],heritageTab];
-  // Reset tab if switching country made current tab invalid
-  if(_importTab==='kpd'&&ic==='PL') _importTab='zabytek';
-  if(_importTab==='zabytek'&&ic!=='PL') _importTab='kpd';
-  return`<div style="display:flex;gap:0;margin-bottom:12px;border-bottom:1px solid var(--bdr)">
-    ${tabs.map(([id,label])=>`<button onclick="_importTab='${id}';renderOsmImport()" style="flex:1;padding:7px;background:none;border:none;border-bottom:2px solid ${_importTab===id?'var(--gold)':'transparent'};font-family:'DM Mono',monospace;font-size:.72rem;color:${_importTab===id?'var(--gold)':'var(--tm)'};cursor:pointer">${label}</button>`).join('')}
-  </div>`;
+  // USA-only: single OSM tab — Wikidata/KPD/Zabytek removed
+  return'';
 }
 
 function renderOsmImport(){
   const body=document.getElementById('panel-osm');
   if(!body) return;
   const ic=_getImportCountry();
-  const cats=['all','church','museum','fort','nature','history','monument','mound','viewpoint','watertower','mural','cemetery'];
+  const cats=['all','church','museum','military','monument','cemetery','bridge','park','mural','viewpoint','lighthouse','school','courthouse','theater','hospital','prison','mill','bank','building','structure','site'];
   const catLabels={all:'All',building:'🏛 Building',structure:'⚙️ Structure',district:'🏘 District',site:'⛏ Site',object:'🗿 Object',hidden:'🔮 Hidden'};
 
-  if(_importTab==='wikidata'){
-    body.innerHTML=`<div class="osm-wrap">${_countrySelector()}${_tabBar()}${renderWikidataPanel()}</div>`;
-    if(_wikiData.length) setTimeout(()=>renderWikidataList(),0);
-    return;
-  }
-
-  if(_importTab==='kpd'){
-    body.innerHTML=`<div class="osm-wrap">${_countrySelector()}${_tabBar()}${renderKpdPanel()}</div>`;
-    if(_kpdData.length) setTimeout(()=>renderKpdList(),0);
-    return;
-  }
-
-  if(_importTab==='zabytek'){
-    body.innerHTML=`<div class="osm-wrap">${_countrySelector()}${_tabBar()}${renderZabytekPanel()}</div>`;
-    if(_zabytekData.length) setTimeout(()=>renderZabytekList(),0);
-    return;
-  }
-
-  // OSM tab
+  // OSM import (only tab)
   const countryLabel=COUNTRY_CONFIG[ic]?`${COUNTRY_CONFIG[ic].flag} ${COUNTRY_CONFIG[ic].name}`:'';
   body.innerHTML=`<div class="osm-wrap">
     ${_countrySelector()}
     ${_tabBar()}
     <div style="margin-bottom:10px">
-      <div style="font-family:'DM Mono',monospace;font-size:.72rem;color:var(--gold);margin-bottom:4px">${countryLabel} · area filtrais</div>
+      <div style="font-family:'DM Mono',monospace;font-size:.72rem;color:var(--gold);margin-bottom:4px">${countryLabel} · curated city bboxes</div>
       <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm)">⚠ Faster query than before. Check for duplicates before importing.</div>
     </div>
     <div class="osm-controls">
       <button class="osm-ctrl-btn" onclick="fetchOsmData()">🔄 Load from OSM</button>
-      <button class="osm-ctrl-btn" onclick="_osmForceRefresh=true;fetchOsmData()" title="Clear cache and reload">♻️ Atnaujinti</button>
-      <button class="osm-ctrl-btn" onclick="osmToggleManual()" id="osmManualToggle">${_osmManualMode?'🤖 Auto':'🖐 Rankiniu'}</button>
+      <button class="osm-ctrl-btn" onclick="_osmForceRefresh=true;fetchOsmData()" title="Clear cache and reload">♻️ Refresh</button>
+      <button class="osm-ctrl-btn" onclick="osmToggleManual()" id="osmManualToggle">${_osmManualMode?'🤖 Auto':'🖐 Manual'}</button>
       <button class="osm-ctrl-btn" onclick="osmSelectAll()">☑ All</button>
-      <button class="osm-ctrl-btn" onclick="osmSelectNone()">☐ Ne viena</button>
+      <button class="osm-ctrl-btn" onclick="osmSelectNone()">☐ None</button>
       <button class="osm-ctrl-btn pri" id="osmImportBtn" onclick="osmImportSelected()">✅ Import</button>
       <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red)" onclick="findDuplicateSpots()">🔍 Duplicates</button>
       <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red);background:rgba(140,74,74,.1)" onclick="autoDeleteAllDuplicates()">🗑 Delete all</button>
-      <button class="osm-ctrl-btn" style="border-color:#b07aaa;color:#b07aaa" onclick="reclassifyKpdSpots()">🏷 Reclassify KPD</button>
+
     </div>
     ${_osmManualMode?`<div id="osmManualGrid" style="margin:8px 0;max-height:260px;overflow-y:auto;padding:0 2px"></div>`:''}
     <div class="osm-filter-row">
       ${cats.map(c=>`<div class="osm-fchip ${_osmFilter===c?'on':''}" data-cat="${c}" onclick="osmSetFilter('${c}')">${catLabels[c]||c}</div>`).join('')}
     </div>
-    <div class="osm-tier-row">
-      <span class="osm-tier-label">Tier:</span>
-      ${[1,2,3].map(t=>`<button class="osm-tier-btn ${_osmTier===t?'on':''}" data-t="${t}" onclick="osmSetTier(${t})">T${t}</button>`).join('')}
+    <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);margin-bottom:8px">
+      🔵 = T2 auto-assigned (has Wikipedia tag) · all others = T1
     </div>
     <div class="osm-status" id="osmStatus">${_osmImportData.length?`${_osmImportData.length} spots loaded (${_osmImportData.filter(x=>x.alreadyIn).length} already added)`:'Click "Load from OSM" to start'}</div>
     <div class="osm-list" id="osmList"></div>
@@ -4715,1081 +4756,6 @@ function renderOsmImport(){
   if(_osmManualMode) renderOsmManualUI();
 }
 
-
-// ═══════════ KPD IMPORT (Kulturos vertybiu registras) ═══════════
-
-const KPD_CACHE_KEY='usa_kpd_cache_v1';
-const KPD_CACHE_TTL=Infinity; // permanent — KPD data changes rarely
-const KPD_URL='https://osp-sdg.stat.gov.lt/arcgis/rest/services/KPD/kvr_taskai_enriched/FeatureServer/0/query';
-const KPD_BATCH=1000;
-
-let _kpdData=[];
-let _kpdSelected=new Set();
-let _kpdLoading=false;
-let _kpdFilter='all';       // category filter
-let _kpdSigFilter='all';    // significance filter
-let _kpdCityFilter='all';   // city filter
-
-// ── LKS94 (EPSG:3346) → WGS84 conversion ──
-function lks94toWGS84(x,y){
-  const a=6378137.0;
-  const f=1/298.257222101; // GRS80 flattening (not WGS84)
-  const k0=0.9998;
-  const e2=2*f-f*f;
-  const lon0=24*Math.PI/180;
-  const FE=500000;
-  const FN=0; // LKS94 has NO false northing
-
-  const xm=x-FE;
-  const ym=y-FN;
-  const e1=(1-Math.sqrt(1-e2))/(1+Math.sqrt(1-e2));
-  const M=ym/k0;
-  const mu=M/(a*(1-e2/4-3*e2*e2/64-5*e2*e2*e2/256));
-  const lat1=mu+(3*e1/2-27*e1*e1*e1/32)*Math.sin(2*mu)+(21*e1*e1/16-55*e1*e1*e1*e1/32)*Math.sin(4*mu)+(151*e1*e1*e1/96)*Math.sin(6*mu)+(1097*e1*e1*e1*e1/512)*Math.sin(8*mu);
-  const sinLat1=Math.sin(lat1);const cosLat1=Math.cos(lat1);const tanLat1=Math.tan(lat1);
-  const N1=a/Math.sqrt(1-e2*sinLat1*sinLat1);
-  const T1=tanLat1*tanLat1;
-  const C1=(e2/(1-e2))*cosLat1*cosLat1;
-  const R1=a*(1-e2)/Math.pow(1-e2*sinLat1*sinLat1,1.5);
-  const D=xm/(N1*k0);
-  const D2=D*D;const D3=D2*D;const D4=D2*D2;const D5=D4*D;const D6=D4*D2;
-  const lat=lat1-(N1*tanLat1/R1)*(D2/2-(5+3*T1+10*C1-4*C1*C1-9*e2/(1-e2))*D4/24+(61+90*T1+298*C1+45*T1*T1-252*e2/(1-e2)-3*C1*C1)*D6/720);
-  const lng=lon0+(D-(1+2*T1+C1)*D3/6+(5-2*C1+28*T1-3*C1*C1+8*e2/(1-e2)+24*T1*T1)*D5/120)/cosLat1;
-  return{lat:lat*180/Math.PI,lng:lng*180/Math.PI};
-}
-
-// ── Map KPD klasifikatorius → app category ──
-const KPD_CAT_MAP={
-  // Churches / sacred
-  // TODO: update OSM LT category map for USA NRHP (admin-only)
-  'church':'church','cathedral':'church','chapel':'church',
-  'monastery':'church','basilica':'church',
-  // Museums
-  'muziejus':'museum','muziejaus pastatas':'museum',
-  // Forts / castles / military
-  'castle':'fort','fortress':'fort','fort':'fort',
-  'tvirtove':'fort','bunkeris':'fort','gynybinis irenginys':'fort',
-  'pilies bokstas':'fort','pilies kompleksas':'fort',
-  // Mounds
-  'piliakalnis':'mound','gynybinis piliakalnis':'mound',
-  'piliakalnio kompleksas':'mound',
-  // Monuments / sculptures
-  'paminklas':'monument','skulptura':'monument','obeliskas':'monument',
-  'stela':'monument','kolona':'monument','varpine':'monument',
-  // History / heritage
-  'sodyba':'history','dvaro sodyba':'history','dvaras':'history',
-  'palivarkas':'history','malunas':'history','karcema':'history',
-  'kalve':'history','smukle':'history','spirito varykla':'history',
-  'lentpjuve':'history','vandens malunas':'history','vejo malunas':'history',
-  'alaus darykla':'history','aliejine':'history',
-  // Cemeteries
-  'kapines':'cemetery','kapinynas':'cemetery','kapas':'cemetery',
-  'senosios kapines':'cemetery','zydu kapines':'cemetery',
-  'kariu kapines':'cemetery','karo kapines':'cemetery',
-  // Nature / parks
-  'parkas':'nature','dendrologinis parkas':'nature',
-  'botanikos sodas':'nature','gamtos paminklas':'nature',
-  // Archaeological
-  'gyvenviete':'history','pilkapiai':'history','pilkapis':'history',
-  'senkapis':'cemetery','akmuo':'monument','riedulys':'monument',
-  // Urban / architecture
-  'namas':'history','pastatas':'history','rumai':'history',
-  'rezidencija':'history','viesbutis':'history','teatro pastatas':'museum',
-  'mokyklos pastatas':'history','ligonines pastatas':'history',
-  // Bridges
-  'tiltas':'bridge',
-  // Viewpoints
-  'apzvalgos bokstas':'viewpoint',
-  // Water towers
-  'vandens bokstas':'watertower',
-};
-
-function kpdMapCat(klasifikatorius){
-  if(!klasifikatorius) return 'history';
-  const k=klasifikatorius.toLowerCase().trim();
-  // Exact match first
-  if(KPD_CAT_MAP[k]) return KPD_CAT_MAP[k];
-  // Partial match
-  for(const[key,val] of Object.entries(KPD_CAT_MAP)){
-    if(k.includes(key)||key.includes(k)) return val;
-  }
-  // Fallback by heritage type flags (set during processing)
-  return 'history';
-}
-
-function kpdMapTier(reiksmingumas){
-  if(!reiksmingumas) return 1;
-  const r=reiksmingumas.toLowerCase();
-  if(r.includes('nacionalinis')||r.includes('national')) return 3;
-  if(r.includes('regioninis')||r.includes('regional')) return 2;
-  return 1; // Vietinis / local
-}
-
-function kpdProcessFeature(f){
-  const a=f.attributes;
-  const g=f.geometry;
-  if(!g||!a.pavadinimas) return null;
-  // Convert LKS94 → WGS84
-  let lat,lng;
-  try{
-    const wgs=lks94toWGS84(g.x,g.y);
-    lat=wgs.lat;lng=wgs.lng;
-  }catch(e){return null;}
-  // Sanity check — must be inside Lithuania bbox
-  if(lat<53.5||lat>56.6||lng<20.5||lng>27.0) return null;
-  const cat=kpdMapCat(a.klasifikatorius);
-  const tier=kpdMapTier(a.reiksmingumas);
-  // Build description from available fields
-  const desc=[];
-  if(a.klasifikatorius) desc.push(a.klasifikatorius.charAt(0).toUpperCase()+a.klasifikatorius.slice(1));
-  if(a.reiksmingumas) desc.push(`${a.reiksmingumas} reiksmingumo objektas`);
-  if(a.adresas) desc.push(a.adresas);
-  return{
-    name:a.pavadinimas,
-    cat,tier,
-    lat:Math.round(lat*100000)/100000,
-    lng:Math.round(lng*100000)/100000,
-    year:a.amzius||'',
-    tag:a.unikalus_kodas?`KPD-${a.unikalus_kodas}`:'',
-    history:desc.join('. ')+'.',
-    address:a.adresas||'',
-    kpdCode:a.unikalus_kodas||'',
-    kpdUrl:a.nuoroda||'',
-    reiksmingumas:a.reiksmingumas||'',
-    klasifikatorius:a.klasifikatorius||'',
-    radius:CAT_DEFAULT_RADIUS[cat]||DEFAULT_RADIUS,
-    bring:[],
-    alreadyIn:false,
-  };
-}
-
-async function fetchKpdData(forceRefresh){
-  if(_kpdLoading) return;
-  _kpdLoading=true;
-  const setS=m=>{const e=document.getElementById('kpdStatus');if(e)e.textContent=m;};
-
-  // Check cache
-  if(!forceRefresh){
-    try{
-      const c=JSON.parse(localStorage.getItem(KPD_CACHE_KEY)||'null');
-      if(c&&Date.now()-c.ts<KPD_CACHE_TTL&&c.data?.length){
-        _kpdData=c.data;
-        // Recheck alreadyIn with tight radius
-        _kpdData.forEach(x=>{
-          x.alreadyIn=SPOTS.some(s=>
-            (s.tag&&s.tag===x.tag)
-            ||(Math.abs(s.lat-x.lat)<0.0001&&Math.abs(s.lng-x.lng)<0.0001)
-          );
-        });
-        setS(`✅ ${_kpdData.length} objektu (talpykla · ${new Date(c.ts).toLocaleDateString('en-US')})`);
-        renderOsmImport();
-        setTimeout(()=>renderKpdList(),0);
-        _kpdLoading=false;
-        return;
-      }
-    }catch(e){}
-  }
-
-  setS('⏳ Loading from KPD registry...');
-  const allFeatures=[];
-  let offset=0;
-  let total=null;
-
-  try{
-    while(true){
-      const url=`${KPD_URL}?where=1%3D1&outFields=objectid,unikalus_kodas,pavadinimas,klasifikatorius,statusas,adresas,tipas,istorinis,architekturinis,sakralinis,archeologinis,memorialinis,amzius,reiksmingumas,nuoroda,sav_pav&returnGeometry=true&resultRecordCount=${KPD_BATCH}&resultOffset=${offset}&f=json`;
-      setS(`⏳ Loading... ${allFeatures.length} objektu (batch ${Math.floor(offset/KPD_BATCH)+1})`);
-      const r=await fetch(url,{signal:AbortSignal.timeout(30000)});
-      if(!r.ok) throw new Error(`HTTP ${r.status}`);
-      const json=await r.json();
-      if(json.error) throw new Error(json.error.message||'ArcGIS error');
-      const features=json.features||[];
-      allFeatures.push(...features);
-      if(total===null&&json.count) total=json.count;
-      // Stop if we got fewer than batch size (last page)
-      if(features.length<KPD_BATCH) break;
-      offset+=KPD_BATCH;
-      // Safety limit — 30 batches = 30,000 records max
-      if(offset>30000) break;
-      await new Promise(r=>setTimeout(r,300));
-    }
-
-    setS(`⏳ Apdorojama ${allFeatures.length} objektu...`);
-    const processed=allFeatures
-      .map(f=>kpdProcessFeature(f))
-      .filter(Boolean)
-      // Dedupe by coords + name
-      .filter((x,i,arr)=>arr.findIndex(y=>Math.abs(y.lat-x.lat)<0.0002&&Math.abs(y.lng-x.lng)<0.0002&&y.name===x.name)===i);
-
-    // Check alreadyIn against current SPOTS — use tight 10m radius
-    // 0.0001° ≈ 10m — only exact same location counts as duplicate
-    processed.forEach(x=>{
-      x.alreadyIn=SPOTS.some(s=>
-        s.tag&&s.tag===x.tag  // same KPD code = definite duplicate
-        ||(Math.abs(s.lat-x.lat)<0.0001&&Math.abs(s.lng-x.lng)<0.0001) // same coords ~10m
-      );
-    });
-
-    _kpdData=processed;
-    // Save cache — skip if too large
-    try{
-      const cacheStr=JSON.stringify({ts:Date.now(),data:_kpdData});
-      if(cacheStr.length<4500000){ // 4.5MB safety limit
-        localStorage.setItem(KPD_CACHE_KEY,cacheStr);
-      } else {
-        console.warn(`KPD cache too large (${Math.round(cacheStr.length/1024)}KB), skipping localStorage`);
-      }
-    }catch(e){
-      console.warn('KPD cache save failed',e);
-    }
-    const newCount=_kpdData.filter(x=>!x.alreadyIn).length;
-    const alreadyCount=_kpdData.filter(x=>x.alreadyIn).length;
-    setS(`✅ ${_kpdData.length} objektu ikelti · ${alreadyCount} jau DB · ${newCount} nauju`);
-    // Rebuild panel then list
-    renderOsmImport();
-    // Give DOM time to rebuild before populating list
-    setTimeout(()=>{
-      const el=document.getElementById('kpdList');
-      if(el) renderKpdList();
-      else console.warn('kpdList element not found after renderOsmImport');
-    },100);
-  }catch(e){
-    setS(`❌ Error: ${e.message}`);
-    console.error('KPD fetch error',e);
-  }
-  _kpdLoading=false;
-}
-
-function renderKpdPanel(){
-  const total=_kpdData.length;
-  const alreadyIn=_kpdData.filter(x=>x.alreadyIn).length;
-  const newOnes=total-alreadyIn;
-
-  // Significance options present in data
-  const sigs=['all','Nacionalinis','Regioninis','Vietinis'];
-  // Categories present
-  const cats=['all','church','fort','mound','history','monument','cemetery','nature','museum','bridge','viewpoint','watertower'];
-  const catLabels={all:'All',church:'⛪',fort:'🏰',mound:'⛰',history:'⚔',monument:'🗿',cemetery:'⚱️',nature:'🌿',museum:'🏛',bridge:'🌉',viewpoint:'🔭',watertower:'🗼'};
-
-  // Cities with KPD spots
-  const citiesWithKpd=total>0
-    ?Object.keys(getCityBounds()).filter(city=>{
-        const b=getCityBounds()[city];
-        return _kpdData.some(x=>x.lat>=b.sw[0]-0.05&&x.lat<=b.ne[0]+0.05&&x.lng>=b.sw[1]-0.05&&x.lng<=b.ne[1]+0.05);
-      }).sort()
-    :[];
-
-  // Filtered count
-  const filteredNew=total>0?_kpdData.filter(x=>{
-    if(x.alreadyIn) return false;
-    if(_kpdFilter!=='all'&&x.cat!==_kpdFilter) return false;
-    if(_kpdSigFilter!=='all'&&x.reiksmingumas!==_kpdSigFilter) return false;
-    if(_kpdCityFilter!=='all'){
-      const b=getCityBounds()[_kpdCityFilter];
-      if(!b||x.lat<b.sw[0]-0.05||x.lat>b.ne[0]+0.05||x.lng<b.sw[1]-0.05||x.lng>b.ne[1]+0.05) return false;
-    }
-    return true;
-  }).length:0;
-
-  return`<div>
-    <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);margin-bottom:6px">
-      Kulturos vertybiu registras · osp-sdg.stat.gov.lt · Nekomerciniam naudojimui
-    </div>
-    ${total>0?`<div style="background:var(--surf2);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-family:'DM Mono',monospace;font-size:.68rem;display:flex;gap:12px;flex-wrap:wrap">
-      <span>📦 Viso: <strong style="color:var(--txt)">${total}</strong></span>
-      <span>✅ DB: <strong style="color:var(--green)">${alreadyIn}</strong></span>
-      <span>🆕 Nauja: <strong style="color:var(--gold)">${newOnes}</strong></span>
-      ${_kpdFilter!=='all'||_kpdSigFilter!=='all'||_kpdCityFilter!=='all'?`<span>🔍 Filtruota: <strong style="color:var(--gold)">${filteredNew}</strong></span>`:''}
-    </div>`:''}
-    <div class="osm-controls">
-      <button class="osm-ctrl-btn" onclick="fetchKpdData(false)">🔄 Ikelti</button>
-      <button class="osm-ctrl-btn" onclick="fetchKpdData(true)">♻️ Atnaujinti</button>
-      <button class="osm-ctrl-btn" onclick="clearKpdCache()">🗑 Isvalyti talpykla</button>
-      <button class="osm-ctrl-btn" onclick="kpdSelectAll()">☑ All</button>
-      <button class="osm-ctrl-btn" onclick="kpdSelectNone()">☐ Ne viena</button>
-      <button class="osm-ctrl-btn pri" onclick="kpdImportSelected()">✅ Import</button>
-    </div>
-    ${total>0?`
-    <div style="margin:8px 0 4px;font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.07em">Reiksmingumas</div>
-    <div class="osm-filter-row" style="flex-wrap:wrap;gap:4px;margin-bottom:6px">
-      ${sigs.map(s=>`<div class="osm-fchip ${_kpdSigFilter===s?'on':''}" onclick="setKpdSigFilter('${s}')">${s==='all'?'Visi':s}</div>`).join('')}
-    </div>
-    <div style="margin:8px 0 4px;font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.07em">Category</div>
-    <div class="osm-filter-row" style="flex-wrap:wrap;gap:4px;margin-bottom:6px">
-      ${cats.map(c=>`<div class="osm-fchip ${_kpdFilter===c?'on':''}" onclick="setKpdCatFilter('${c}')">${catLabels[c]||c}</div>`).join('')}
-    </div>
-    ${citiesWithKpd.length>0?`
-    <div style="margin:8px 0 4px;font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.07em">Miestas</div>
-    <div class="osm-filter-row" style="flex-wrap:wrap;gap:4px;margin-bottom:6px">
-      <div class="osm-fchip ${_kpdCityFilter==='all'?'on':''}" onclick="setKpdCityFilter('all')">🇱🇹 Visi</div>
-      ${citiesWithKpd.map(c=>`<div class="osm-fchip ${_kpdCityFilter===c?'on':''}" onclick="setKpdCityFilter('${c}')">${c}</div>`).join('')}
-    </div>`:''}
-    `:''}
-    <div class="osm-status" id="kpdStatus">${total?`${total} objektu · ${alreadyIn} jau DB · ${newOnes} nauju`:'Spausk "Ikelti" pradeti — kraunama ~10-20k objektu'}</div>
-    <div class="osm-list" id="kpdList"></div>
-  </div>`;
-}
-
-function clearKpdCache(){
-  localStorage.removeItem(KPD_CACHE_KEY);
-  _kpdData=[];_kpdSelected.clear();
-  toast('🗑 KPD talpykla isvalyta','info');
-  renderOsmImport();
-}
-function setKpdSigFilter(v){_kpdSigFilter=v;renderOsmImport();setTimeout(()=>renderKpdList(),0);}
-function setKpdCatFilter(v){_kpdFilter=v;renderOsmImport();setTimeout(()=>renderKpdList(),0);}
-function setKpdCityFilter(v){_kpdCityFilter=v;renderOsmImport();setTimeout(()=>renderKpdList(),0);}
-
-function _kpdFiltered(){
-  const result=[];
-  _kpdData.forEach((item,i)=>{
-    if(_kpdFilter!=='all'&&item.cat!==_kpdFilter) return;
-    if(_kpdSigFilter!=='all'&&item.reiksmingumas!==_kpdSigFilter) return;
-    if(_kpdCityFilter!=='all'){
-      const b=getCityBounds()[_kpdCityFilter];
-      if(!b||item.lat<b.sw[0]-0.05||item.lat>b.ne[0]+0.05||item.lng<b.sw[1]-0.05||item.lng>b.ne[1]+0.05) return;
-    }
-    result.push({item,i});
-  });
-  return result;
-}
-
-function renderKpdList(){
-  const el=document.getElementById('kpdList');if(!el) return;
-  const filtered=_kpdFiltered();
-  const newOnes=filtered.filter(({item})=>!item.alreadyIn);
-
-  if(!filtered.length){
-    el.innerHTML=`<div style="padding:24px;text-align:center;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--td)">${_kpdData.length?'No results for selected filters':'Click "Load" to fetch KPD data'}</div>`;
-    return;
-  }
-  if(!newOnes.length){
-    el.innerHTML=`<div style="padding:24px;text-align:center;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--green)">✅ Visi ${filtered.length} objektai jau yra DB!</div>`;
-    return;
-  }
-
-  const sigColor={Nacionalinis:'var(--t3)',Regioninis:'var(--t2)',Vietinis:'var(--t1)'};
-
-  el.innerHTML=`
-    <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);padding:6px 0">${newOnes.length} nauju · ${filtered.length-newOnes.length} jau DB</div>
-    ${filtered.map(({item,i})=>{
-      if(item.alreadyIn) return'';
-      const sel=_kpdSelected.has(i);
-      const cat=CATS[item.cat]||CATS.history;
-      return`<div class="osm-item ${sel?'selected':''}" onclick="kpdToggleItem(${i})">
-        <div class="osm-check">${sel?'✓':''}</div>
-        <div class="osm-emoji">${cat.emoji}</div>
-        <div class="osm-info">
-          <div class="osm-name">${item.name}</div>
-          <div class="osm-meta">
-            ${cat.label} · <span style="color:${sigColor[item.reiksmingumas]||'var(--td)'}">${item.reiksmingumas||''}</span>
-            ${item.klasifikatorius?` · ${item.klasifikatorius}`:''}
-            ${item.year?` · ${item.year}`:''}
-            ${item.kpdUrl?`<a href="${item.kpdUrl}" target="_blank" onclick="event.stopPropagation()" style="color:var(--gold);text-decoration:none;margin-left:6px">KPD↗</a>`:''}
-          </div>
-          ${item.address?`<div class="osm-meta" style="color:var(--tm)">${item.address}</div>`:''}
-        </div>
-      </div>`;
-    }).join('')}
-  `;
-}
-
-function kpdToggleItem(idx){
-  if(_kpdSelected.has(idx))_kpdSelected.delete(idx);
-  else _kpdSelected.add(idx);
-  renderKpdList();
-}
-
-function kpdSelectAll(){
-  _kpdFiltered().forEach(({item,i})=>{
-    if(!item.alreadyIn) _kpdSelected.add(i);
-  });
-  renderKpdList();
-}
-
-function kpdSelectNone(){_kpdSelected.clear();renderKpdList();}
-
-async function kpdImportSelected(){
-  if(!_kpdSelected.size){toast('Nieko nepasirinkta','info');return;}
-  const setS=m=>{const e=document.getElementById('kpdStatus');if(e)e.textContent=m;};
-  const{db,collection,writeBatch,doc,serverTimestamp}=window._fb||{};
-  if(!db){toast('Firebase nepasiekiamas','info');return;}
-
-  const items=[..._kpdSelected].map(i=>_kpdData[i]).filter(x=>x&&!x.alreadyIn);
-  if(!items.length){toast('All selected spots are already in DB','info');return;}
-
-  const BATCH_SIZE=400; // Firestore max is 500, use 400 for safety
-  let imported=0;
-  let failed=0;
-  const colRef=collection(db,'spots');
-
-  setS(`⏳ Importuojama ${items.length} objektu (partijomis po ${BATCH_SIZE})...`);
-
-  for(let batchStart=0;batchStart<items.length;batchStart+=BATCH_SIZE){
-    const batchItems=items.slice(batchStart,batchStart+BATCH_SIZE);
-    const batch=writeBatch(db);
-    const newDocs=[];
-
-    for(const item of batchItems){
-      const newRef=doc(colRef);
-      const spot={
-        name:item.name,cat:item.cat,tier:item.tier,
-        lat:item.lat,lng:item.lng,
-        history:item.history||'',
-        year:item.year||'',
-        tag:item.tag||'',
-        bring:[],
-        radius:item.radius,
-        kpdCode:item.kpdCode||'',
-        kpdUrl:item.kpdUrl||'',
-        address:item.address||'',
-        createdAt:serverTimestamp(),
-      };
-      batch.set(newRef,spot);
-      newDocs.push({ref:newRef,item,spot});
-    }
-
-    try{
-      await batch.commit();
-      // Update local state after successful commit
-      for(const{ref,item,spot} of newDocs){
-        const fid=ref.id;
-        spot.id=fid;spot._fid=fid;
-        SPOTS.push(spot);
-        item.alreadyIn=true;
-        imported++;
-      }
-      setS(`⏳ Importuota ${imported}/${items.length} (${Math.round(imported/items.length*100)}%)...`);
-    }catch(e){
-      console.error('KPD batch failed',e);
-      failed+=batchItems.length;
-      setS(`⚠ Klaida partijoje ${Math.floor(batchStart/BATCH_SIZE)+1}: ${e.message}. Tesiama...`);
-    }
-    // Pause between batches to avoid rate limiting
-    if(batchStart+BATCH_SIZE<items.length){
-      await new Promise(r=>setTimeout(r,800));
-    }
-  }
-
-  _kpdSelected.clear();
-  if(imported>0){refreshMarkers();updateAll();}
-
-  const msg=failed>0
-    ?`✅ Importuota ${imported}, nepavyko ${failed}. Atnaujinkite KV talpykla!`
-    :`✅ Importuota ${imported} objektu! Atnaujinkite KV talpykla.`;
-  setS(msg);
-  toast(msg,'success');
-  renderKpdList();
-
-  // Update cache alreadyIn states
-  try{localStorage.setItem(KPD_CACHE_KEY,JSON.stringify({ts:Date.now(),data:_kpdData}));}catch(e){
-    console.warn('KPD cache save failed (too large?)',e);
-  }
-}
-const DEG_50M=0.00045; // ~50 metres in degrees
-
-function findDuplicateSpots(){
-  const ic=_getImportCountry();
-  const countrySpots=SPOTS.filter(s=>s.country===ic||(ic==='LT'&&!s.country));
-  osmSetStatus(`🔍 Ieskoma dublikatu (${ic})...`);
-  const groups=[];
-  const used=new Set();
-  for(let i=0;i<countrySpots.length;i++){
-    if(used.has(i)) continue;
-    const a=countrySpots[i];
-    const group=[a];
-    for(let j=i+1;j<countrySpots.length;j++){
-      if(used.has(j)) continue;
-      const b=countrySpots[j];
-      if(b.cat!==a.cat) continue;
-      const dlat=Math.abs(a.lat-b.lat);
-      const dlng=Math.abs(a.lng-b.lng);
-      if(dlat<DEG_50M&&dlng<DEG_50M){
-        group.push(b);
-        used.add(j);
-      }
-    }
-    if(group.length>1){
-      used.add(i);
-      groups.push(group);
-    }
-  }
-  if(!groups.length){
-    osmSetStatus('✅ Dublikatu nerasta!');
-    return;
-  }
-  osmSetStatus(`⚠ Rasta ${groups.length} dublikatu grupiu — pazymetos zemiau`);
-  // Show results in osmList
-  const list=document.getElementById('osmList');
-  if(!list) return;
-  const cat=s=>CATS[s.cat]||CATS.history;
-  list.innerHTML=`
-    <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--red);padding:8px 0;margin-bottom:4px">
-      ⚠ ${groups.length} dublikatu grupiu · Spausk 🗑 noredamas istrinti
-    </div>
-    ${groups.map((group,gi)=>`
-      <div style="background:rgba(140,74,74,.1);border:1px solid var(--red);border-radius:10px;padding:10px;margin-bottom:8px">
-        <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--red);margin-bottom:6px">Grupe ${gi+1} · ${cat(group[0]).emoji} ${cat(group[0]).label}</div>
-        ${group.map(s=>`
-          <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(140,74,74,.2)">
-            <div style="flex:1;min-width:0">
-              <div style="font-size:.8rem;font-weight:600;color:var(--txt)">${s.name||'—'}</div>
-              <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm)">${s.lat?.toFixed(5)}, ${s.lng?.toFixed(5)} · T${s.tier||1}</div>
-              ${s.history?`<div style="font-size:.7rem;color:var(--td);margin-top:2px">${s.history.substring(0,60)}${s.history.length>60?'…':''}</div>`:''}
-            </div>
-            <button onclick="deleteDuplicateSpot('${s._fid||s.id}')" style="background:var(--red);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:.75rem;cursor:pointer;flex-shrink:0">🗑</button>
-          </div>`).join('')}
-      </div>`).join('')}
-  `;
-}
-
-// Score a spot — higher = better, keep this one
-function _spotScore(s){
-  let score=0;
-  if(s.history&&s.history.length>30) score+=3;     // has description
-  if(s.history&&s.history.length>100) score+=2;    // long description
-  if(s.year&&s.year.length>0) score+=2;             // has year
-  if(s.kpdCode) score+=5;                           // from KPD (official)
-  if(s.tag&&s.tag.startsWith('KPD')) score+=5;      // KPD tag
-  if(s.address&&s.address.length>5) score+=2;       // has address
-  if(s.tag&&s.tag.startsWith('Q')) score+=1;        // from Wikidata
-  if(s.tier&&s.tier>1) score+=s.tier;               // higher tier
-  return score;
-}
-
-async function autoDeleteAllDuplicates(){
-  if(!isAdmin()) return;
-  if(!confirm(`Automatiskai istrinti visus dublikatus?\n\nAlgoritmas paliks geriausia kiekvienos grupes a spot (KPD > Wikidata > OSM, ilgesnis aprasas = geriau).\n\nTesti?`)) return;
-
-  osmSetStatus('🔍 Ieskoma dublikatu...');
-  const groups=[];
-  const used=new Set();
-  for(let i=0;i<SPOTS.length;i++){
-    if(used.has(i)) continue;
-    const a=SPOTS[i];
-    const group=[{spot:a,idx:i}];
-    for(let j=i+1;j<SPOTS.length;j++){
-      if(used.has(j)) continue;
-      const b=SPOTS[j];
-      if(b.cat!==a.cat) continue;
-      if(Math.abs(a.lat-b.lat)<DEG_50M&&Math.abs(a.lng-b.lng)<DEG_50M){
-        group.push({spot:b,idx:j});
-        used.add(j);
-      }
-    }
-    if(group.length>1){
-      used.add(i);
-      groups.push(group);
-    }
-  }
-
-  if(!groups.length){
-    osmSetStatus('✅ Dublikatu nerasta!');
-    toast('✅ Dublikatu nerasta!','success');
-    return;
-  }
-
-  osmSetStatus(`⏳ Rasta ${groups.length} grupiu. Trinami dublikatai...`);
-
-  // For each group — keep highest score, delete the rest
-  const toDelete=[];
-  for(const group of groups){
-    group.sort((a,b)=>_spotScore(b.spot)-_spotScore(a.spot));
-    // Keep first (highest score), delete rest
-    for(let k=1;k<group.length;k++){
-      const s=group[k].spot;
-      const fid=s._fid||s.id;
-      if(fid) toDelete.push(fid);
-    }
-  }
-
-  osmSetStatus(`⏳ Trinami ${toDelete.length} dublikatu...`);
-
-  let deleted=0;
-  let failed=0;
-  for(const fid of toDelete){
-    try{
-      await fbDeleteSpot(fid);
-      SPOTS=SPOTS.filter(s=>s._fid!==fid&&String(s.id)!==String(fid));
-      deleted++;
-      if(deleted%10===0) osmSetStatus(`⏳ Istrinta ${deleted}/${toDelete.length}...`);
-    }catch(e){
-      failed++;
-      console.error('autoDelete failed',fid,e);
-    }
-    await new Promise(r=>setTimeout(r,100)); // small delay
-  }
-
-  refreshMarkers();updateAll();
-  const msg=`✅ Istrinta ${deleted} dublikatu${failed>0?`, nepavyko ${failed}`:''} is ${groups.length} grupiu. Atnaujinkite KV talpykla!`;
-  osmSetStatus(msg);
-  toast(msg,'success');
-  const list=document.getElementById('osmList');
-  if(list) list.innerHTML='';
-}
-
-async function deleteDuplicateSpot(fid){
-  if(!isAdmin()) return;
-  if(!confirm('Istrinti sia a spot?')) return;
-  try{
-    await fbDeleteSpot(fid);
-    SPOTS=SPOTS.filter(s=>s._fid!==fid&&s.id!==fid);
-    refreshMarkers();updateAll();
-    toast('🗑 Spot deleted','success');
-    findDuplicateSpots();
-  }catch(e){
-    toast('Error: '+e.message,'info');
-  }
-}
-// ═══════════ KPD CATEGORY RECLASSIFIER (Admin) ═══════════
-// Fixes ~547 history spots that were miscategorised during KPD import.
-// Uses spot name keywords to determine correct category.
-
-function resolveKpdCatFromName(name){
-  const n=name.toLowerCase();
-  // Mound complex sub-objects
-  if(/piliakalnio|pilkapis|piliakalniui|senojo piliakalnio/.test(n)) return 'mound';
-  // Cemetery objects
-  if(/antkapinis|antkapis/.test(n)) return 'cemetery';
-  // Church objects
-  // TODO: update KPD category regex for USA (admin-only)
-  // Monument/sculpture
-  if(/koplytstulpis|skulptura|obeliskas/.test(n)) return 'monument';
-  // Fort/bunker
-  if(/sleptuve|bunkeris|tvirtoves/.test(n)) return 'fort';
-  return null; // no change
-}
-
-async function reclassifyKpdSpots(){
-  if(!isAdmin()){toast('Tik adminui','info');return;}
-  const{db,doc,updateDoc}=window._fb||{};
-  if(!db){toast('Firebase nepasiekiamas','info');return;}
-
-  const candidates=SPOTS.filter(s=>s.cat==='history'&&s.tag&&s.tag.startsWith('KPD-'));
-  const toReclassify=[];
-  candidates.forEach(s=>{
-    const newCat=resolveKpdCatFromName(s.name);
-    if(newCat) toReclassify.push({spot:s,newCat});
-  });
-
-  osmSetStatus(`🔍 Rasta ${toReclassify.length} spots perrusiavimui is ${candidates.length} istoriniu...`);
-  if(!toReclassify.length){toast('Nieko perrusiuoti','info');return;}
-
-  if(!confirm(`Perrusiuoti ${toReclassify.length} spots?\n\nPavyzdziai:\n${toReclassify.slice(0,5).map(x=>`${x.spot.name.slice(0,40)} → ${x.newCat}`).join('\n')}\n\nTesti?`)) return;
-
-  let done=0,failed=0;
-  for(const{spot,newCat} of toReclassify){
-    try{
-      const fid=spot._fid||spot.id;
-      await updateDoc(doc(db,'spots',fid),{cat:newCat});
-      spot.cat=newCat; // update local
-      done++;
-      if(done%20===0) osmSetStatus(`⏳ Perrusiuota ${done}/${toReclassify.length}...`);
-    }catch(e){
-      failed++;
-      console.error('reclassify fail',spot.name,e);
-    }
-    if(done%50===0) await new Promise(r=>setTimeout(r,200));
-  }
-
-  // Rebuild spot level map after category changes
-  _spotLevelMap=null;
-  refreshMarkers();updateAll();
-  const msg=`✅ Perrusiuota ${done} spots${failed>0?`, klaida ${failed}`:''}.`;
-  osmSetStatus(msg);
-  toast(msg,'success');
-}
-
-let _wikiData=[];
-let _wikiSelected=new Set();
-let _wikiLoading=false;
-let _wikiFilter='all';
-
-const WIKIDATA_CAT_MAP={
-  Q16970:'church',Q2977:'church',Q108325:'church',Q44539:'church',
-  Q33506:'museum',Q207694:'museum',
-  Q16831714:'fort',Q57831:'fort',Q23413:'fort',Q44450:'fort',
-  Q570116:'mound',Q371204:'mound',
-  Q747074:'history',Q839954:'history',
-  Q5003624:'monument',Q4989906:'monument',Q179700:'monument',
-  Q5086:'nature',Q22698:'nature',Q728937:'nature',
-  Q1048835:'viewpoint',Q1311958:'viewpoint',
-  Q12280:'bridge',
-  Q18371:'cemetery',Q39614:'cemetery',
-};
-function wikidataCat(instanceIds){
-  for(const id of(instanceIds||[])){if(WIKIDATA_CAT_MAP[id]) return WIKIDATA_CAT_MAP[id];}
-  return 'history';
-}
-
-function wikiCacheKey(){return`usa_wiki_cache_${_getImportCountry()}_v2`;}
-const WIKI_CACHE_TTL=48*60*60*1000;
-
-// Country-specific SPARQL config
-const WIKIDATA_COUNTRY_CFG={
-  LT:{qid:'Q37',minLat:53.8,maxLat:56.5,minLng:20.9,maxLng:26.9,wpLang:'lt'},
-  PL:{qid:'Q36',minLat:49.0,maxLat:54.9,minLng:14.1,maxLng:24.2,wpLang:'pl'},
-};
-
-function renderWikidataPanel(){
-  const cached=JSON.parse(localStorage.getItem(wikiCacheKey())||'null');
-  const cacheInfo=cached?`<span style="color:var(--tm);font-size:.6rem">· ${_wikiData.length} (${new Date(cached.ts).toLocaleDateString('en-US')})</span>`:'';
-  const wcats=['all','church','museum','fort','mound','history','monument','nature','viewpoint','bridge','cemetery'];
-  const wcatLabels={all:'All',church:'⛪',museum:'🏛',fort:'🏰',mound:'⛰',history:'⚔',monument:'🗿',nature:'🌿',viewpoint:'🔭',bridge:'🌉',cemetery:'⚱️'};
-  const ic=_getImportCountry();
-  const cfg=COUNTRY_CONFIG[ic];
-  return`<div>
-    <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);margin-bottom:8px">${cfg?cfg.flag:''} Wikidata · USA. ${cacheInfo}</div>
-    <div class="osm-controls">
-      <button class="osm-ctrl-btn" onclick="fetchWikidata(false)">🔄 Ikelti</button>
-      <button class="osm-ctrl-btn" onclick="fetchWikidata(true)">♻️ Atnaujinti</button>
-      <button class="osm-ctrl-btn" onclick="wikiSelectAll()">☑ All</button>
-      <button class="osm-ctrl-btn" onclick="wikiSelectNone()">☐ Ne viena</button>
-      <button class="osm-ctrl-btn pri" onclick="wikiImportSelected()">✅ Import</button>
-    </div>
-    <div class="osm-filter-row" style="margin-top:6px">
-      ${wcats.map(wc=>`<div class="osm-fchip ${_wikiFilter===wc?'on':''}" onclick="_wikiFilter='${wc}';renderOsmImport()">${wcatLabels[wc]||wc}</div>`).join('')}
-    </div>
-    <div class="osm-status" id="wikiStatus">${_wikiData.length?`${_wikiData.length} spots · ${_wikiData.filter(x=>x.alreadyIn).length} already added`:'Spausk "Ikelti" pradeti'}</div>
-    <div class="osm-list" id="wikiList"></div>
-  </div>`;
-}
-
-async function fetchWikidata(forceRefresh){
-  if(_wikiLoading) return;
-  _wikiLoading=true;
-  _wikiData=[];_wikiSelected.clear();
-  const setS=m=>{const e=document.getElementById('wikiStatus');if(e)e.textContent=m;};
-  if(!forceRefresh){
-    const cached=JSON.parse(localStorage.getItem(wikiCacheKey())||'null');
-    if(cached&&Date.now()-cached.ts<WIKI_CACHE_TTL){
-      _wikiData=cached.data;setS(`✅ ${_wikiData.length} spots (talpykla)`);
-      _wikiLoading=false;renderWikidataList();return;
-    }
-  }
-  const cc=WIKIDATA_COUNTRY_CFG[_getImportCountry()]||WIKIDATA_COUNTRY_CFG.LT;
-  const sparql=`SELECT DISTINCT ?item ?itemLabel ?itemDescription ?lat ?lon ?instanceOf ?wpLocal ?wpEN WHERE {
-  ?item wdt:P17 wd:${cc.qid}.
-  ?item p:P625 ?coord.
-  ?coord psv:P625 ?coordNode.
-  ?coordNode wikibase:geoLatitude ?lat.
-  ?coordNode wikibase:geoLongitude ?lon.
-  ?item wdt:P31 ?instanceOf.
-  ?item wdt:P31 ?inst.
-  VALUES ?inst {
-    wd:Q16970 wd:Q2977 wd:Q108325 wd:Q33506 wd:Q207694
-    wd:Q16831714 wd:Q23413 wd:Q44450 wd:Q570116 wd:Q371204
-    wd:Q747074 wd:Q839954 wd:Q5003624 wd:Q4989906 wd:Q179700
-    wd:Q22698 wd:Q39614 wd:Q1048835 wd:Q12280 wd:Q44539
-  }
-  FILTER(?lat > ${cc.minLat} && ?lat < ${cc.maxLat} && ?lon > ${cc.minLng} && ?lon < ${cc.maxLng})
-  OPTIONAL { ?wpLocal schema:about ?item; schema:inLanguage "${cc.wpLang}"; schema:isPartOf <https://${cc.wpLang}.wikipedia.org/>. }
-  OPTIONAL { ?wpEN schema:about ?item; schema:inLanguage "en"; schema:isPartOf <https://en.wikipedia.org/>. }
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "${cc.wpLang},en". }
-} LIMIT 3000`;
-  const url='https://query.wikidata.org/sparql?format=json&query='+encodeURIComponent(sparql);
-  setS('⏳ Loading from Wikidata (up to 30s)...');
-  try{
-    const r=await fetch(url,{headers:{'Accept':'application/sparql-results+json','User-Agent':'SpotSeekers/1.0'},signal:AbortSignal.timeout(30000)});
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    const json=await r.json();
-    const rows=json.results.bindings;
-    setS(`⏳ Apdorojama ${rows.length} irasu...`);
-    const byItem={};
-    for(const row of rows){
-      const id=row.item.value.split('/').pop();
-      if(!byItem[id]){byItem[id]={id:'wd_'+id,name:row.itemLabel?.value||'',lat:parseFloat(row.lat.value),lng:parseFloat(row.lon.value),instances:[],wdId:id,wdDesc:row.itemDescription?.value||'',wpLocal:'',wpEN:''};}
-      if(row.instanceOf) byItem[id].instances.push(row.instanceOf.value.split('/').pop());
-      if(row.wpLocal?.value) byItem[id].wpLocal=row.wpLocal.value.split('/wiki/').pop();
-      if(row.wpEN?.value) byItem[id].wpEN=row.wpEN.value.split('/wiki/').pop();
-    }
-    const processed=Object.values(byItem)
-      .filter(x=>x.name&&!x.name.startsWith('Q'))
-      .map(x=>({...x,cat:wikidataCat(x.instances),alreadyIn:SPOTS.some(s=>Math.abs(s.lat-x.lat)<0.0005&&Math.abs(s.lng-x.lng)<0.0005)}))
-      .filter((x,i,arr)=>arr.findIndex(y=>Math.abs(y.lat-x.lat)<0.0003&&Math.abs(y.lng-x.lng)<0.0003&&y.cat===x.cat)===i)
-      .sort((a,b)=>a.name.localeCompare(b.name));
-    _wikiData=processed;
-    try{localStorage.setItem(wikiCacheKey(),JSON.stringify({ts:Date.now(),data:_wikiData}));}catch(e){}
-    setS(`✅ ${_wikiData.length} spots. Already added: ${_wikiData.filter(x=>x.alreadyIn).length}`);
-    renderWikidataList();
-  }catch(e){setS('❌ Klaida: '+e.message);}
-  _wikiLoading=false;
-}
-
-function renderWikidataList(){
-  const el=document.getElementById('wikiList');if(!el) return;
-  const cc=WIKIDATA_COUNTRY_CFG[_getImportCountry()]||WIKIDATA_COUNTRY_CFG.LT;
-  const filtered=_wikiData.filter(x=>_wikiFilter==='all'||x.cat===_wikiFilter);
-  el.innerHTML=filtered.map((item,i)=>{
-    if(item.alreadyIn) return'';
-    const sel=_wikiSelected.has(i);
-    const cat=CATS[item.cat]||CATS.history;
-    return`<div class="osm-item ${sel?'selected':''}" onclick="wikiToggleItem(${i})">
-      <div class="osm-check">${sel?'✓':''}</div>
-      <div class="osm-emoji">${cat.emoji}</div>
-      <div class="osm-info">
-        <div class="osm-name">${item.name}</div>
-        <div class="osm-meta">${cat.label}${item.wdDesc?' · '+item.wdDesc:''}</div>
-        <div class="osm-meta" style="margin-top:2px">
-          <a href="https://www.wikidata.org/wiki/${item.wdId}" target="_blank" onclick="event.stopPropagation()" style="color:var(--gold);text-decoration:none">WD ↗</a>
-          ${item.wpLocal?` <a href="https://${cc.wpLang}.wikipedia.org/wiki/${item.wpLocal}" target="_blank" onclick="event.stopPropagation()" style="color:var(--gold);text-decoration:none">${cc.wpLang.toUpperCase()} Wiki ↗</a>`:''}
-          ${item.wpEN?` <a href="https://en.wikipedia.org/wiki/${item.wpEN}" target="_blank" onclick="event.stopPropagation()" style="color:var(--gold);text-decoration:none">EN Wiki ↗</a>`:''}
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-}
-function wikiToggleItem(idx){if(_wikiSelected.has(idx))_wikiSelected.delete(idx);else _wikiSelected.add(idx);renderWikidataList();}
-function wikiSelectAll(){_wikiData.forEach((x,i)=>{if(!x.alreadyIn&&(_wikiFilter==='all'||x.cat===_wikiFilter))_wikiSelected.add(i);});renderWikidataList();}
-function wikiSelectNone(){_wikiSelected.clear();renderWikidataList();}
-
-async function wikiImportSelected(){
-  if(!_wikiSelected.size){toast('Nieko nepasirinkta','info');return;}
-  const cc=WIKIDATA_COUNTRY_CFG[_getImportCountry()]||WIKIDATA_COUNTRY_CFG.LT;
-  const setS=m=>{const e=document.getElementById('wikiStatus');if(e)e.textContent=m;};
-  let imported=0;const toEnrich=[];
-  for(const idx of _wikiSelected){
-    const item=_wikiData[idx];if(!item||item.alreadyIn) continue;
-    const spot={name:item.name,cat:item.cat,tier:2,lat:item.lat,lng:item.lng,
-      radius:CAT_DEFAULT_RADIUS[item.cat]||DEFAULT_RADIUS,
-      history:item.wdDesc?item.wdDesc+'.':'',year:'',tag:item.wdId,bring:[],
-      country:_getImportCountry()};
-    try{
-      const fid=await fbSaveSpot(spot);
-      if(fid){spot.id=fid;spot._fid=fid;SPOTS.push(spot);item.alreadyIn=true;imported++;
-        if(item.wpLocal||item.wpEN) toEnrich.push({item,fid,lang:item.wpLocal?cc.wpLang:'en',title:item.wpLocal||item.wpEN});}
-    }catch(e){console.error('wikiImport',e);}
-  }
-  _wikiSelected.clear();
-  if(imported>0){refreshMarkers();updateAll();}
-  setS(`✅ Importuota ${imported}.${toEnrich.length?' Kraunami Wikipedia aprasymai...':''}`);
-  renderWikidataList();
-  if(toEnrich.length) enrichWithWikipedia(toEnrich,setS);
-}
-
-async function enrichWithWikipedia(items,setS){
-  let done=0;
-  for(const{fid,lang,title} of items){
-    try{
-      const r=await fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(decodeURIComponent(title))}`,{signal:AbortSignal.timeout(8000)});
-      if(r.ok){
-        const d=await r.json();
-        const extract=(d.extract||'').split('. ').slice(0,3).join('. ').trim();
-        if(extract&&window._fb){
-          const{db,doc,updateDoc}=window._fb;
-          await updateDoc(doc(db,'spots',fid),{history:extract+(extract.endsWith('.')?'':'.'),wpTitle:title,wpLang:lang});
-          const spot=SPOTS.find(s=>s._fid===fid||s.id===fid);
-          if(spot) spot.history=extract;
-        }
-      }
-    }catch(e){}
-    done++;
-    if(setS) setS(`⏳ Wikipedia: ${done}/${items.length}...`);
-    await new Promise(r=>setTimeout(r,350));
-  }
-  if(setS) setS(`✅ Wikipedia aprasymai prideti (${done}/${items.length})`);
-}
-
-// ═══════════ ZABYTEK IMPORTER (Poland heritage register) ═══════════
-// API: api.zabytek.gov.pl/nidrestapi — REST, take/skip pagination, WGS84 coords
-// Equivalent of KPD for Poland
-
-const ZABYTEK_URL='https://api.zabytek.gov.pl/nidrestapi/api/data/geoportal/otwarteDaneZestawienieZrn';
-const ZABYTEK_CACHE_KEY='usa_zabytek_cache_v1';
-const ZABYTEK_CACHE_TTL=Infinity; // permanent like KPD
-const ZABYTEK_BATCH=500;
-
-let _zabytekData=[];
-let _zabytekSelected=new Set();
-let _zabytekLoading=false;
-let _zabytekFilter='all';
-let _zabytekCityFilter='all';
-
-// Map Polish heritage types to SpotSeekers categories
-function zabytekCat(rodzaj){
-  if(!rodzaj) return 'history';
-  const r=rodzaj.toLowerCase();
-  if(/kościół|kaplica|klasztor|katedra|bazylika/.test(r)) return 'church';
-  if(/zamek|fort|twierdza|bunkier/.test(r)) return 'fort';
-  if(/cmentarz/.test(r)) return 'cemetery';
-  if(/pomnik|obelisk|rzeźba|kolumna/.test(r)) return 'monument';
-  if(/muzeum/.test(r)) return 'museum';
-  if(/park|ogród/.test(r)) return 'nature';
-  if(/most/.test(r)) return 'bridge';
-  return 'history';
-}
-
-function renderZabytekPanel(){
-  const cached=JSON.parse(localStorage.getItem(ZABYTEK_CACHE_KEY)||'null');
-  const cacheInfo=cached?`<span style="color:var(--tm);font-size:.6rem">· ${_zabytekData.length} (${new Date(cached.ts).toLocaleDateString('pl-PL')})</span>`:'';
-  const cats=['all','church','fort','cemetery','monument','history','museum','nature','bridge'];
-  const catLabels={all:'All',church:'⛪',fort:'🏰',cemetery:'⚱️',monument:'🗿',history:'⚔',museum:'🏛',nature:'🌿',bridge:'🌉'};
-
-  const citiesWithZab=_zabytekData.length>0
-    ?[...new Set(_zabytekData.map(x=>x.miejscowosc).filter(Boolean))].sort()
-    :[];
-
-  const total=_zabytekData.length;
-  const filteredNew=total>0?_zabytekData.filter(x=>{
-    if(x.alreadyIn) return false;
-    if(_zabytekFilter!=='all'&&x.cat!==_zabytekFilter) return false;
-    if(_zabytekCityFilter!=='all'&&x.miejscowosc!==_zabytekCityFilter) return false;
-    return true;
-  }).length:0;
-
-  return`<div>
-    <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);margin-bottom:6px">
-      🇵🇱 Rejestr Zabytków NID · ${total?`${total} załadowanych${cacheInfo}`:'Kliknij Załaduj'}
-    </div>
-    <div class="osm-controls">
-      <button class="osm-ctrl-btn" onclick="fetchZabytek(false)">🔄 Załaduj</button>
-      <button class="osm-ctrl-btn" onclick="fetchZabytek(true)">♻️ Odśwież</button>
-      <button class="osm-ctrl-btn" onclick="zabytekSelectAll()">☑ Wszystkie</button>
-      <button class="osm-ctrl-btn" onclick="zabytekSelectNone()">☐ Żadne</button>
-      <button class="osm-ctrl-btn pri" onclick="zabytekImportSelected()">✅ Importuj</button>
-    </div>
-    <div style="display:flex;gap:6px;align-items:center;margin:6px 0;flex-wrap:wrap">
-      <span style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm)">Miasto:</span>
-      <div class="osm-fchip ${_zabytekCityFilter==='all'?'on':''}" onclick="_zabytekCityFilter='all';renderOsmImport()">🇵🇱 Wszystkie</div>
-      ${citiesWithZab.slice(0,20).map(c=>`<div class="osm-fchip ${_zabytekCityFilter===c?'on':''}" onclick="_zabytekCityFilter='${c.replace(/'/g,"\\'")}';renderOsmImport()">${c}</div>`).join('')}
-    </div>
-    <div class="osm-filter-row">
-      ${cats.map(c=>`<div class="osm-fchip ${_zabytekFilter===c?'on':''}" onclick="_zabytekFilter='${c}';renderOsmImport()">${catLabels[c]||c}</div>`).join('')}
-    </div>
-    ${total>0?`<div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);margin:6px 0">
-      Łacznie: ${total} · Nowych: <strong style="color:var(--gold)">${filteredNew}</strong> · Już dodanych: ${_zabytekData.filter(x=>x.alreadyIn).length}
-    </div>`:''}
-    <div class="osm-status" id="zabytekStatus">${total?'Wybierz i importuj':'Kliknij "Załaduj" aby rozpoczać'}</div>
-    <div class="osm-list" id="zabytekList"></div>
-  </div>`;
-}
-
-async function fetchZabytek(forceRefresh){
-  if(_zabytekLoading) return;
-  _zabytekLoading=true;
-  _zabytekData=[];_zabytekSelected.clear();
-  const setS=m=>{const e=document.getElementById('zabytekStatus');if(e)e.textContent=m;};
-
-  if(!forceRefresh){
-    const cached=JSON.parse(localStorage.getItem(ZABYTEK_CACHE_KEY)||'null');
-    if(cached&&cached.data){
-      _zabytekData=cached.data;
-      _zabytekData.forEach(x=>{x.alreadyIn=SPOTS.some(s=>Math.abs(s.lat-x.lat)<0.0005&&Math.abs(s.lng-x.lng)<0.0005);});
-      setS(`✅ ${_zabytekData.length} zabytków (cache)`);
-      _zabytekLoading=false;renderZabytekList();return;
-    }
-  }
-
-  setS('⏳ Pobieranie z rejestru NID...');
-  let allData=[];
-  let skip=0;
-  const MAX_RECORDS=10000;
-
-  try{
-    // Count total first
-    const countRes=await fetch(`${ZABYTEK_URL}?format=json&take=1`,{signal:AbortSignal.timeout(15000)});
-    if(!countRes.ok) throw new Error('HTTP '+countRes.status);
-    const countJson=await countRes.json();
-    const total=countJson.totalCount||countJson.total||MAX_RECORDS;
-    setS(`⏳ Pobieranie ${total} zabytków...`);
-
-    while(skip<Math.min(total,MAX_RECORDS)){
-      const url=`${ZABYTEK_URL}?format=json&take=${ZABYTEK_BATCH}&skip=${skip}`;
-      const res=await fetch(url,{signal:AbortSignal.timeout(20000)});
-      if(!res.ok) throw new Error('HTTP '+res.status);
-      const json=await res.json();
-      const items=json.data||json.items||json||[];
-      if(!Array.isArray(items)||items.length===0) break;
-
-      for(const item of items){
-        // API returns WGS84 directly (unlike KPD which used LKS94)
-        const lat=parseFloat(item.szerokoscGeograficzna||item.lat||item.latitude||0);
-        const lng=parseFloat(item.dlugoscGeograficzna||item.lng||item.longitude||0);
-        if(!lat||!lng||lat<49||lat>55||lng<14||lng>25) continue;
-        allData.push({
-          id:'zab_'+(item.inspireId||item.id||skip+'_'+allData.length),
-          name:item.nazwaObiektu||item.nazwa||item.name||'Zabytek',
-          lat,lng,
-          rodzaj:item.rodzajObiektu||item.rodzaj||'',
-          miejscowosc:item.miejscowosc||item.miasto||'',
-          rejestr:item.nrRejestruZabytkow||item.numerRejestru||'',
-          cat:'history', // assigned below
-          alreadyIn:false
-        });
-      }
-      skip+=ZABYTEK_BATCH;
-      setS(`⏳ Pobrano ${allData.length}...`);
-      await new Promise(r=>setTimeout(r,500));
-    }
-
-    // Assign categories and deduplicate
-    allData=allData
-      .map(x=>({...x,cat:zabytekCat(x.rodzaj)}))
-      .filter((x,i,arr)=>arr.findIndex(y=>Math.abs(y.lat-x.lat)<0.0003&&Math.abs(y.lng-x.lng)<0.0003&&y.cat===x.cat)===i);
-    // Mark already imported
-    allData.forEach(x=>{x.alreadyIn=SPOTS.some(s=>Math.abs(s.lat-x.lat)<0.0005&&Math.abs(s.lng-x.lng)<0.0005);});
-
-    _zabytekData=allData;
-    try{localStorage.setItem(ZABYTEK_CACHE_KEY,JSON.stringify({ts:Date.now(),data:_zabytekData}));}catch(e){}
-    setS(`✅ ${_zabytekData.length} zabytków. Już dodanych: ${_zabytekData.filter(x=>x.alreadyIn).length}`);
-    renderOsmImport(); // re-render to show city list
-  }catch(e){
-    setS('❌ Bład: '+e.message+'. Spróbuj ponownie.');
-    console.error('fetchZabytek',e);
-  }
-  _zabytekLoading=false;
-}
-
-function renderZabytekList(){
-  const el=document.getElementById('zabytekList');if(!el) return;
-  const filtered=_zabytekData.filter(x=>{
-    if(x.alreadyIn) return false;
-    if(_zabytekFilter!=='all'&&x.cat!==_zabytekFilter) return false;
-    if(_zabytekCityFilter!=='all'&&x.miejscowosc!==_zabytekCityFilter) return false;
-    return true;
-  });
-  if(!filtered.length){el.innerHTML=`<div style="text-align:center;padding:24px;color:var(--td);font-size:.82rem">Brak wyników dla wybranych filtrów</div>`;return;}
-  el.innerHTML=filtered.map((item,i)=>{
-    const realIdx=_zabytekData.indexOf(item);
-    const sel=_zabytekSelected.has(realIdx);
-    const cat=CATS[item.cat]||CATS.history;
-    return`<div class="osm-item ${sel?'selected':''}" onclick="zabytekToggleItem(${realIdx})">
-      <div class="osm-check">${sel?'✓':''}</div>
-      <div class="osm-emoji">${cat.emoji}</div>
-      <div class="osm-info">
-        <div class="osm-name">${item.name}</div>
-        <div class="osm-meta">${cat.label}${item.miejscowosc?' · '+item.miejscowosc:''}${item.rodzaj?' · '+item.rodzaj.slice(0,40):''}</div>
-        ${item.rejestr?`<div class="osm-meta" style="color:var(--tm)">Nr rej: ${item.rejestr}</div>`:''}
-      </div>
-    </div>`;
-  }).join('');
-}
-function zabytekToggleItem(idx){if(_zabytekSelected.has(idx))_zabytekSelected.delete(idx);else _zabytekSelected.add(idx);renderZabytekList();}
-function zabytekSelectAll(){_zabytekData.forEach((x,i)=>{if(!x.alreadyIn&&(_zabytekFilter==='all'||x.cat===_zabytekFilter)&&(_zabytekCityFilter==='all'||x.miejscowosc===_zabytekCityFilter))_zabytekSelected.add(i);});renderZabytekList();}
-function zabytekSelectNone(){_zabytekSelected.clear();renderZabytekList();}
-
-async function zabytekImportSelected(){
-  if(!_zabytekSelected.size){toast('Nic nie wybrano','info');return;}
-  const setS=m=>{const e=document.getElementById('zabytekStatus');if(e)e.textContent=m;};
-  let imported=0;
-  for(const idx of _zabytekSelected){
-    const item=_zabytekData[idx];if(!item||item.alreadyIn) continue;
-    const spot={
-      name:item.name,cat:item.cat,tier:2,lat:item.lat,lng:item.lng,
-      radius:CAT_DEFAULT_RADIUS[item.cat]||DEFAULT_RADIUS,
-      history:'',year:'',tag:'ZAB-'+item.rejestr,bring:[],
-      country:'PL'
-    };
-    try{
-      const fid=await fbSaveSpot(spot);
-      if(fid){spot.id=fid;spot._fid=fid;SPOTS.push(spot);item.alreadyIn=true;imported++;}
-    }catch(e){console.error('zabytekImport',e);}
-  }
-  _zabytekSelected.clear();
-  if(imported>0){refreshMarkers();updateAll();}
-  setS(`✅ Zaimportowano ${imported} obiektów`);
-  renderZabytekList();
-}
 
 function osmToggleManual(){
   _osmManualMode=!_osmManualMode;
