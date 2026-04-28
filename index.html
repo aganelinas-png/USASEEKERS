@@ -5931,7 +5931,14 @@ async function fbLoadSpots(){
       }
       if(_fsSpots&&_fsSpots.length){
         const _existing=new Set(SPOTS.map(s=>String(s.id)));
-        _fsSpots.forEach(s=>{if(!_existing.has(String(s.id)))SPOTS.push(s);});
+        _fsSpots.forEach(s=>{
+          if(_existing.has(String(s.id)))return;
+          if(s.name&&['building','structure','site','object','house'].includes(s.cat)){
+            const derived=_classifyByName(s.name);
+            if(derived)s.cat=derived;
+          }
+          SPOTS.push(s);
+        });
         _spotLevelMap=null;
         refreshMarkers();
         renderList();
