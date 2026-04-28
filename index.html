@@ -1562,6 +1562,28 @@ const BADGE_GROUPS=[
     {id:'ob2',name:'Artifact Hunter',desc:'Visit 5 objects',icon:'🏺',need:5,xpReward:60},
     {id:'ob3',name:'Object Collector',desc:'Visit 20 objects',icon:'💎',need:20,xpReward:200},
   ]},
+  // ── Commerce & Civic ──
+  {id:'banks',title:'Vault Hunter',icon:'🏦',cat:'bank',sub:true,badges:[
+    {id:'bk1',name:'First Deposit',desc:'Visit 1 historic bank',icon:'🏦',need:1,xpReward:10},
+    {id:'bk2',name:'Loan Officer',desc:'Visit 5 historic banks',icon:'💰',need:5,xpReward:35},
+    {id:'bk3',name:'Financial Historian',desc:'Visit 20 historic banks',icon:'💎',need:20,xpReward:120},
+  ]},
+  {id:'hospitals',title:'House Call',icon:'🏥',cat:'hospital',sub:true,badges:[
+    {id:'hp1',name:'First Patient',desc:'Visit 1 historic hospital',icon:'🏥',need:1,xpReward:10},
+    {id:'hp2',name:'Ward Walker',desc:'Visit 5 historic hospitals',icon:'🩺',need:5,xpReward:35},
+    {id:'hp3',name:'Medical Historian',desc:'Visit 20 historic hospitals',icon:'💎',need:20,xpReward:120},
+  ]},
+  {id:'prisons',title:'Behind Bars',icon:'🔒',cat:'prison',sub:true,badges:[
+    {id:'pr1',name:'Visitor\'s Pass',desc:'Visit 1 historic prison',icon:'🔒',need:1,xpReward:15},
+    {id:'pr2',name:'Cell Block Walker',desc:'Visit 5 historic prisons',icon:'⛓',need:5,xpReward:50},
+    {id:'pr3',name:'Warden of History',desc:'Visit 15 historic prisons',icon:'💎',need:15,xpReward:150},
+  ]},
+  {id:'parks',title:'Park Ranger',icon:'🌿',cat:'park',sub:true,badges:[
+    {id:'pk1',name:'First Trail',desc:'Visit 1 historic park or garden',icon:'🌿',need:1,xpReward:10},
+    {id:'pk2',name:'Nature Walker',desc:'Visit 10 parks',icon:'🌳',need:10,xpReward:30},
+    {id:'pk3',name:'Trail Blazer',desc:'Visit 50 parks',icon:'🏕',need:50,xpReward:80},
+    {id:'pk4',name:'Park Legend',desc:'Visit 100 parks',icon:'💎',need:100,xpReward:200},
+  ]},
   // ── Tier completion ──
   {id:'tiers',title:'Tier Progress',icon:'⭐',cat:null,badges:[
     {id:'t1all',name:'Local Champion',desc:'All Local (T1) spots collected',icon:'⚪',tierComplete:1,xpReward:100},
@@ -2679,7 +2701,7 @@ function renderTierProgressHTML(){
     <div class="tier-row" style="margin-bottom:4px">
       <div class="tier-dot" style="background:var(--gold)"></div>
       <div class="tier-info">
-        <div class="tier-name">Lv.${plvl} — Matomos spots</div>
+        <div class="tier-name">Lv.${plvl} — Visible Spots</div>
         <div class="tier-count">${visibleCount.toLocaleString()} spots total · Lv.${plvl+1} unlocks more</div>
         <div class="tier-bar"><div class="tier-fill" style="background:var(--gold);width:${Math.round(visibleSpots.length/Math.max(1,SPOTS.filter(s=>s.cat!=='hidden').length)*100)}%"></div></div>
       </div>
@@ -3093,7 +3115,7 @@ function renderAboutMe(){
         <div style="font-size:32px">${lv.icon}</div>
         <div style="flex:1;min-width:0">
           <div style="font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--gold)">Lv.${lv.level} — ${lv.name}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:.68rem;color:var(--td);margin-top:3px">${nxt?`Kitas: Lv.${nxt.level} ${nxt.name} (${xpLeft} XP)`:'Max level! 👑'}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.68rem;color:var(--td);margin-top:3px">${nxt?`Next: Lv.${nxt.level} ${nxt.name} (${xpLeft} XP)`:'Max level! 👑'}</div>
         </div>
       </div>
       <div style="height:7px;background:var(--bdr);border-radius:4px;overflow:hidden">
@@ -3112,18 +3134,18 @@ function renderAboutMe(){
     <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.08em;margin-bottom:-4px">Spots Progress</div>
     <div style="background:var(--surf2);border:1px solid var(--bdr);border-radius:10px;padding:11px 14px">
       <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span style="font-size:.82rem;font-weight:700;color:var(--txt)">Matomos spots</span>
-        <span style="font-family:'DM Mono',monospace;font-size:.75rem;color:var(--gold);font-weight:600">${found.size} / ${SPOTS.filter(s=>isSpotVisible(s)&&s.cat!=='hidden').length} matoma</span>
+        <span style="font-size:.82rem;font-weight:700;color:var(--txt)">Visible Spots</span>
+        <span style="font-family:'DM Mono',monospace;font-size:.75rem;color:var(--gold);font-weight:600">${found.size} / ${SPOTS.filter(s=>isSpotVisible(s)&&s.cat!=='hidden').length} visible</span>
       </div>
       <div style="height:6px;background:var(--bdr);border-radius:3px;overflow:hidden">
         <div style="height:100%;width:${Math.round(found.size/Math.max(1,SPOTS.filter(s=>isSpotVisible(s)&&s.cat!=='hidden').length)*100)}%;background:linear-gradient(90deg,var(--gd),var(--gold));border-radius:3px;transition:width .5s"></div>
       </div>
-      <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--td);margin-top:5px">Next level unlocks more spots</div>
+      <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--td);margin-top:5px">Levels unlock XP bonuses and perks</div>
     </div>
     <div style="background:var(--surf2);border:1px solid var(--bdr);border-radius:10px;padding:11px 14px">
       <div style="display:flex;justify-content:space-between;margin-bottom:5px">
-        <span style="font-size:.82rem;font-weight:700;color:var(--txt)">Collectta</span>
-        <span style="font-family:'DM Mono',monospace;font-size:.75rem;color:var(--txt)">${found.size} viet${found.size===1?'spot':'spots'}</span>
+        <span style="font-size:.82rem;font-weight:700;color:var(--txt)">Collected</span>
+        <span style="font-family:'DM Mono',monospace;font-size:.75rem;color:var(--txt)">${found.size} spot${found.size===1?'':'s'}</span>
       </div>
       <div style="display:flex;gap:8px;font-family:'DM Mono',monospace;font-size:.62rem;color:var(--td)">
         <span>⚪ Local: ${t1c}</span>
@@ -3787,7 +3809,7 @@ let _lbTab='xp'; // current leaderboard sort tab
 
 function renderSocial(){
   const body=document.getElementById('panel-social');
-  const pct=SPOTS.length?Math.round(found.size/SPOTS.length*100):0;
+  const pct=SPOTS.filter(s=>s.cat!=='hidden').length?Math.round(found.size/SPOTS.filter(s=>s.cat!=='hidden').length*100):0;
   const lv=getLevel(totalXP);
   const badgeCount=[...earnedBadges].length;
   const user=window._fbUser;
@@ -4078,7 +4100,7 @@ function renderLevelCard(){
       <div class="lc-icon">${lv.icon}</div>
       <div class="lc-info">
         <div class="lc-title">Lv.${lv.level} — ${lv.name}</div>
-        <div class="lc-sub">${nxt?`Kitas: Lv.${nxt.level} ${nxt.name} (${xpLeft} XP)`:'Max level! 👑'}</div>
+        <div class="lc-sub">${nxt?`Next: Lv.${nxt.level} ${nxt.name} (${xpLeft} XP)`:'Max level! 👑'}</div>
       </div>
     </div>
     <div class="lc-bar"><div class="lc-fill" style="width:${pct}%"></div></div>
@@ -4825,7 +4847,7 @@ function skipUsername(){
 let _sugLat=null,_sugLng=null;
 
 function openSuggestModal(){
-  if(!window._fbUser){toast('⚠ Prisijunk noredamas siulyti vietas','info');return;}
+  if(!window._fbUser){toast('⚠ Sign in to suggest a spot','info');return;}
   _sugLat=null;_sugLng=null;
   document.getElementById('sugName').value='';
   document.getElementById('sugCat').value='history';
@@ -4879,7 +4901,7 @@ function _handleSuggestMapPick(e){
 
 async function submitSuggestion(){
   const user=window._fbUser;
-  if(!user){toast('⚠ Prisijunk noredamas siulyti vietas','info');return;}
+  if(!user){toast('⚠ Sign in to suggest a spot','info');return;}
   const name=document.getElementById('sugName').value.trim();
   const cat=document.getElementById('sugCat').value;
   const desc=document.getElementById('sugDesc').value.trim();
@@ -4915,7 +4937,7 @@ async function renderMySuggestions(){
   const body=document.getElementById('panel-mysuggestions');
   const user=window._fbUser;
   if(!user){
-    body.innerHTML=`<div style="padding:40px 20px;text-align:center;color:var(--td);font-size:.85rem">Prisijunk noredamas matyti savo siulymus.</div>`;
+    body.innerHTML=`<div style="padding:40px 20px;text-align:center;color:var(--td);font-size:.85rem">Sign in to see your suggestions.</div>`;
     return;
   }
   body.innerHTML=`<div style="padding:20px;text-align:center;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--td)">⏳ Loading...</div>`;
@@ -4927,7 +4949,7 @@ async function renderMySuggestions(){
       body.innerHTML=`<div style="padding:40px 20px;text-align:center">
         <div style="font-size:40px;margin-bottom:12px">📍</div>
         <div style="font-family:'Playfair Display',serif;font-size:1rem;color:var(--txt);margin-bottom:8px">Dar nera siulymu</div>
-        <div style="font-size:.8rem;color:var(--td);line-height:1.6">Siulyk vietas naudodamas mygtuka zemelapyje.</div>
+        <div style="font-size:.8rem;color:var(--td);line-height:1.6">Suggest spots using the button on the map.</div>
         <button onclick="closeSuggestModal();closeDrawer();openSuggestModal()" style="margin-top:16px;background:var(--gold);color:#0e0c09;border:none;border-radius:10px;padding:10px 20px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.85rem;cursor:pointer">📍 Suggest a Spot</button>
       </div>`;
       return;
@@ -5057,10 +5079,10 @@ function checkContributorBadges(count,isCurrentUser){
 const INTRO_STEPS=[
   {glyph:'🗺',title:'Labas, Seeker\'i!',sub:'SpotSeekers — explore the USA in real time. Collect spots by physically visiting them.'},
   {glyph:'📍',title:'How do I collect a spot?',sub:'Walk up to the marker on the map and tap "Collect". GPS will detect your presence automatically.'},
-  {glyph:'🔓',title:'Levels & Unlocks',sub:'You start with ~16k spots visible. Each level unlocks more — up to all 67k across the USA.'},
+  {glyph:'🔓',title:'Levels & Perks',sub:'All 67k+ spots are yours to find. Level up to earn XP bonuses, badges, and flair.'},
   {glyph:'🏅',title:'XP, Badges & Streaks',sub:'Every spot earns you XP. Collect badges by category — buildings, structures, districts and more.'},
-  {glyph:'🏆',title:'Lyderiu lentele',sub:'Lenktyniauk su kitais Seeker\'iais. Prisijunk kad sinchronizuoti pazanga tarp irenginiu.'},
-  {glyph:'🚀',title:'Start Exploring!',sub:'GPS veikia fone. Matai vietas 50 km spinduliu. Sekmes, Seeker\'i!',isLast:true},
+  {glyph:'🏆',title:'Leaderboard',sub:'Compete with other Seekers. Sign in to sync your progress across devices.'},
+  {glyph:'🚀',title:'Start Exploring!',sub:'GPS runs in the background. You\'ll see spots within 50 km. Good luck, Seeker!',isLast:true},
 ];
 let _introStep=0;
 
@@ -5893,6 +5915,7 @@ async function fbLoadSpots(){
         _spotLevelMap=null;
         refreshMarkers();
         renderList();
+        updateAll();
         const sub=document.getElementById('authSub');
         if(sub) sub.textContent=`${SPOTS.length.toLocaleString()} spots ready`;
       }
@@ -6242,7 +6265,7 @@ saveSpot=async function(){
 const _origDeleteSpot=deleteSpot;
 deleteSpot=async function(){
   if(!window._fbUser||!ADMIN_UIDS.includes(window._fbUser.uid)){
-    toast('⚠ Tik administratorius gali trinti vietas','info');return;
+    toast('⚠ Only admins can delete spots','info');return;
   }
   const id=document.getElementById('eId').value;if(!id)return;
   const sp=SPOTS.find(s=>s.id==id||s._fid==id);
