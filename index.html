@@ -1998,9 +1998,10 @@ function spotInCity(spot,city){
 
 function refreshMarkers(){
   if(!clusterGroup||!map) return;
-  // Clean up removed spots
+  // Clean up markers for spots no longer in SPOTS (O(n) via Set, not O(n²) via .find)
+  const ids=new Set(SPOTS.map(s=>String(s.id)));
   Object.keys(markers).forEach(id=>{
-    if(!SPOTS.find(s=>s.id==id)){delete markers[id];}
+    if(!ids.has(String(id))){delete markers[id];}
   });
   renderViewportMarkers();
 }
@@ -2023,21 +2024,25 @@ function scheduleViewportRender(){
 function renderViewportMarkers(){
   if(!map||!clusterGroup) return;
   const zoom=map.getZoom();
-  // At country/state zoom individual markers are invisible — skip entirely.
-  // Markers appear as user zooms into city level. Eliminates 67k loop on startup.
-  if(zoom<7){clusterGroup.clearLayers();return;}
-  const pad=zoom>=12?0.4:zoom>=9?0.3:0.15;
+  // Wider padding when zoomed out so clusters fill the view; tighter when zoomed in.
+  const pad=zoom>=12?0.4:zoom>=9?0.3:zoom>=6?0.2:0.1;
   const bounds=map.getBounds().pad(pad);
+  // Hard cap on markers fed to the cluster engine in one pass. At low zoom the
+  // whole country may be in bounds (tens of thousands of spots) — clustering can
+  // group them into count bubbles, but handing it 67k at once freezes mobile.
+  // Cap keeps it responsive; zooming in narrows bounds so the cap is never hit.
+  const MAX_MARKERS=zoom<6?3000:zoom<9?6000:12000;
   clusterGroup.clearLayers();
   const toAdd=[];
-  SPOTS.forEach(s=>{
-    if(!isSpotVisible(s)||s.cat==='hidden') return;
-    if(hideCollected&&found.has(s.id)) return;
-    const show=activeFilterHidden.size===0||!activeFilterHidden.has(s.cat);
-    if(!show) return;
-    if(activeCity!=='all'&&!spotInCity(s,activeCity)) return;
-    if(routeFilterActive&&activeRouteId){const ar=getActiveRoute();if(ar&&!ar.spots.includes(String(s.id))) return;}
-    if(!bounds.contains([s.lat,s.lng])) return;
+  for(let i=0;i<SPOTS.length;i++){
+    if(toAdd.length>=MAX_MARKERS) break;
+    const s=SPOTS[i];
+    if(s.cat==='hidden') continue;
+    if(hideCollected&&found.has(s.id)) continue;
+    if(activeFilterHidden.size>0&&activeFilterHidden.has(s.cat)) continue;
+    if(activeCity!=='all'&&!spotInCity(s,activeCity)) continue;
+    if(routeFilterActive&&activeRouteId){const ar=getActiveRoute();if(ar&&!ar.spots.includes(String(s.id))) continue;}
+    if(!bounds.contains([s.lat,s.lng])) continue;
     if(!markers[s.id]){
       const m=L.marker([s.lat,s.lng],{icon:makeIcon(s)});
       m._isMarker=true;
@@ -2047,9 +2052,8 @@ function renderViewportMarkers(){
       markers[s.id].setIcon(makeIcon(s));
     }
     toAdd.push(markers[s.id]);
-  });
+  }
   // Batch add — MarkerCluster defers internal recalculation to end of batch.
-  // Individual addLayer() calls recalculate after every single add = catastrophic at 1000+ markers.
   if(toAdd.length) clusterGroup.addLayers(toAdd);
 }
 
