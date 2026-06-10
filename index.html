@@ -2152,8 +2152,14 @@ function scheduleViewportRender(){
 }
 function renderViewportMarkers(){
   if(!map||!clusterGroup) return;
-  const bounds=map.getBounds().pad(0.5); // 50% padding beyond viewport
+  const zoom=map.getZoom();
+  // At country/state zoom individual markers are invisible — skip entirely.
+  // Markers appear as user zooms into city level. Eliminates 67k loop on startup.
+  if(zoom<7){clusterGroup.clearLayers();return;}
+  const pad=zoom>=12?0.4:zoom>=9?0.3:0.15;
+  const bounds=map.getBounds().pad(pad);
   clusterGroup.clearLayers();
+  const toAdd=[];
   SPOTS.forEach(s=>{
     if(!isSpotVisible(s)||s.cat==='hidden') return;
     if(hideCollected&&found.has(s.id)) return;
@@ -2170,13 +2176,16 @@ function renderViewportMarkers(){
     } else {
       markers[s.id].setIcon(makeIcon(s));
     }
-    clusterGroup.addLayer(markers[s.id]);
+    toAdd.push(markers[s.id]);
   });
+  // Batch add — MarkerCluster defers internal recalculation to end of batch.
+  // Individual addLayer() calls recalculate after every single add = catastrophic at 1000+ markers.
+  if(toAdd.length) clusterGroup.addLayers(toAdd);
 }
 
 function centerUser(){
   if(userLat!==null) map.setView([userLat,userLng],16);
-  else toast('📍 GPS dar neveikia','info');
+  else toast('📍 GPS not available yet','info');
 }
 
 // ═══════════ FILTER ═══════════
@@ -5994,7 +6003,7 @@ function suggestUseGPS(){
     document.getElementById('sugCoords').textContent=`📍 ${_sugLat.toFixed(5)}, ${_sugLng.toFixed(5)}`;
     toast('📡 GPS coordinates used','success');
   } else {
-    toast('⚠ GPS dar nepasiekiamas','info');
+    toast('⚠ GPS not available yet','info');
   }
 }
 
@@ -7298,7 +7307,8 @@ async function fbLoadSpots(){
           return n?{...s,...n}:s;
         });
         _spotLevelMap=null;
-        renderViewportMarkers();
+        // No re-render needed — positions unchanged, names only visible when user taps a spot.
+        // renderViewportMarkers() here would re-iterate 67k spots for zero visible benefit.
         renderList();
         const sub=document.getElementById('authSub');
         if(sub) sub.textContent=`${SPOTS.length.toLocaleString()} spots ready`;
