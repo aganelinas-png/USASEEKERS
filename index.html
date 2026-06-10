@@ -22,15 +22,13 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-<!-- Google Identity Services -->
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 <!-- Firebase -->
 <script>window._adminSecret='ADMIN_SECRET_PLACEHOLDER';</script>
 <script type="module">
 // ═══════════ FIREBASE SETUP ═══════════
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import{getFirestore,doc,getDoc,setDoc,collection,getDocs,addDoc,updateDoc,deleteDoc,serverTimestamp,query,orderBy,limit,where,writeBatch}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-import{getAuth,signInWithPopup,signInWithRedirect,getRedirectResult,signInWithCredential,signOut,GoogleAuthProvider,onAuthStateChanged,createUserWithEmailAndPassword,signInWithEmailAndPassword,updateProfile,browserLocalPersistence,setPersistence}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import{getAuth,signOut,onAuthStateChanged,createUserWithEmailAndPassword,signInWithEmailAndPassword,updateProfile,browserLocalPersistence,setPersistence}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 const firebaseConfig={
   apiKey:"FIREBASE_API_KEY_PLACEHOLDER",
@@ -44,16 +42,15 @@ const firebaseConfig={
 const fbApp=initializeApp(firebaseConfig);
 const db=getFirestore(fbApp);
 const auth=getAuth(fbApp);
-const gProvider=new GoogleAuthProvider();
 
 // Ensure login persists across page refreshes
 setPersistence(auth,browserLocalPersistence).catch(()=>{});
 
 // Expose to global scope so non-module code can use them
-window._fb={db,auth,gProvider,
+window._fb={db,auth,
   doc,getDoc,setDoc,collection,getDocs,addDoc,updateDoc,deleteDoc,serverTimestamp,
   query,orderBy,limit,where,writeBatch,
-  signInWithPopup,signInWithRedirect,getRedirectResult,signInWithCredential,GoogleAuthProvider,signOut,onAuthStateChanged,
+  signOut,onAuthStateChanged,
   createUserWithEmailAndPassword,signInWithEmailAndPassword,updateProfile
 };
 
@@ -63,17 +60,7 @@ onAuthStateChanged(auth,user=>{
   if(typeof window.onFbAuthReady==='function') window.onFbAuthReady(user);
 });
 
-// Handle returning redirect from Google sign-in (TWA / mobile)
-getRedirectResult(auth).then(result=>{
-  if(result?.user){
-    window._fbUser=result.user;
-    if(typeof window.updateAuthUI==='function') window.updateAuthUI(result.user);
-    if(typeof window.toast==='function') window.toast(`👋 Sveiki, ${result.user.displayName||''}!`,'success');
-    if(typeof window.onFbAuthReady==='function') window.onFbAuthReady(result.user);
-  }
-}).catch(e=>{
-  console.error('Redirect result error:',e);
-});
+// (Google redirect handler removed — email/password only.)
 </script>
 <style>
 :root{
@@ -210,7 +197,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 .drawer-back-btn{background:none;border:none;color:var(--gold);font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;padding:4px 0;flex-shrink:0;-webkit-user-select:none;user-select:none}
 .drawer-back-btn:active{opacity:.7}
 .drawer-sub-title{font-family:'Playfair Display',serif;font-size:1rem;color:var(--txt);flex:1}
-.drawer-sub-body{flex:1;overflow-y:scroll;-webkit-overflow-scrolling:touch;min-height:0;padding-bottom:env(safe-area-inset-bottom,20px);overscroll-behavior:contain}
+.drawer-sub-body{flex:1;overflow-y:scroll;-webkit-overflow-scrolling:touch;min-height:0;padding-bottom:calc(90px + env(safe-area-inset-bottom,20px));overscroll-behavior:contain}
 
 /* ── PANEL SECTIONS (inside sub-panel) ── */
 .panel-section{display:none}
@@ -906,7 +893,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
     <div class="ib" id="gpsRefreshBtn" onclick="refreshGPS()" title="Refresh GPS" style="position:relative"><span id="gpsRefreshIcon">↻</span><span class="gd" id="gpsDot" style="position:absolute;top:8px;right:8px;width:6px;height:6px"></span></div>
     <div class="ib" onclick="centerUser()">📍</div>
     <!-- Mobile login icon — only visible on mobile when not logged in -->
-    <div class="ib" id="mobLoginPill" onclick="openEmailModal()" style="display:none" title="Prisijungti">👤</div>
+    <div class="ib" id="mobLoginPill" onclick="openEmailModal()" style="display:none" title="Sign in">👤</div>
   </div>
 </div>
 
@@ -972,7 +959,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
           <!-- Login/logout button always visible -->
           <button id="drawerAuthBtn" onclick="drawerAuthAction()" style="margin-top:10px;width:100%;background:var(--surf3);border:1px solid var(--bdr);border-radius:8px;padding:7px;font-family:'DM Sans',sans-serif;font-size:.78rem;color:var(--td);cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px">
             <span id="drawerAuthAvatar">👤</span>
-            <span id="drawerAuthLabel">Prisijungti su Google</span>
+            <span id="drawerAuthLabel">Sign in</span>
           </button>
           <!-- City switcher -->
 
@@ -1035,7 +1022,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
   <!-- SUB-PANEL: slides in from right -->
   <div class="drawer-sub-panel" id="drawerSubPanel">
     <div class="drawer-sub-header">
-      <button class="drawer-back-btn" onclick="closeSubPanel()">← Atgal</button>
+      <button class="drawer-back-btn" onclick="closeSubPanel()">← Back</button>
       <div class="drawer-sub-title" id="drawerSubTitle"></div>
     </div>
     <div class="drawer-sub-body" id="drawerSubBody">
@@ -1099,9 +1086,10 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
       <div class="fg">
         <label class="fl">Tier</label>
         <select class="fs" id="eTier">
-          <option value="1">T1 — Knownios</option>
-          <option value="2">T2 — Hidden</option>
-          <option value="3">T3 — Legends</option>
+          <option value="1">T1 — Landmark 🔴</option>
+          <option value="2">T2 — National 🟡</option>
+          <option value="3">T3 — State 🔵</option>
+          <option value="4">T4 — Local ⚪</option>
         </select>
       </div>
     </div>
@@ -1296,7 +1284,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
     <div class="auth-name" id="authName">Not signed in</div>
     <div class="auth-sub" id="authSub">Sign in to sync</div>
   </div>
-  <button class="auth-btn" id="authBtn" onclick="openEmailModal()">Google</button>
+  <button class="auth-btn" id="authBtn" onclick="openEmailModal()">Sign in</button>
   <button class="auth-btn" id="authEmailBtn" onclick="openEmailModal()" style="background:var(--surf2);border:1px solid var(--bdr);color:var(--txt)">Email</button>
 </div>
 
@@ -1304,27 +1292,17 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 <div class="eauth-overlay" id="eauthOverlay" onclick="if(event.target===this)closeEmailModal()">
   <div class="eauth-sheet">
     <button class="eauth-close" onclick="closeEmailModal()">✕</button>
-    <div class="eauth-title" id="eauthTitle">Prisijungti</div>
+    <div class="eauth-title" id="eauthTitle">Sign in</div>
     <div class="eauth-error" id="eauthError"></div>
-    <input class="eauth-input" id="eauthName" type="text" placeholder="Slapyvardis" style="display:none" maxlength="30">
+    <input class="eauth-input" id="eauthName" type="text" placeholder="Username" style="display:none" maxlength="30">
     <input class="eauth-input" id="eauthEmail" type="email" placeholder="Email" autocomplete="email">
     <input class="eauth-input" id="eauthPass" type="password" placeholder="Password" autocomplete="current-password">
     <div id="eauthForgotWrap" style="text-align:right;margin:-6px 0 10px 0">
       <span id="eauthForgotLink" onclick="fbForgotPassword()" style="font-size:.75rem;color:var(--td);cursor:pointer;text-decoration:underline;text-underline-offset:2px">Forgot password</span>
     </div>
-    <button class="eauth-btn" id="eauthSubmit" onclick="fbLoginEmail()">Prisijungti</button>
-    <div class="eauth-sep"><span class="eauth-sep-txt">arba</span></div>
-    <!-- GIS Google Sign-In button rendered here -->
-    <div id="gisGoogleBtn" style="display:flex;justify-content:center;margin-bottom:8px"></div>
-    <div class="eauth-toggle" id="eauthToggle">Neturi paskyros? <span onclick="toggleEmailMode()">Registruotis</span></div>
+    <button class="eauth-btn" id="eauthSubmit" onclick="fbLoginEmail()">Sign in</button>
+    <div class="eauth-toggle" id="eauthToggle">No account? <span onclick="toggleEmailMode()">Sign up</span></div>
   </div>
-</div>
-
-<!-- Google One Tap container -->
-<div id="g_id_onload"
-  data-client_id="241890115444-i97i3pcibutqg9mriqjdd67cqg1suudi.apps.googleusercontent.com"
-  data-callback="handleGisCredential"
-  data-auto_prompt="false">
 </div>
 
 <!-- TOASTS -->
@@ -1364,13 +1342,15 @@ const FILTER_GROUPS=[
 
 // TIER_CONFIG kept for display labels only — unlock logic replaced by player level system
 const TIER_CONFIG={
-  1:{label:'T1 — Known',color:'#c9a84c',icon:'🥉',desc:'Well-known spots'},
-  2:{label:'T2 — Rare',color:'#7a9cc9',icon:'🥈',desc:'Rare, lesser-known spots'},
-  3:{label:'T3 — Legends',color:'#b07aaa',icon:'🥇',desc:'Rarest and most mysterious spots'},
+  1:{label:'T1 — Landmark',color:'#d9534f',icon:'🔴',desc:'National Historic Landmarks — the rarest, most significant spots'},
+  2:{label:'T2 — National',color:'#e0a800',icon:'🟡',desc:'Nationally significant historic places'},
+  3:{label:'T3 — State',color:'#4a90d9',icon:'🔵',desc:'State-significant historic places'},
+  4:{label:'T4 — Local',color:'#9aa0a6',icon:'⚪',desc:'Locally significant historic places'},
 };
 
 // Default collection radius per spot in metres (can be overridden per spot)
 const DEFAULT_RADIUS=80;
+const APP_VERSION='1.01';
 
 // Per-category sensible defaults — used when no explicit radius is set
 const CAT_DEFAULT_RADIUS={
@@ -1665,9 +1645,18 @@ let approvedSuggestions=0; // loaded from Firestore user doc
 
 // ═══════════ TIER HELPERS (display only) ═══════════
 
-function t1Collected(){return[...found].filter(id=>SPOTS.find(s=>s.id===id&&s.tier===1)).length;}
-function t2Collected(){return[...found].filter(id=>SPOTS.find(s=>s.id===id&&s.tier===2)).length;}
-function t3Collected(){return[...found].filter(id=>SPOTS.find(s=>s.id===id&&s.tier===3)).length;}
+// Build id→tier lookup once per call set (cheap) to avoid O(found × SPOTS) scans
+function _tierCount(tier){
+  let n=0;
+  const byId=_spotById||(_spotById=new Map(SPOTS.map(s=>[s.id,s])));
+  found.forEach(id=>{const s=byId.get(id);if(s&&s.tier===tier)n++;});
+  return n;
+}
+let _spotById=null; // invalidated whenever SPOTS changes (see refreshMarkers)
+function t1Collected(){return _tierCount(1);}
+function t2Collected(){return _tierCount(2);}
+function t3Collected(){return _tierCount(3);}
+function t4Collected(){return _tierCount(4);}
 
 // isSpotUnlocked → alias of isSpotVisible (reserved for future paywall)
 function isSpotUnlocked(spot){return isSpotVisible(spot);}
@@ -1956,7 +1945,7 @@ function makeIcon(spot){
   const cat=CATS[spot.cat]||CATS.history;
   const locked=!isSpotUnlocked(spot);
   const isF=found.has(spot.id);
-  const tc=TIER_CONFIG[spot.tier||1];
+  const tc=TIER_CONFIG[spot.tier]||TIER_CONFIG[4];
 
   if(locked){
     return L.divIcon({className:'',html:'<div style="width:8px;height:8px;border-radius:50%;background:var(--tm);opacity:.3"></div>',iconSize:[8,8],iconAnchor:[4,4]});
@@ -1998,6 +1987,7 @@ function spotInCity(spot,city){
 
 function refreshMarkers(){
   if(!clusterGroup||!map) return;
+  _spotById=null; // SPOTS may have changed — invalidate tier lookup cache
   // Clean up markers for spots no longer in SPOTS (O(n) via Set, not O(n²) via .find)
   const ids=new Set(SPOTS.map(s=>String(s.id)));
   Object.keys(markers).forEach(id=>{
@@ -2208,8 +2198,7 @@ function startGPS(){
     try{navigator.geolocation.clearWatch(_gpsWatchId);}catch(e){}
     _gpsWatchId=null;
   }
-  const sub=document.getElementById('topSub');
-  if(sub&&sub.textContent.includes('collected')) sub.textContent='📍 Waiting for GPS...';
+  // GPS status is shown by the green dot (#gpsDot) — topSub stays as count/level/version.
   _gpsWatchId=navigator.geolocation.watchPosition(pos=>{
     userLat=pos.coords.latitude;userLng=pos.coords.longitude;
     _lastFixTs=Date.now();
@@ -2522,15 +2511,16 @@ function renderTierProgressHTML(){
   const lv=getLevel(totalXP);
   const next=getNextLevel(totalXP);
   const allSpots=SPOTS.filter(s=>s.cat!=='hidden');
-  const t1c=t1Collected(),t2c=t2Collected(),t3c=t3Collected();
-  function tierRow(tier,color,label,collected){
+  const tc=[t1Collected(),t2Collected(),t3Collected(),t4Collected()];
+  function tierRow(tier,collected){
+    const cfg=TIER_CONFIG[tier];
     const tot=SPOTS.filter(s=>s.tier===tier&&s.cat!=='hidden').length;
     return`<div class="tier-row">
-      <div class="tier-dot" style="background:${color}"></div>
+      <div class="tier-dot" style="background:${cfg.color}"></div>
       <div class="tier-info">
-        <div class="tier-name">${label}</div>
-        <div class="tier-count">${collected} / ${tot} collected</div>
-        <div class="tier-bar"><div class="tier-fill" style="background:${color};width:${tot?collected/tot*100:0}%"></div></div>
+        <div class="tier-name">${cfg.icon} ${cfg.label}</div>
+        <div class="tier-count">${collected} / ${tot.toLocaleString()} collected</div>
+        <div class="tier-bar"><div class="tier-fill" style="background:${cfg.color};width:${tot?collected/tot*100:0}%"></div></div>
       </div>
     </div>`;
   }
@@ -2543,9 +2533,10 @@ function renderTierProgressHTML(){
         <div class="tier-bar"><div class="tier-fill" style="background:var(--gold);width:${next?Math.round((totalXP-lv.xp)/Math.max(1,next.xp-lv.xp)*100):100}%"></div></div>
       </div>
     </div>
-    ${tierRow(1,'#c9a84c','T1 — Known',t1c)}
-    ${tierRow(2,'#7a9cc9','T2 — Rare',t2c)}
-    ${tierRow(3,'#b07aaa','T3 — Legends',t3c)}
+    ${tierRow(1,tc[0])}
+    ${tierRow(2,tc[1])}
+    ${tierRow(3,tc[2])}
+    ${tierRow(4,tc[3])}
   </div>`;
 }
 
@@ -2985,10 +2976,11 @@ function renderAboutMe(){
         <span style="font-size:.82rem;font-weight:700;color:var(--txt)">Collected</span>
         <span style="font-family:'DM Mono',monospace;font-size:.75rem;color:var(--txt)">${found.size} spot${found.size===1?'':'s'}</span>
       </div>
-      <div style="display:flex;gap:8px;font-family:'DM Mono',monospace;font-size:.62rem;color:var(--td)">
-        <span>🥉 T1: ${t1c}</span>
-        <span>🥈 T2: ${t2c}</span>
-        <span>🥇 T3: ${t3c}</span>
+      <div style="display:flex;gap:8px;font-family:'DM Mono',monospace;font-size:.62rem;color:var(--td);flex-wrap:wrap">
+        <span>🔴 T1: ${t1c}</span>
+        <span>🟡 T2: ${t2c}</span>
+        <span>🔵 T3: ${t3c}</span>
+        <span>⚪ T4: ${t4Collected()}</span>
       </div>
     </div>
 
@@ -3498,7 +3490,7 @@ function generateShareCode(){
 // Generate a clean invite URL with the user's name as ref
 function getInviteUrl(){
   const base=window.location.origin+window.location.pathname;
-  const ref=encodeURIComponent((playerName||'draugas').trim());
+  const ref=encodeURIComponent((playerName||'friend').trim());
   return `${base}?ref=${ref}`;
 }
 
@@ -3510,10 +3502,10 @@ function shareInvite(){
 }
 
 function shareProgress(){
-  const t1=t1Collected(),t2=t2Collected(),t3=t3Collected();
+  const t1=t1Collected(),t2=t2Collected(),t3=t3Collected(),t4=t4Collected();
   const badges=[...earnedBadges].length;
   const url=getInviteUrl();
-  const text=`🗺 SpotSeekers — ${playerName}'s progress!\n\n📍 Collected: ${found.size}/${SPOTS.length} spots\n   T1: ${t1} · T2: ${t2} · T3: ${t3}\n⭐ XP: ${totalXP}\n🔥 Streak: ${streak} days\n🏅 Badges: ${badges}\n\n👉 ${url}`;
+  const text=`🗺 SpotSeekers — ${playerName}'s progress!\n\n📍 Collected: ${found.size}/${SPOTS.length} spots\n   T1: ${t1} · T2: ${t2} · T3: ${t3} · T4: ${t4}\n⭐ XP: ${totalXP}\n🔥 Streak: ${streak} days\n🏅 Badges: ${badges}\n\n👉 ${url}`;
   showProgressSheet(text, url);
 }
 
@@ -3683,7 +3675,7 @@ function renderSocial(){
       <div class="lb-login-prompt">
         <div class="lp-icon">🏆</div>
         <div class="lp-text">Sign in to see the leaderboard and appear on it.</div>
-        <button class="auth-btn" onclick="closeDrawer();openEmailModal()">Prisijungti</button>
+        <button class="auth-btn" onclick="closeDrawer();openEmailModal()">Sign in</button>
       </div>`:''}
     <div class="lb-tabs">
       <div class="lb-tab ${_lbTab==='xp'?'on':''}" onclick="setLbTab('xp')">⭐ XP</div>
@@ -3866,7 +3858,7 @@ function deleteSpot(){
 // ═══════════ HEADER ═══════════
 
 function updateAll(){
-  document.getElementById('topSub').textContent=`${found.size} collected · Lv.${getPlayerLevel(totalXP)}`;
+  document.getElementById('topSub').textContent=`${found.size} collected · Lv.${getPlayerLevel(totalXP)} · v${APP_VERSION}`;
   const s=streak||0;
   document.getElementById('streakNum').textContent=s;
   const pill=document.getElementById('streakPill');
@@ -6765,7 +6757,7 @@ function maybeShowAuthOnFirstVisit(){
     if(window._fbUser) return; // logged in by the time timer fires
     // Open in register mode for new users
     _emailRegisterMode=true;
-    document.getElementById('eauthTitle').textContent='Registruotis';
+    document.getElementById('eauthTitle').textContent='Sign up';
     document.getElementById('eauthSubmit').textContent='Create account';
     document.getElementById('eauthName').style.display='block';
     document.getElementById('eauthToggle').innerHTML='Already have an account? <span onclick="toggleEmailMode()">Sign in</span>';
@@ -6900,7 +6892,7 @@ window.onFbAuthReady=async function(user){
 
 function drawerAuthAction(){
   if(window._fbUser) fbLogout();
-  else fbLogin();
+  else openEmailModal();
 }
 
 function updateAuthUI(user){
@@ -6916,9 +6908,9 @@ function updateAuthUI(user){
   const drawerLabel=document.getElementById('drawerAuthLabel');
 
   if(user){
-    if(nameEl) nameEl.textContent=user.displayName||user.email||'Vartotojas';
-    if(subEl) subEl.textContent='Sinchronizuota ✓';
-    if(btn){btn.textContent='Atsijungti';btn.className='auth-btn out';btn.onclick=fbLogout;}
+    if(nameEl) nameEl.textContent=user.displayName||user.email||'User';
+    if(subEl) subEl.textContent='Synced ✓';
+    if(btn){btn.textContent='Sign out';btn.className='auth-btn out';btn.onclick=fbLogout;}
     const emailBtn=document.getElementById('authEmailBtn');
     if(emailBtn) emailBtn.style.display='none';
     if(avatar){
@@ -6926,84 +6918,34 @@ function updateAuthUI(user){
       else avatar.textContent='👤';
     }
     if(drawerAvatar) drawerAvatar.textContent=user.photoURL?'':'👤';
-    if(drawerLabel) drawerLabel.textContent=`${user.displayName||'Vartotojas'} · Atsijungti`;
+    if(drawerLabel) drawerLabel.textContent=`${user.displayName||'User'} · Sign out`;
     if(drawerBtn) drawerBtn.style.borderColor='var(--green)';
     if(mobPill) mobPill.style.display='none';
   } else {
     if(nameEl) nameEl.textContent='Not signed in';
     if(subEl) subEl.textContent='Sign in to sync';
-    if(btn){btn.textContent='Google';btn.className='auth-btn';btn.onclick=fbLogin;}
+    if(btn){btn.textContent='Sign in';btn.className='auth-btn';btn.onclick=openEmailModal;}
     const emailBtn=document.getElementById('authEmailBtn');
     if(emailBtn) emailBtn.style.display='';
     if(avatar) avatar.innerHTML='👤';
     if(drawerAvatar) drawerAvatar.textContent='👤';
-    if(drawerLabel) drawerLabel.textContent='Prisijungti';
+    if(drawerLabel) drawerLabel.textContent='Sign in';
     if(drawerBtn){drawerBtn.style.borderColor='var(--bdr)';drawerBtn.onclick=openEmailModal;}
     if(mobPill&&window.innerWidth<=600) mobPill.style.display='flex';
   }
 }
 
-function fbLogin(){
-  // Trigger GIS — render button and prompt
-  if(window.google?.accounts?.id){
-    google.accounts.id.prompt();
-  } else {
-    toast('Google sign-in is loading, try again...','info');
-  }
-}
-
-// Called by GIS when user picks a Google account
-function handleGisCredential(response){
-  const{auth,signInWithCredential,GoogleAuthProvider}=window._fb||{};
-  if(!auth||!response?.credential){toast('Prisijungimas nepavyko','info');return;}
-  const cred=GoogleAuthProvider.credential(response.credential);
-  signInWithCredential(auth,cred)
-    .then(result=>{
-      closeEmailModal();
-      toast(`👋 Sveiki, ${result.user.displayName||''}!`,'success');
-    })
-    .catch(e=>{
-      console.error(e);
-      toast('Prisijungimas nepavyko: '+e.message,'info');
-    });
-}
-
-// Initialise GIS once the library loads
-function initGIS(){
-  if(!window.google?.accounts?.id) return;
-  google.accounts.id.initialize({
-    client_id:'241890115444-i97i3pcibutqg9mriqjdd67cqg1suudi.apps.googleusercontent.com',
-    callback:handleGisCredential,
-    auto_select:false,
-    cancel_on_tap_outside:true,
-  });
-  // Render the standard Google button inside the modal
-  const btnEl=document.getElementById('gisGoogleBtn');
-  if(btnEl){
-    google.accounts.id.renderButton(btnEl,{
-      type:'standard',
-      theme:'outline',
-      size:'large',
-      text:'signin_with',
-      shape:'pill',
-      logo_alignment:'left',
-      width:280,
-    });
-  }
-}
-// GIS loads async — try after DOM ready and also on load event
-if(document.readyState==='complete') initGIS();
-else window.addEventListener('load',initGIS);
+// Google sign-in removed — email/password only.
 
 // ── EMAIL AUTH ──
 let _emailRegisterMode=false;
 
 function openEmailModal(){
   _emailRegisterMode=false;
-  document.getElementById('eauthTitle').textContent='Prisijungti';
-  document.getElementById('eauthSubmit').textContent='Prisijungti';
+  document.getElementById('eauthTitle').textContent='Sign in';
+  document.getElementById('eauthSubmit').textContent='Sign in';
   document.getElementById('eauthName').style.display='none';
-  document.getElementById('eauthToggle').innerHTML='Neturi paskyros? <span onclick="toggleEmailMode()">Registruotis</span>';
+  document.getElementById('eauthToggle').innerHTML='No account? <span onclick="toggleEmailMode()">Sign up</span>';
   document.getElementById('eauthError').textContent='';
   document.getElementById('eauthEmail').value='';
   document.getElementById('eauthPass').value='';
@@ -7020,12 +6962,12 @@ function closeEmailModal(){
 function toggleEmailMode(){
   _emailRegisterMode=!_emailRegisterMode;
   const nameEl=document.getElementById('eauthName');
-  document.getElementById('eauthTitle').textContent=_emailRegisterMode?'Registruotis':'Prisijungti';
-  document.getElementById('eauthSubmit').textContent=_emailRegisterMode?'Create account':'Prisijungti';
+  document.getElementById('eauthTitle').textContent=_emailRegisterMode?'Sign up':'Sign in';
+  document.getElementById('eauthSubmit').textContent=_emailRegisterMode?'Create account':'Sign in';
   nameEl.style.display=_emailRegisterMode?'block':'none';
   document.getElementById('eauthToggle').innerHTML=_emailRegisterMode
     ?'Already have an account? <span onclick="toggleEmailMode()">Sign in</span>'
-    :'Neturi paskyros? <span onclick="toggleEmailMode()">Registruotis</span>';
+    :'No account? <span onclick="toggleEmailMode()">Sign up</span>';
   // Hide forgot password link in register mode
   const fw=document.getElementById('eauthForgotWrap');
   if(fw) fw.style.display=_emailRegisterMode?'none':'';
@@ -7050,25 +6992,25 @@ async function fbLoginEmail(){
       const cred=await createUserWithEmailAndPassword(auth,email,pass);
       await updateProfile(cred.user,{displayName:name});
       playerName=name; save();
-      toast(`👋 Sveiki, ${name}!`,'success');
+      toast(`👋 Welcome, ${name}!`,'success');
     } else {
       const cred=await signInWithEmailAndPassword(auth,email,pass);
-      toast(`👋 Sveiki, ${cred.user.displayName||cred.user.email}!`,'success');
+      toast(`👋 Welcome, ${cred.user.displayName||cred.user.email}!`,'success');
     }
     closeEmailModal();
   } catch(e){
     const msgs={
       'auth/invalid-email':'Invalid email format.',
-      'auth/user-not-found':'Vartotojas nerastas.',
+      'auth/user-not-found':'No account found with this email.',
       'auth/wrong-password':'Incorrect password.',
       'auth/email-already-in-use':'This email is already in use.',
       'auth/weak-password':'Password is too weak.',
-      'auth/invalid-credential':'Neteisingi prisijungimo duomenys.',
+      'auth/invalid-credential':'Invalid login credentials.',
     };
     errEl.textContent=msgs[e.code]||'Error. Try again.';
   }
   btn.disabled=false;
-  btn.textContent=_emailRegisterMode?'Create account':'Prisijungti';
+  btn.textContent=_emailRegisterMode?'Create account':'Sign in';
 }
 
 async function fbForgotPassword(){
@@ -7098,7 +7040,7 @@ function fbLogout(){
   const{auth,signOut}=window._fb||{};
   if(!auth) return;
   signOut(auth).then(()=>{
-    toast('Atsijungta','info');
+    toast('Signed out','info');
     updateAuthUI(null);
   });
 }
@@ -7113,14 +7055,16 @@ function setSyncDot(state){
 
 // Lightweight spot validator — trusts cat/tier from KV data, just ensures sane types
 function normalizeSpot(s){
-  // Validate cat against known LT categories — fallback to 'history' if unknown
+  // Validate cat against known categories — fallback to 'history' if unknown
   if(!CATS[s.cat]) s.cat='history';
-  // Normalize tier: string → int, missing → 1
+  // Normalize tier: string label → int (landmark=1 rarest … local=4 common)
   if(typeof s.tier==='string'){
-    const tierMap={local:1,state:2,national:3,landmark:4,t1:1,t2:2,t3:3};
-    s.tier=tierMap[s.tier.toLowerCase()]||1;
+    const tierMap={landmark:1,national:2,state:3,local:4,t1:1,t2:2,t3:3,t4:4};
+    s.tier=tierMap[s.tier.toLowerCase()]||4;
   }
-  if(!s.tier||typeof s.tier!=='number') s.tier=1;
+  // Coerce to a valid 1–4 integer; anything odd → 4 (Local, the safe common default)
+  s.tier=parseInt(s.tier,10);
+  if(!(s.tier>=1&&s.tier<=4)) s.tier=4;
   // Ensure name fallback
   if(!s.name) s.name='';
   return s;
@@ -7218,7 +7162,7 @@ async function fbLoadSpotsFromFirestore(){
   }catch(e){
     console.error('fbLoadSpotsFromFirestore',e);
     setSyncDot('');
-    toast('Nepavyko prisijungti prie DB','info');
+    toast('Could not connect to the database','info');
   }
 }
 
