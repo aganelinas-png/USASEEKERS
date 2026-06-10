@@ -888,7 +888,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
     <div class="ib" onclick="openDrawer()">☰</div>
     <div class="logo-pill" onclick="handleLogoClick()">
       <div class="logo-text">SpotSeekers</div>
-      <div class="logo-sub" id="topSub">0 / 0 surinkta</div>
+      <div class="logo-sub" id="topSub">0 / 0 collected</div>
       <div style="font-family:'DM Mono',monospace;font-size:.48rem;color:var(--tm);letter-spacing:.06em;margin-top:1px;opacity:.7">v24.03</div>
     </div>
     <div class="streak-pill" id="streakPill" style="display:none">🔥 <span id="streakNum">0</span></div>
@@ -953,7 +953,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
         <div style="flex:1;min-width:0">
           <div class="drawer-logo">SpotSeekers</div>
           <div style="font-family:'DM Mono',monospace;font-size:.52rem;color:var(--tm);letter-spacing:.06em;margin-top:-2px;opacity:.7">v24.03</div>
-          <div class="drawer-sub" id="drawerSub">0 / 0 surinkta · ⭐ 0 XP</div>
+          <div class="drawer-sub" id="drawerSub">0 / 0 collected · ⭐ 0 XP</div>
           <div class="drawer-sub" id="drawerStreak" style="margin-top:2px;color:var(--gold)">Start a streak!</div>
           <!-- XP progress bar -->
           <div style="margin-top:8px">
@@ -1097,7 +1097,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
         </select>
       </div>
       <div class="fg">
-        <label class="fl">Lygis (Tier)</label>
+        <label class="fl">Tier</label>
         <select class="fs" id="eTier">
           <option value="1">T1 — Knownios</option>
           <option value="2">T2 — Hidden</option>
@@ -1148,7 +1148,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
   <div id="unlockPicker" style="display:none;width:100%;max-width:320px;padding:0 16px">
     <div id="unlockCatGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px"></div>
   </div>
-  <button class="unlock-btn" id="unlockCloseBtn" onclick="closeUnlock()" style="display:none">Puiku! 🎉</button>
+  <button class="unlock-btn" id="unlockCloseBtn" onclick="closeUnlock()" style="display:none">Great! 🎉</button>
 </div>
 
 
@@ -1462,7 +1462,7 @@ const BADGE_GROUPS=[
     {id:'t3all',name:'USA Legend',desc:'All T3 spots collected',icon:'🥇',tierComplete:3,xpReward:500},
   ]},
   {id:'general',title:'Overall progress',icon:'🗺',cat:null,badges:[
-    {id:'g1',name:'First Step',desc:'1 vieta surinkta',icon:'🗺',need:1,all:true,xpReward:10},
+    {id:'g1',name:'First Step',desc:'1 spot collected',icon:'🗺',need:1,all:true,xpReward:10},
     {id:'g2',name:'Scout',desc:'10 spots collected',icon:'🔭',need:10,all:true,xpReward:10},
     {id:'g3',name:'Serious Explorer',desc:'25 spots collected',icon:'🌟',need:25,all:true,xpReward:20},
     {id:'g4',name:'Profesionalus Klajoklis',desc:'50 spots collected',icon:'🏆',need:50,all:true,xpReward:20},
@@ -1532,56 +1532,56 @@ const BADGE_GROUPS=[
 
 // ═══════════ LEVEL SYSTEM ═══════════
 const LEVELS=[
-  {level:1,name:'Naujokas',icon:'🐣',xp:0},
-  {level:2,name:'Klajoklis',icon:'🚶',xp:120},
-  {level:3,name:'Scout',icon:'🔭',xp:280},
-  {level:4,name:'Explorer',icon:'🧭',xp:500},
-  {level:5,name:'Keliauninkas',icon:'🗺',xp:780},
-  {level:6,name:'Expert',icon:'📚',xp:1120},
-  {level:7,name:'Meistras',icon:'⚔',xp:1530},
-  {level:8,name:'Ekspeditorius',icon:'🏕',xp:2020},
-  {level:9,name:'Land Keeper',icon:'🛡',xp:2600},
-  {level:10,name:'America Explorer',icon:'🇺🇸',xp:3280},
-  {level:11,name:'Treasure Seeker',icon:'🔍',xp:4060},
-  {level:12,name:'Istorijos Palikimas',icon:'🏺',xp:4950},
-  {level:13,name:'Landscape Master',icon:'🌄',xp:5960},
-  {level:14,name:'Legendinis Keliautojas',icon:'🌟',xp:7100},
-  {level:15,name:'Coast Explorer',icon:'⚓',xp:8380},
-  {level:16,name:'Culture Keeper',icon:'🏛',xp:9810},
-  {level:17,name:'Castle Lord',icon:'🏰',xp:11400},
-  {level:18,name:'Forest Brother',icon:'🌲',xp:13160},
-  {level:19,name:'River Wanderer',icon:'🏞',xp:15100},
-  {level:20,name:'Land Knower',icon:'🗺',xp:17230},
-  {level:21,name:'Secret Paths Expert',icon:'🛤',xp:19560},
-  {level:22,name:'Old World Researcher',icon:'🌍',xp:22100},
-  {level:23,name:'Church Pilgrim',icon:'⛪',xp:24870},
-  {level:24,name:'Fort Strategist',icon:'⚔',xp:27880},
-  {level:25,name:'Pusiau Legenda',icon:'💫',xp:31150},
-  {level:26,name:'Hillfort Lord',icon:'⛰',xp:34700},
-  {level:27,name:'Cemetery Meditator',icon:'🕯',xp:38540},
-  {level:28,name:'Laiko Keliautojas',icon:'⏳',xp:42690},
-  {level:29,name:'Medieval Knight',icon:'🗡',xp:47160},
-  {level:30,name:'American History Expert',icon:'📜',xp:51970},
-  {level:31,name:'Nemuninkas',icon:'🌊',xp:57140},
-  {level:32,name:'Folk Art Keeper',icon:'🎨',xp:62680},
-  {level:33,name:'Scout General',icon:'🎖',xp:68610},
-  {level:34,name:'Heritage Descendant',icon:'🌾',xp:74950},
-  {level:35,name:'Pusiasalio Valdovas',icon:'🏝',xp:81720},
-  {level:36,name:'Memorial Keeper',icon:'🕊',xp:88940},
-  {level:37,name:'Wildlife Friend',icon:'🦅',xp:96630},
-  {level:38,name:'Baroque Fan',icon:'🏺',xp:104810},
-  {level:39,name:'Dvaro Lordas',icon:'🏡',xp:113500},
-  {level:40,name:'Eternal Memory Keeper',icon:'🕯',xp:122720},
-  {level:41,name:'Sanctuary Master',icon:'🙏',xp:132490},
-  {level:42,name:'Map Maker',icon:'🗺',xp:142830},
-  {level:43,name:'Mythic Lands Expert',icon:'🐉',xp:153760},
-  {level:44,name:'Royal Advisor',icon:'👑',xp:165300},
-  {level:45,name:'Coastal Hero',icon:'⛵',xp:177470},
-  {level:46,name:'Immortal Explorer',icon:'⚡',xp:190290},
-  {level:47,name:'Mysterious Paths Master',icon:'🌙',xp:203780},
-  {level:48,name:'Legend Maker',icon:'📖',xp:217960},
-  {level:49,name:'Baltijos Legenda',icon:'🌟',xp:232850},
-  {level:50,name:'USA Legend',icon:'💎',xp:248470},
+  {level:1,name:'Newcomer',icon:'🐣',xp:0},
+  {level:2,name:'Wanderer',icon:'🚶',xp:90},
+  {level:3,name:'Scout',icon:'🔭',xp:340},
+  {level:4,name:'Explorer',icon:'🧭',xp:740},
+  {level:5,name:'Traveler',icon:'🗺',xp:1300},
+  {level:6,name:'Historian',icon:'📚',xp:1950},
+  {level:7,name:'Pathfinder',icon:'⚔',xp:2750},
+  {level:8,name:'Expeditioner',icon:'🏕',xp:3700},
+  {level:9,name:'Land Keeper',icon:'🛡',xp:4800},
+  {level:10,name:'America Explorer',icon:'🇺🇸',xp:6000},
+  {level:11,name:'Treasure Seeker',icon:'🔍',xp:7300},
+  {level:12,name:'Heritage Heir',icon:'🏺',xp:8800},
+  {level:13,name:'Landscape Master',icon:'🌄',xp:10400},
+  {level:14,name:'Legendary Traveler',icon:'🌟',xp:12100},
+  {level:15,name:'Coast Explorer',icon:'⚓',xp:13900},
+  {level:16,name:'Culture Keeper',icon:'🏛',xp:15800},
+  {level:17,name:'Castle Lord',icon:'🏰',xp:17900},
+  {level:18,name:'Forest Brother',icon:'🌲',xp:20100},
+  {level:19,name:'River Wanderer',icon:'🏞',xp:22400},
+  {level:20,name:'Land Knower',icon:'🗺',xp:24800},
+  {level:21,name:'Secret Paths Expert',icon:'🛤',xp:27300},
+  {level:22,name:'Old World Researcher',icon:'🌍',xp:30000},
+  {level:23,name:'Church Pilgrim',icon:'⛪',xp:32800},
+  {level:24,name:'Fort Strategist',icon:'⚔',xp:35600},
+  {level:25,name:'Half Legend',icon:'💫',xp:38600},
+  {level:26,name:'Hillfort Lord',icon:'⛰',xp:41800},
+  {level:27,name:'Cemetery Meditator',icon:'🕯',xp:45000},
+  {level:28,name:'Time Traveler',icon:'⏳',xp:48300},
+  {level:29,name:'Medieval Knight',icon:'🗡',xp:52000},
+  {level:30,name:'American History Expert',icon:'📜',xp:55500},
+  {level:31,name:'River Master',icon:'🌊',xp:59000},
+  {level:32,name:'Folk Art Keeper',icon:'🎨',xp:63000},
+  {level:33,name:'Scout General',icon:'🎖',xp:67000},
+  {level:34,name:'Heritage Descendant',icon:'🌾',xp:71000},
+  {level:35,name:'Peninsula Lord',icon:'🏝',xp:75000},
+  {level:36,name:'Memorial Keeper',icon:'🕊',xp:79000},
+  {level:37,name:'Wildlife Friend',icon:'🦅',xp:83500},
+  {level:38,name:'Baroque Fan',icon:'🏺',xp:88000},
+  {level:39,name:'Manor Lord',icon:'🏡',xp:92500},
+  {level:40,name:'Eternal Memory Keeper',icon:'🕯',xp:97000},
+  {level:41,name:'Sanctuary Master',icon:'🙏',xp:102000},
+  {level:42,name:'Map Maker',icon:'🗺',xp:107000},
+  {level:43,name:'Mythic Lands Expert',icon:'🐉',xp:112000},
+  {level:44,name:'Royal Advisor',icon:'👑',xp:117000},
+  {level:45,name:'Coastal Hero',icon:'⛵',xp:122500},
+  {level:46,name:'Immortal Explorer',icon:'⚡',xp:127500},
+  {level:47,name:'Mysterious Paths Master',icon:'🌙',xp:133000},
+  {level:48,name:'Legend Maker',icon:'📖',xp:138500},
+  {level:49,name:'Grand Legend',icon:'🌟',xp:144000},
+  {level:50,name:'USA Legend',icon:'💎',xp:150000},
 ];
 function getLevel(xp){let lv=LEVELS[0];for(let i=LEVELS.length-1;i>=0;i--){if(xp>=LEVELS[i].xp){lv=LEVELS[i];break;}}return lv;}
 function getNextLevel(xp){for(let i=0;i<LEVELS.length;i++){if(xp<LEVELS[i].xp) return LEVELS[i];}return null;}
@@ -1595,141 +1595,11 @@ function getLevelProgress(xp){const c=getLevel(xp),n=getNextLevel(xp);if(!n)retu
 
 function getPlayerLevel(xp){return getLevel(xp).level;}
 
-// Deterministic shuffle using spot ID as seed contribution
-function seededHash(str){
-  let h=0;
-  for(let i=0;i<str.length;i++){h=Math.imul(31,h)+str.charCodeAt(i)|0;}
-  return Math.abs(h);
-}
-
-// Build the spotLevel assignment table. Called once after SPOTS loaded.
-// Returns a Map<spotId, spotLevel>
-function buildSpotLevelMap(spots){
-  // Filter out hidden/special
-  const eligible=spots.filter(s=>s.cat!=='hidden'&&s.id!==99);
-
-  // Geo regions for spread guarantee (USA)
-  function geoRegion(s){
-    if(s.lng<-115) return 'west';      // West Coast / Pacific
-    if(s.lng>-80) return 'east';       // East Coast / Atlantic
-    if(s.lat>42) return 'north';        // Northern tier (Great Lakes, New England, Pacific NW)
-    if(s.lat<33) return 'south';        // Deep South / Gulf / SoCal / AZ
-    return 'center';                    // Midwest / Mountain West
-  }
-
-  // Sort spots deterministically by seeded hash so assignment is stable across all clients
-  const sorted=[...eligible].sort((a,b)=>seededHash(String(a.id)+'v1')-seededHash(String(b.id)+'v1'));
-
-  // LOGARITHMIC scaling: L1=25%, L50=100%.
-  // Log curve: fast unlock early, slower mid, tiny batches at end.
-  // Formula: visible(l) = total * (log(l+1)/log(51))^0.7
-  const totalEligible=eligible.length;
-  function logVisible(lvl){
-    return Math.round(totalEligible*Math.pow(Math.log(lvl+1)/Math.log(51),1.5));
-  }
-  const batchSizes=[];
-  // Enforce minimum 25% at L1
-  const l1Target=Math.max(Math.round(totalEligible*0.25),logVisible(1));
-  let prev=0;
-  for(let l=1;l<=50;l++){
-    let target=l===1?l1Target:(l===50?totalEligible:logVisible(l));
-    batchSizes.push(Math.max(1,target-prev));
-    prev=Math.min(target,totalEligible);
-  }
-
-  // Tier weighting per level: [T1%, T2%, T3%]
-  // Linear batches — tier mix creates quality curve: T3-heavy early, rarities at high levels
-  function tierWeight(lvl){
-    if(lvl===1)  return[0.20,0.40,0.40];
-    if(lvl<=5)   return[0.22,0.40,0.38];
-    if(lvl<=10)  return[0.25,0.38,0.37];
-    if(lvl<=15)  return[0.28,0.37,0.35];
-    if(lvl<=20)  return[0.25,0.36,0.39];
-    if(lvl<=25)  return[0.20,0.33,0.47];
-    if(lvl<=30)  return[0.15,0.28,0.57];
-    if(lvl<=38)  return[0.10,0.22,0.68];
-    if(lvl<=45)  return[0.06,0.15,0.79];
-    return[0.03,0.08,0.89];
-  }
-
-  // Separate pools by tier and geo region
-  const regions=['west','north','east','south','center'];
-  const pools={};
-  regions.forEach(r=>{
-    pools[r]={1:[],2:[],3:[]};
-  });
-  sorted.forEach(s=>{
-    const r=geoRegion(s);
-    const t=s.tier||1;
-    if(pools[r][t]) pools[r][t].push(s);
-  });
-
-  const levelMap=new Map();
-  const assigned=new Set();
-
-  function pickFromPools(count,wt,lvl){
-    const picked=[];
-    // Calculate how many from each tier
-    const t1n=Math.round(count*wt[0]);
-    const t2n=Math.round(count*wt[1]);
-    const t3n=count-t1n-t2n;
-    const tierNeeds={1:t1n,2:t2n,3:t3n};
-
-    // For each tier, spread across regions proportionally
-    [1,2,3].forEach(tier=>{
-      let need=tierNeeds[tier];
-      if(need<=0) return;
-      // Round-robin across regions to ensure spread
-      const regionOrder=['center','east','west','north','south'];
-      let ri=0;
-      while(need>0&&regionOrder.length>0){
-        const r=regionOrder[ri%regionOrder.length];
-        const pool=pools[r][tier];
-        const avail=pool.filter(s=>!assigned.has(s.id));
-        if(avail.length>0){
-          const s=avail[0];
-          picked.push(s);
-          assigned.add(s.id);
-          need--;
-        }
-        ri++;
-        // Safety: if no region has this tier left, break
-        if(regionOrder.every(rr=>pools[rr][tier].filter(s=>!assigned.has(s.id)).length===0)) break;
-      }
-    });
-    return picked;
-  }
-
-  for(let lvl=1;lvl<=50;lvl++){
-    const batchSize=batchSizes[lvl-1];
-    const wt=tierWeight(lvl);
-    const batch=lvl<50
-      ? pickFromPools(Math.min(batchSize,eligible.length-assigned.size),wt,lvl)
-      : eligible.filter(s=>!assigned.has(s.id)); // L50: all remaining
-    batch.forEach(s=>levelMap.set(s.id,lvl));
-  }
-
-  // Any unassigned (shouldn't happen) → L50
-  eligible.forEach(s=>{if(!levelMap.has(s.id)) levelMap.set(s.id,50);});
-
-  return levelMap;
-}
-
-let _spotLevelMap=null;
-function getSpotLevelMap(){
-  if(!_spotLevelMap) _spotLevelMap=buildSpotLevelMap(SPOTS);
-  return _spotLevelMap;
-}
-function getSpotLevel(spot){
-  // Use stored spotLevel if already persisted to Firestore, else compute
-  if(spot.spotLevel) return spot.spotLevel;
-  const m=getSpotLevelMap();
-  return m.get(spot.id)||1;
-}
+// ═══════════ SPOT VISIBILITY ═══════════
+// All spots are unlocked from level 1. Player level is purely cosmetic (rank/flair).
+// No spot-level gating — isSpotVisible only hides 'hidden' category spots.
 function isSpotVisible(spot){
-  if(spot.cat==='hidden') return false;
-  if(isAdmin()) return true;
-  return getSpotLevel(spot)<=getPlayerLevel(totalXP);
+  return spot.cat!=='hidden';
 }
 
 // ═══════════ STREAK MILESTONES ═══════════
@@ -1799,7 +1669,7 @@ function t1Collected(){return[...found].filter(id=>SPOTS.find(s=>s.id===id&&s.ti
 function t2Collected(){return[...found].filter(id=>SPOTS.find(s=>s.id===id&&s.tier===2)).length;}
 function t3Collected(){return[...found].filter(id=>SPOTS.find(s=>s.id===id&&s.tier===3)).length;}
 
-// isSpotUnlocked → now uses level system
+// isSpotUnlocked → alias of isSpotVisible (reserved for future paywall)
 function isSpotUnlocked(spot){return isSpotVisible(spot);}
 
 function catsForTier(tier){
@@ -1862,7 +1732,7 @@ function load(){
     try{
       const _fp=JSON.parse(_fraw);
       if(Array.isArray(_fp)){found=new Set(_fp);}// migrate old flat format
-      else if(_fp.LT){found=new Set(_fp.LT);}// current {LT:[]} format
+      else if(_fp.US){found=new Set(_fp.US);}else if(_fp.LT){found=new Set(_fp.LT);}// US format, LT legacy fallback
     }catch(e){}
   }
   streak=parseInt(localStorage.getItem('ke7_streak')||'0');
@@ -2335,7 +2205,7 @@ function startGPS(){
     _gpsWatchId=null;
   }
   const sub=document.getElementById('topSub');
-  if(sub&&sub.textContent.includes('surinkta')) sub.textContent='📍 Laukiama GPS...';
+  if(sub&&sub.textContent.includes('collected')) sub.textContent='📍 Waiting for GPS...';
   _gpsWatchId=navigator.geolocation.watchPosition(pos=>{
     userLat=pos.coords.latitude;userLng=pos.coords.longitude;
     _lastFixTs=Date.now();
@@ -2645,16 +2515,17 @@ function updateDrawerHeader(){
 
 function renderTierProgressHTML(){
   const plvl=getPlayerLevel(totalXP);
-  const visibleSpots=SPOTS.filter(s=>isSpotVisible(s)&&s.cat!=='hidden');
-  const nextLvlSpots=SPOTS.filter(s=>getSpotLevel(s)===plvl+1).length;
+  const lv=getLevel(totalXP);
+  const next=getNextLevel(totalXP);
+  const allSpots=SPOTS.filter(s=>s.cat!=='hidden');
   const t1c=t1Collected(),t2c=t2Collected(),t3c=t3Collected();
   function tierRow(tier,color,label,collected){
-    const tot=SPOTS.filter(s=>s.tier===tier&&isSpotVisible(s)).length;
+    const tot=SPOTS.filter(s=>s.tier===tier&&s.cat!=='hidden').length;
     return`<div class="tier-row">
       <div class="tier-dot" style="background:${color}"></div>
       <div class="tier-info">
         <div class="tier-name">${label}</div>
-        <div class="tier-count">${collected} / ${tot} surinkta (matoma)</div>
+        <div class="tier-count">${collected} / ${tot} collected</div>
         <div class="tier-bar"><div class="tier-fill" style="background:${color};width:${tot?collected/tot*100:0}%"></div></div>
       </div>
     </div>`;
@@ -2663,9 +2534,9 @@ function renderTierProgressHTML(){
     <div class="tier-row" style="margin-bottom:4px">
       <div class="tier-dot" style="background:var(--gold)"></div>
       <div class="tier-info">
-        <div class="tier-name">Lv.${plvl} — Visible spots</div>
-        <div class="tier-count">${visibleSpots.length} spots on the map · Lv.${plvl+1} unlocks +${nextLvlSpots}</div>
-        <div class="tier-bar"><div class="tier-fill" style="background:var(--gold);width:${Math.round(visibleSpots.length/Math.max(1,SPOTS.filter(s=>s.cat!=='hidden').length)*100)}%"></div></div>
+        <div class="tier-name">Lv.${plvl} — ${lv.name} ${lv.icon}</div>
+        <div class="tier-count">${found.size} / ${allSpots.length.toLocaleString()} collected${next?` · ${(next.xp-totalXP).toLocaleString()} XP to Lv.${plvl+1}`:' · max level'}</div>
+        <div class="tier-bar"><div class="tier-fill" style="background:var(--gold);width:${next?Math.round((totalXP-lv.xp)/Math.max(1,next.xp-lv.xp)*100):100}%"></div></div>
       </div>
     </div>
     ${tierRow(1,'#c9a84c','T1 — Known',t1c)}
@@ -2792,24 +2663,22 @@ function openSheet(spot){
   if(headerName) headerName.textContent=locked?'🔒 Locked spot':(spot.name||cat.label);
 
   if(locked){
-    // Locked spots are invisible on map — this branch only triggers for admin previews
-    const spotLvl=getSpotLevel(spot);
-    const plvl=getPlayerLevel(totalXP);
+    // Reserved for the future free/paid paywall (level gating removed — all spots unlocked).
     content.innerHTML=`
       <div class="locked-sheet">
         <div class="locked-icon">🔒</div>
-        <div class="locked-title">??? — Unknown vieta</div>
+        <div class="locked-title">??? — Unknown spot</div>
         <div class="tier-badge t${spot.tier||1}" style="margin:8px auto 14px;justify-content:center">${tc.icon} ${tc.label}</div>
         <div class="locked-hint-box">
-          <div class="lhb-row"><span class="lhb-icon">💡</span><span class="lhb-title">How to unlock?</span></div>
-          <div class="lhb-text">Unlocks when you reach <strong style="color:var(--gold)">Level ${spotLvl}</strong>. You're currently <strong>Level ${plvl}</strong> — keep collecting!</div>
+          <div class="lhb-row"><span class="lhb-icon">💡</span><span class="lhb-title">Locked</span></div>
+          <div class="lhb-text">This spot is part of the premium collection.</div>
         </div>
       </div>`;
   } else {
     const histFull=spot.history||'';
     const histShort=histFull.length>180;
     const histHtml=histShort
-      ?`<div class="hist-short"><div class="hist-clamp shist" id="histText">${histFull}</div><button class="read-more-btn" id="readMoreBtn" onclick="toggleReadMore()">Skaityti daugiau ↓</button></div>`
+      ?`<div class="hist-short"><div class="hist-clamp shist" id="histText">${histFull}</div><button class="read-more-btn" id="readMoreBtn" onclick="toggleReadMore()">Read more ↓</button></div>`
       :`<div class="shist">${histFull}</div>`;
 
     content.innerHTML=`
@@ -2823,7 +2692,7 @@ function openSheet(spot){
         const yr=spot.year;
         const long=yr.length>30;
         return long
-          ?`<div class="year-block"><span class="year-label">📅</span><span class="year-text year-clamp" id="yrText">${yr}</span><button class="year-toggle" id="yrBtn" onclick="toggleYear()">Rodyti daugiau ↓</button></div>`
+          ?`<div class="year-block"><span class="year-label">📅</span><span class="year-text year-clamp" id="yrText">${yr}</span><button class="year-toggle" id="yrBtn" onclick="toggleYear()">Show more ↓</button></div>`
           :`<div class="year-block"><span class="year-label">📅</span><span class="year-text">${yr}</span></div>`;
       })():''}
       <div class="sinfo">
@@ -2856,7 +2725,7 @@ function toggleReadMore(){
   const btn=document.getElementById('readMoreBtn');
   if(!el||!btn) return;
   el.classList.toggle('expanded');
-  btn.textContent=el.classList.contains('expanded')?'Show less ↑':'Skaityti daugiau ↓';
+  btn.textContent=el.classList.contains('expanded')?'Show less ↑':'Read more ↓';
 }
 
 function toggleYear(){
@@ -2864,7 +2733,7 @@ function toggleYear(){
   const btn=document.getElementById('yrBtn');
   if(!el||!btn) return;
   el.classList.toggle('expanded');
-  btn.textContent=el.classList.contains('expanded')?'Show less ↑':'Rodyti daugiau ↓';
+  btn.textContent=el.classList.contains('expanded')?'Show less ↑':'Show more ↓';
 }
 
 function updateCollectBtn(spot){
@@ -2951,7 +2820,7 @@ function collectCurrent(){
   if(window._fbUser&&window._fb){
     const{db,doc,setDoc}=window._fb;
     setDoc(doc(db,'users',window._fbUser.uid),{
-      found:{LT:[...found]},totalXP,streak,badges:[...earnedBadges],name:playerName
+      found:{US:[...found]},totalXP,streak,badges:[...earnedBadges],name:playerName
     },{merge:true}).catch(()=>{});
   }
 
@@ -2966,12 +2835,8 @@ function collectCurrent(){
   // Check level-up after XP gain
   const newPlayerLevel=getPlayerLevel(totalXP);
   if(newPlayerLevel>prevPlayerLevel){
-    // Invalidate spot level map cache so new spots appear
-    _spotLevelMap=null;
-    // Count newly visible spots
-    const newVisibleCount=SPOTS.filter(s=>getSpotLevel(s)===newPlayerLevel).length;
     refreshMarkers();
-    setTimeout(()=>showLevelUpOverlay(newPlayerLevel,newVisibleCount),700);
+    setTimeout(()=>showLevelUpOverlay(newPlayerLevel,0),700);
   } else {
     refreshMarkers();
     setTimeout(checkBadges,400);
@@ -3003,16 +2868,12 @@ function showLevelUpOverlay(newLevel,newSpotsCount){
   const lv=LEVELS.find(l=>l.level===newLevel)||LEVELS[0];
   const el=document.getElementById('unlockOverlay');
   document.getElementById('unlockStars').textContent=lv.icon;
-  document.getElementById('unlockIcon').textContent='🗺';
-  document.getElementById('unlockTitle').textContent=`Lygis ${newLevel} — ${lv.name}!`;
-  document.getElementById('unlockSub').innerHTML=newSpotsCount>0
-    ?`<span style="color:var(--gold);font-size:1.1rem;font-weight:700">+${newSpotsCount}</span> new spots appeared on the map across the USA!`
-    :'Sveikiname su nauju lygiu!';
+  document.getElementById('unlockIcon').textContent='🎉';
+  document.getElementById('unlockTitle').textContent=`Level ${newLevel} — ${lv.name}!`;
+  document.getElementById('unlockSub').innerHTML=`You've reached <strong style="color:var(--gold)">${lv.name}</strong> ${lv.icon}<br>Keep collecting to climb higher!`;
   document.getElementById('unlockPicker').style.display='none';
   document.getElementById('unlockCloseBtn').style.display='block';
   el.classList.add('show');
-  // Animate map dots appearing after a short delay
-  setTimeout(()=>{refreshMarkers();},600);
 }
 function closeUnlock(){
   document.getElementById('unlockOverlay').classList.remove('show');
@@ -3024,13 +2885,10 @@ function closeUnlock(){
 function surpriseMe(){
   const unfound=SPOTS.filter(s=>
     !found.has(s.id)&&
-    isSpotVisible(s)&&
     s.cat!=='hidden'&&
-    getSpotLevel(s)<=getPlayerLevel(totalXP)&&
-    (s.country==='LT'||!s.country)&&
     (activeCity==='all'||spotInCity(s,activeCity))
   );
-  if(!unfound.length){toast('🎉 Viskas surinkta! Tu legenda!','gold');return;}
+  if(!unfound.length){toast('🎉 All collected! You legend!','gold');return;}
   const pick=unfound[Math.floor(Math.random()*unfound.length)];
   map.setView([pick.lat,pick.lng],16);
   setTimeout(()=>openSheet(pick),300);
@@ -3103,25 +2961,25 @@ function renderAboutMe(){
     <!-- Quick stats row -->
     <div style="display:flex;gap:8px">
       ${statCard('Collected',found.size,`of ${SPOTS.filter(s=>s.cat!=='hidden').length}`,'var(--gold)')}
-      ${statCard('Serija',streak>0?streak+'d':'—',streak>0?'days in a row':'start today',streak>=2?'var(--gold)':'var(--txt)')}
+      ${statCard('Streak',streak>0?streak+'d':'—',streak>0?'days in a row':'start today',streak>=2?'var(--gold)':'var(--txt)')}
     </div>
 
-    <!-- Level & spots progress -->
-    <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.08em;margin-bottom:-4px">Spot progress</div>
+    <!-- Collection progress -->
+    <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.08em;margin-bottom:-4px">Collection progress</div>
     <div style="background:var(--surf2);border:1px solid var(--bdr);border-radius:10px;padding:11px 14px">
       <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span style="font-size:.82rem;font-weight:700;color:var(--txt)">Visible spots</span>
-        <span style="font-family:'DM Mono',monospace;font-size:.75rem;color:var(--gold);font-weight:600">${found.size} / ${SPOTS.filter(s=>isSpotVisible(s)&&s.cat!=='hidden').length} matoma</span>
+        <span style="font-size:.82rem;font-weight:700;color:var(--txt)">Spots collected</span>
+        <span style="font-family:'DM Mono',monospace;font-size:.75rem;color:var(--gold);font-weight:600">${found.size} / ${SPOTS.filter(s=>s.cat!=='hidden').length.toLocaleString()}</span>
       </div>
       <div style="height:6px;background:var(--bdr);border-radius:3px;overflow:hidden">
-        <div style="height:100%;width:${Math.round(found.size/Math.max(1,SPOTS.filter(s=>isSpotVisible(s)&&s.cat!=='hidden').length)*100)}%;background:linear-gradient(90deg,var(--gd),var(--gold));border-radius:3px;transition:width .5s"></div>
+        <div style="height:100%;width:${Math.round(found.size/Math.max(1,SPOTS.filter(s=>s.cat!=='hidden').length)*100)}%;background:linear-gradient(90deg,var(--gd),var(--gold));border-radius:3px;transition:width .5s"></div>
       </div>
-      <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--td);margin-top:5px">Next level unlocks ${SPOTS.filter(s=>getSpotLevel(s)===lv.level+1).length} new spots</div>
+      <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--td);margin-top:5px">${(()=>{const n=getNextLevel(totalXP);return n?`${(n.xp-totalXP).toLocaleString()} XP to Level ${getPlayerLevel(totalXP)+1}`:'Max level reached 💎';})()}</div>
     </div>
     <div style="background:var(--surf2);border:1px solid var(--bdr);border-radius:10px;padding:11px 14px">
       <div style="display:flex;justify-content:space-between;margin-bottom:5px">
         <span style="font-size:.82rem;font-weight:700;color:var(--txt)">Collected</span>
-        <span style="font-family:'DM Mono',monospace;font-size:.75rem;color:var(--txt)">${found.size} viet${found.size===1?'a':'os'}</span>
+        <span style="font-family:'DM Mono',monospace;font-size:.75rem;color:var(--txt)">${found.size} spot${found.size===1?'':'s'}</span>
       </div>
       <div style="display:flex;gap:8px;font-family:'DM Mono',monospace;font-size:.62rem;color:var(--td)">
         <span>🥉 T1: ${t1c}</span>
@@ -3329,7 +3187,7 @@ function renderWeeklyChallenge(){
     </div>
     <div class="quest-reward">🌟 Atlygis: +${ch.xp} XP</div>
     <div class="quest-pbar"><div class="quest-pfill" style="width:${done?100:pct}%"></div></div>
-    <div class="quest-status">${done?'Awesome! New quest next Monday.':`${prog} / ${ch.goal} surinkta`}</div>
+    <div class="quest-status">${done?'Awesome! New quest next Monday.':`${prog} / ${ch.goal} collected`}</div>
   </div>`;
 }
 
@@ -3540,7 +3398,7 @@ function renderList(){
       style="width:100%;box-sizing:border-box;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:.78rem;color:var(--txt);outline:none">
   </div>
   <div class="prog-h" style="margin-bottom:6px">
-    <div class="prog-row"><div class="prog-cnt">${found.size} / ${visibleSpots.length} surinkta</div><div class="streak-t">⭐ ${totalXP} XP</div></div>
+    <div class="prog-row"><div class="prog-cnt">${found.size} / ${visibleSpots.length} collected</div><div class="streak-t">⭐ ${totalXP} XP</div></div>
     <div class="pbar"><div class="pbf" style="width:${pct}%"></div></div>
   </div>`;
 
@@ -3560,7 +3418,7 @@ function renderList(){
     // Flat search results
     const results=unlockedSpots
       .filter(s=>(s.name||'').toLowerCase().includes(searchVal))
-      .sort((a,b)=>(a.name||'').localeCompare(b.name||'','lt'));
+      .sort((a,b)=>(a.name||'').localeCompare(b.name||'','en'));
     if(results.length===0){
       h+=`<div style="text-align:center;padding:24px;color:var(--tm);font-size:.8rem">Nerasta</div>`;
     } else {
@@ -3580,7 +3438,7 @@ function renderList(){
   } else {
     // Static category rows — no expand, just count + progress
     orderedCats.forEach(catId=>{
-      const catSpots=unlockedSpots.filter(s=>s.cat===catId).sort((a,b)=>(a.name||'').localeCompare(b.name||'','lt'));
+      const catSpots=unlockedSpots.filter(s=>s.cat===catId).sort((a,b)=>(a.name||'').localeCompare(b.name||'','en'));
       if(!catSpots.length) return;
       const cat=CATS[catId];
       if(!cat) return;
@@ -3867,14 +3725,14 @@ async function loadLeaderboard(){
       const snap=await getDocs(q);
       snap.forEach(d=>{
         const data=d.data();
-        users.push({uid:d.id,name:data.playerName||data.name||'Anonimas',xp:data.totalXP||0,spots:data.foundCount||0,streak:data.streak||0,photo:data.photoURL||null});
+        users.push({uid:d.id,name:data.playerName||data.name||'Anonymous',xp:data.totalXP||0,spots:data.foundCount||0,streak:data.streak||0,photo:data.photoURL||null});
       });
     }catch(indexErr){
       // Index not ready yet — fall back to full read with client sort
       const snap=await getDocs(collection(db,'users'));
       snap.forEach(d=>{
         const data=d.data();
-        users.push({uid:d.id,name:data.playerName||data.name||'Anonimas',xp:data.totalXP||0,spots:data.foundCount||0,streak:data.streak||0,photo:data.photoURL||null});
+        users.push({uid:d.id,name:data.playerName||data.name||'Anonymous',xp:data.totalXP||0,spots:data.foundCount||0,streak:data.streak||0,photo:data.photoURL||null});
       });
       const sortKey=_lbTab==='xp'?'xp':_lbTab==='spots'?'spots':'streak';
       users.sort((a,b)=>b[sortKey]-a[sortKey]);
@@ -4004,7 +3862,7 @@ function deleteSpot(){
 // ═══════════ HEADER ═══════════
 
 function updateAll(){
-  document.getElementById('topSub').textContent=`${found.size} surinkta · Lv.${getPlayerLevel(totalXP)}`;
+  document.getElementById('topSub').textContent=`${found.size} collected · Lv.${getPlayerLevel(totalXP)}`;
   const s=streak||0;
   document.getElementById('streakNum').textContent=s;
   const pill=document.getElementById('streakPill');
@@ -4077,7 +3935,7 @@ function checkLevelUp(){
       const el=document.getElementById('levelUpOverlay');
       if(!el) return;
       document.getElementById('luGlyph').textContent=lv.icon;
-      document.getElementById('luLevel').textContent=`Lygis ${lv.level}`;
+      document.getElementById('luLevel').textContent=`Level ${lv.level}`;
       document.getElementById('luName').textContent=lv.name;
       document.getElementById('luReward').textContent=`${lv.icon} ${lv.name} — new class!`;
       el.classList.add('show');
@@ -4684,7 +4542,7 @@ out center tags;`,
       .filter((x,i,arr)=>arr.findIndex(y=>y.osmTag===x.osmTag)===i)
       // Also dedupe by tight coords (ways+nodes can overlap)
       .filter((x,i,arr)=>arr.findIndex(y=>Math.abs(y.lat-x.lat)<0.0002&&Math.abs(y.lng-x.lng)<0.0002)===i)
-      .sort((a,b)=>a.name.localeCompare(b.name,'lt'));
+      .sort((a,b)=>a.name.localeCompare(b.name,'en'));
 
     _abandonedData=processed;
     try{
@@ -4908,7 +4766,7 @@ async function fetchOsmData(){
 
     _osmImportData=processed
       .filter((x,i,arr)=>arr.findIndex(y=>Math.abs(y.lat-x.lat)<0.0002&&Math.abs(y.lng-x.lng)<0.0002&&y.cat===x.cat)===i)
-      .sort((a,b)=>a.name.localeCompare(b.name,'lt'));
+      .sort((a,b)=>a.name.localeCompare(b.name,'en'));
 
     osmSetStatus(`✅ Found ${_osmImportData.length} spots from ${CITY_BBOXES_GLOBAL.length} cities. Already added: ${_osmImportData.filter(x=>x.alreadyIn).length}`);
 
@@ -5772,7 +5630,6 @@ async function reclassifyKpdSpots(){
   }
 
   // Rebuild spot level map after category changes
-  _spotLevelMap=null;
   refreshMarkers();updateAll();
   const msg=`✅ Reclassified ${done} spots${failed>0?`, klaida ${failed}`:''}.`;
   osmSetStatus(msg);
@@ -6499,7 +6356,7 @@ function updateRouteBar(){
   if(!r){bar.classList.remove('active');return;}
   const done=r.spots.filter(id=>{const s=SPOTS.find(s=>String(s.id)===id);return s&&found.has(s.id);}).length;
   document.getElementById('rbName').textContent=r.name;
-  document.getElementById('rbStop').textContent=`${done}/${r.spots.length} surinkta${r.distKm?` · ~${r.distKm}km`:''}`;
+  document.getElementById('rbStop').textContent=`${done}/${r.spots.length} collected${r.distKm?` · ~${r.distKm}km`:''}`;
   bar.classList.add('active');
 }
 
@@ -6695,7 +6552,7 @@ function renderRouteDetailInto(r,body,routeId){
     </div>
     <div style="padding:10px 14px;display:flex;gap:8px;align-items:center;background:var(--surf2);border-bottom:1px solid var(--bdr)">
       <div style="flex:1">
-        <div style="font-size:.75rem;color:var(--td)">✓ ${done}/${r.spots.length} surinkta${r.distKm?` · ~${r.distKm}km`:''}${!r.distKm&&r.spots.length>=2?' · ⟳ Calculating...':''}</div>
+        <div style="font-size:.75rem;color:var(--td)">✓ ${done}/${r.spots.length} collected${r.distKm?` · ~${r.distKm}km`:''}${!r.distKm&&r.spots.length>=2?' · ⟳ Calculating...':''}</div>
         <div style="height:3px;background:var(--bdr);border-radius:2px;margin-top:5px;overflow:hidden"><div style="height:100%;background:linear-gradient(90deg,var(--gd),var(--gold));border-radius:2px;width:${pct}%"></div></div>
       </div>
     </div>
@@ -6990,13 +6847,12 @@ window.onFbAuthReady=async function(user){
         const d=snap.data();
         if(d.found){
           if(Array.isArray(d.found)){found=new Set(d.found);}// migrate old flat format
-          else if(d.found.LT){found=new Set(d.found.LT);}// current {LT:[]} format
+          else if(d.found.US){found=new Set(d.found.US);}else if(d.found.LT){found=new Set(d.found.LT);}// US format, LT legacy fallback
         }
         if(d.name) playerName=d.name;
         if(d.totalXP) totalXP=d.totalXP;
         if(d.streak) streak=d.streak;
         if(d.badges) earnedBadges=new Set(d.badges);
-        _spotLevelMap=null; // rebuild with fresh data
         refreshMarkers();updateAll();
         // Restore active route polyline if one was active
         if(activeRouteId){const ar=getActiveRoute();if(ar&&ar.spots.length>=2) fetchAndDrawRoute(activeRouteId);}
@@ -7277,7 +7133,6 @@ async function fbLoadSpots(){
       const skeleton=await res.json();
       if(Array.isArray(skeleton)&&skeleton.length>0){
         SPOTS=skeleton.map(normalizeSpot);
-        _spotLevelMap=null;
         refreshMarkers();
         updateAll();
         setSyncDot('synced');
@@ -7306,7 +7161,6 @@ async function fbLoadSpots(){
           const n=nameMap.get(String(s.id));
           return n?{...s,...n}:s;
         });
-        _spotLevelMap=null;
         // No re-render needed — positions unchanged, names only visible when user taps a spot.
         // renderViewportMarkers() here would re-iterate 67k spots for zero visible benefit.
         renderList();
@@ -7316,36 +7170,13 @@ async function fbLoadSpots(){
     }
   }catch(e){console.warn('Names pack load failed — spots visible but names missing',e);}
 
-  // ── 3. Firestore admin/OSM spots — cached in localStorage to avoid mass reads per load ──
-  //    First load fetches from Firestore once and caches; subsequent loads read from cache instantly
-  try{
-    const{db,collection,getDocs}=window._fb||{};
-    if(db){
-      const _ck='usa_firestore_spots_v1';
-      let _fsSpots=null;
-      try{const _r=localStorage.getItem(_ck);if(_r)_fsSpots=JSON.parse(_r);}catch(_){}
-      if(!_fsSpots){
-        // Cache miss — fetch from Firestore once, then cache
-        const _snap=await getDocs(collection(db,'spots'));
-        _fsSpots=[];
-        _snap.forEach(d=>{_fsSpots.push({radius:DEFAULT_RADIUS,...d.data(),_fid:d.id,id:d.id});});
-        try{localStorage.setItem(_ck,JSON.stringify(_fsSpots));}catch(_){}
-      }
-      if(_fsSpots&&_fsSpots.length){
-        const _existing=new Set(SPOTS.map(s=>String(s.id)));
-        _fsSpots.forEach(s=>{
-          if(_existing.has(String(s.id)))return;
-          SPOTS.push(normalizeSpot(s));
-        });
-        _spotLevelMap=null;
-        refreshMarkers();
-        renderList();
-        updateAll();
-        const sub=document.getElementById('authSub');
-        if(sub) sub.textContent=`${SPOTS.length.toLocaleString()} spots ready`;
-      }
-    }
-  }catch(e){console.warn('Firestore spots merge failed',e);}
+  // ── Phase 3 removed ──
+  // Spots are served entirely from KV (skeleton + names = all 67k). The old
+  // Firestore getDocs(collection(db,'spots')) read the entire spots collection
+  // on every cache-miss load — 1 read/doc = tens of thousands of reads per session,
+  // blowing past the free-tier 50k/day limit. KV already has every spot, so reading
+  // them again from Firestore was pure waste. Firestore now only handles user
+  // progress, suggestions, reviews and the leaderboard.
 
   setSyncDot('synced');
 }
@@ -7656,7 +7487,7 @@ async function fbLoadUserProgress(uid){
       const d=snap.data();
       if(d.found){
         if(Array.isArray(d.found)){found=new Set(d.found);}// migrate old flat format
-        else if(d.found.LT){found=new Set(d.found.LT);}// current {LT:[]} format
+        else if(d.found.US){found=new Set(d.found.US);}else if(d.found.LT){found=new Set(d.found.LT);}// US format, LT legacy fallback
       }
       if(d.streak!==undefined) streak=d.streak;
       if(d.lastDate) lastDate=d.lastDate;
@@ -7680,7 +7511,7 @@ async function fbSaveUserProgress(){
   if(!db||!user) return;
   try{
     await setDoc(doc(db,'users',user.uid),{
-      found:{LT:[...found]},
+      found:{US:[...found]},
       foundCount:found.size,
       streak,lastDate,totalXP,notes,
       earnedBadges:[...earnedBadges],
@@ -7826,7 +7657,7 @@ deleteSpot=async function(){
   <div class="rb-info">
     <div class="rb-label">🗺 Active route</div>
     <div class="rb-name" id="rbName">—</div>
-    <div class="rb-stop" id="rbStop">0/0 surinkta</div>
+    <div class="rb-stop" id="rbStop">0/0 collected</div>
   </div>
   <button class="rb-btn" onclick="navigateToNext()">→ Eiti</button>
   <button class="rb-end" onclick="endActiveRoute()">✕</button>
