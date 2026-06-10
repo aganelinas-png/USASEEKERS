@@ -1988,6 +1988,7 @@ function spotInCity(spot,city){
 function refreshMarkers(){
   if(!clusterGroup||!map) return;
   _spotById=null; // SPOTS may have changed — invalidate tier lookup cache
+  _gridCacheKey=null; // invalidate grid overview cache too
   // Clean up markers for spots no longer in SPOTS (O(n) via Set, not O(n²) via .find)
   const ids=new Set(SPOTS.map(s=>String(s.id)));
   Object.keys(markers).forEach(id=>{
@@ -2011,17 +2012,85 @@ function scheduleViewportRender(){
   _viewportRenderPending=true;
   setTimeout(()=>{_viewportRenderPending=false;renderViewportMarkers();},200);
 }
+// Below this zoom we show grid-bucket count badges (accurate totals, no lag)
+// instead of feeding markers to the cluster engine. At/above it, real markers render.
+const LOW_ZOOM_THRESHOLD=6;
+let _gridLayer=null;        // Leaflet layerGroup holding the count badges
+let _gridCacheKey=null;     // invalidates when SPOTS/filters change
+
+// Build (or reuse) the grid buckets: divide spots into lat/lng cells, count each.
+// Cell size scales with zoom so the country looks evenly dotted at every low zoom.
+function buildGridBuckets(cellSize){
+  // Cache key includes things that change which spots are counted
+  const key=`${cellSize}|${SPOTS.length}|${hideCollected?found.size:'all'}|${[...activeFilterHidden].sort().join(',')}|${activeCity}`;
+  if(_gridCacheKey===key&&_gridBuckets) return _gridBuckets;
+  const buckets=new Map(); // "row:col" -> {count, latSum, lngSum}
+  for(let i=0;i<SPOTS.length;i++){
+    const s=SPOTS[i];
+    if(s.cat==='hidden') continue;
+    if(hideCollected&&found.has(s.id)) continue;
+    if(activeFilterHidden.size>0&&activeFilterHidden.has(s.cat)) continue;
+    if(activeCity!=='all'&&!spotInCity(s,activeCity)) continue;
+    if(typeof s.lat!=='number'||typeof s.lng!=='number') continue;
+    const row=Math.floor(s.lat/cellSize);
+    const col=Math.floor(s.lng/cellSize);
+    const k=row+':'+col;
+    let b=buckets.get(k);
+    if(!b){b={count:0,latSum:0,lngSum:0};buckets.set(k,b);}
+    b.count++;b.latSum+=s.lat;b.lngSum+=s.lng;
+  }
+  _gridBuckets=buckets;_gridCacheKey=key;
+  return buckets;
+}
+let _gridBuckets=null;
+
+function renderGridOverview(zoom){
+  // Remove real markers; grid replaces them at low zoom
+  clusterGroup.clearLayers();
+  if(!_gridLayer){_gridLayer=L.layerGroup().addTo(map);}
+  _gridLayer.clearLayers();
+  // Coarser cells when very zoomed out, finer as you approach the threshold
+  const cellSize=zoom<=3?6:zoom===4?4:zoom===5?2.5:1.5;
+  const buckets=buildGridBuckets(cellSize);
+  const bounds=map.getBounds().pad(0.3);
+  buckets.forEach(b=>{
+    const lat=b.latSum/b.count, lng=b.lngSum/b.count;
+    if(!bounds.contains([lat,lng])) return;
+    // Size + color scale with count, mimicking cluster bubbles
+    const n=b.count;
+    const size=n>=5000?54:n>=1000?46:n>=200?38:n>=50?32:26;
+    const bg=n>=1000?'rgba(217,83,79,.92)':n>=200?'rgba(224,168,0,.92)':n>=50?'rgba(74,144,217,.92)':'rgba(120,140,160,.92)';
+    const label=n>=1000?(Math.round(n/100)/10)+'k':n;
+    const icon=L.divIcon({
+      className:'',
+      html:`<div style="width:${size}px;height:${size}px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;color:#fff;font-family:'DM Mono',monospace;font-weight:600;font-size:${size>=46?'.8rem':size>=32?'.72rem':'.62rem'};box-shadow:0 0 0 4px ${bg.replace('.92','.25')},0 2px 8px rgba(0,0,0,.4);cursor:pointer">${label}</div>`,
+      iconSize:[size,size],iconAnchor:[size/2,size/2]
+    });
+    const m=L.marker([lat,lng],{icon});
+    // Tapping a bucket zooms into it
+    m.on('click',()=>map.setView([lat,lng],8));
+    _gridLayer.addLayer(m);
+  });
+}
+
+function clearGridOverview(){
+  if(_gridLayer){_gridLayer.clearLayers();}
+}
+
 function renderViewportMarkers(){
   if(!map||!clusterGroup) return;
   const zoom=map.getZoom();
+  // ── Low zoom: grid-bucket count badges (accurate 67k total, no lag) ──
+  if(zoom<LOW_ZOOM_THRESHOLD){
+    renderGridOverview(zoom);
+    return;
+  }
+  clearGridOverview(); // leaving low zoom — drop the badges
   // Wider padding when zoomed out so clusters fill the view; tighter when zoomed in.
-  const pad=zoom>=12?0.4:zoom>=9?0.3:zoom>=6?0.2:0.1;
+  const pad=zoom>=12?0.4:zoom>=9?0.3:0.2;
   const bounds=map.getBounds().pad(pad);
-  // Hard cap on markers fed to the cluster engine in one pass. At low zoom the
-  // whole country may be in bounds (tens of thousands of spots) — clustering can
-  // group them into count bubbles, but handing it 67k at once freezes mobile.
-  // Cap keeps it responsive; zooming in narrows bounds so the cap is never hit.
-  const MAX_MARKERS=zoom<6?3000:zoom<9?6000:12000;
+  // Cap markers fed to the cluster engine in one pass to stay responsive.
+  const MAX_MARKERS=zoom<9?6000:12000;
   clusterGroup.clearLayers();
   const toAdd=[];
   for(let i=0;i<SPOTS.length;i++){
