@@ -1,4 +1,4 @@
-// SpotSeekers USA — Cloudflare Worker 
+// SpotSeekers USA — Cloudflare Worker
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -451,8 +451,10 @@ export default {
       html = html.replace(FIREBASE_CONFIG_PLACEHOLDER, injected);
     }
 
-    // Inject admin secret
-    html = html.replace(ADMIN_SECRET_PLACEHOLDER, `window._adminSecret='${adminSecret}';`);
+    // SECURITY: never ship the admin secret to visitors.
+    // The admin enters it once in the app (stored in their browser's localStorage only)
+    // and every /api/admin/rebuild request is verified server-side via X-Admin-Secret.
+    html = html.replace(ADMIN_SECRET_PLACEHOLDER, `window._adminSecret='';`);
 
     // Inject ADMIN_UIDS
     const adminUid = env.ADMIN_UID || 'K9DGewbvOKZsidYDaiAk2pc0J0m1';
