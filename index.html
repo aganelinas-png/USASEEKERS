@@ -838,27 +838,38 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
     <div class="suggest-body">
       <div class="suggest-label">Spot name</div>
       <input class="suggest-input" id="sugName" maxlength="80" placeholder="Pvz. Napoleono tiltas">
-      <div class="suggest-label">Kategorija</div>
+      <div class="suggest-label">Category</div>
       <select class="suggest-select" id="sugCat">
         <option value="history">⚔️ History</option>
+        <option value="house">🏠 House</option>
         <option value="church">⛪ Church</option>
-        <option value="museum">🏛 Muziejus</option>
-        <option value="fort">🏰 Fortas</option>
-        <option value="monument">🗿 Monumentas</option>
-        <option value="mound">⛰️ Hillforts</option>
+        <option value="school">🎓 School</option>
+        <option value="civic">🏛️ Civic</option>
+        <option value="hotel">🏨 Hotel / Inn</option>
+        <option value="theater">🎭 Theater</option>
+        <option value="museum">🏺 Museum</option>
+        <option value="commerce">🏪 Commerce</option>
+        <option value="bridge">🌉 Bridge</option>
+        <option value="railroad">🚂 Railroad</option>
+        <option value="mill">⚙️ Mill / Industry</option>
+        <option value="watertower">🗼 Water Tower</option>
+        <option value="maritime">⚓ Maritime</option>
+        <option value="military">🏰 Military</option>
+        <option value="farm">🌾 Farm / Barn</option>
+        <option value="monument">🗿 Monument</option>
+        <option value="cemetery">⚱️ Cemetery</option>
+        <option value="mound">⛰️ Mound</option>
         <option value="nature">🌿 Nature</option>
         <option value="viewpoint">🔭 Viewpoint</option>
         <option value="mural">🎨 Street Art</option>
-        <option value="cemetery">⚱️ Cemeteries</option>
-        <option value="watertower">🗼 Water Tower</option>
-        <option value="bridge">🌉 Tiltas</option>
+        <option value="abandoned">🏚️ Ruins</option>
       </select>
       <div class="suggest-label">Coordinates</div>
       <div style="display:flex;gap:8px;margin-bottom:8px">
-        <button class="suggest-use-gps" style="flex:1;margin-bottom:0" onclick="suggestUseGPS()">📡 Mano vieta</button>
+        <button class="suggest-use-gps" style="flex:1;margin-bottom:0" onclick="suggestUseGPS()">📡 My location</button>
         <button class="suggest-use-gps" style="flex:1;margin-bottom:0;border-color:var(--gold);color:var(--gold)" onclick="suggestPickOnMap()">🗺 Pick on map</button>
       </div>
-      <div class="suggest-coords" id="sugCoords">Vieta nepasirinkta</div>
+      <div class="suggest-coords" id="sugCoords">No location selected</div>
       <div class="suggest-label">Short description</div>
       <textarea class="suggest-textarea" id="sugDesc" maxlength="300" placeholder="Why is this spot worth visiting? (up to 300 characters)"></textarea>
       <div class="suggest-err" id="sugErr"></div>
@@ -997,23 +1008,22 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
       </div>
       <!-- Settings -->
       <div class="dnav-main-item" onclick="closeDrawer();openSettings()">
-        <span class="dnmi-icon">⚙️</span><span class="dnmi-label">Nustatymai</span><span class="dnmi-arrow">›</span>
+        <span class="dnmi-icon">⚙️</span><span class="dnmi-label">Settings</span><span class="dnmi-arrow">›</span>
       </div>
       <!-- Admin data tools — only visible to admin -->
       <div id="adminDataSection" style="display:none;margin-top:8px;border-top:1px solid var(--bdr);padding-top:8px">
         <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--tm);text-transform:uppercase;letter-spacing:.08em;padding:2px 4px 6px">Admin tools</div>
-        <div onclick="rebuildKVCache()" style="padding:9px 12px;border-radius:8px;background:rgba(74,140,92,.12);border:1px solid var(--green);color:var(--green);font-size:.78rem;cursor:pointer;margin-bottom:6px;display:flex;align-items:center;gap:8px">🔄 Refresh KV cache</div>
-        <div onclick="exportSpotsCSV()" id="csvExportBtn" style="padding:9px 12px;border-radius:8px;background:rgba(74,140,92,.12);border:1px solid var(--green);color:var(--green);font-size:.78rem;cursor:pointer;margin-bottom:6px;display:flex;align-items:center;gap:8px">📥 Eksportuoti CSV</div>
-        <label id="csvImportBtn" style="padding:9px 12px;border-radius:8px;background:rgba(201,168,76,.12);border:1px solid var(--gold);color:var(--gold);font-size:.78rem;cursor:pointer;display:flex;align-items:center;gap:8px">📤 Import CSV<input type="file" accept=".csv" id="csvImportInput" style="display:none" onchange="importSpotsCSV(this)"></label>
+        
+        
         <div onclick="openAbandonedCleanup()" style="padding:9px 12px;border-radius:8px;background:rgba(180,60,60,.12);border:1px solid #c05050;color:#e07070;font-size:.78rem;cursor:pointer;margin-top:6px;display:flex;align-items:center;gap:8px">🧹 Cleanup: abandoned outside USA</div>
       </div>
     </div>
     <div class="drawer-bottom" style="flex-shrink:0">
-      <div class="dbot-btn pri" id="drawerAddBtn" onclick="closeDrawer();openEditor(null)" style="display:none">+ Nauja vieta</div>
+      <div class="dbot-btn pri" id="drawerAddBtn" onclick="closeDrawer();openEditor(null)" style="display:none">+ New spot</div>
       <div class="dbot-btn" id="drawerOsmBtn" onclick="openSubPanel('osm')" style="display:none">🗺 OSM Import</div>
-      <div class="dbot-btn" id="drawerReviewsBtn" onclick="openSubPanel('reviews')" style="display:none">💬 Atsiliepimai</div>
+      <div class="dbot-btn" id="drawerReviewsBtn" onclick="openSubPanel('reviews')" style="display:none">💬 Reviews</div>
       <div class="dbot-btn" id="drawerSuggestionsBtn" onclick="openSubPanel('suggestions')" style="display:none">📬 Suggestions</div>
-      <div id="kvRebuildBtn" style="display:none"></div>
+      
     </div>
 
     <div style="text-align:center;padding:8px 0 12px;font-family:'DM Mono',monospace;font-size:.58rem;color:var(--tm)">v24.03</div>
@@ -1045,41 +1055,54 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 <div class="modal-bg" id="editorModal">
   <div class="modal-box">
     <div class="modal-handle"></div>
-    <div class="modal-title" id="editorTitle">Nauja vieta</div>
+    <div class="modal-title" id="editorTitle">New spot</div>
     <!-- OSM SEARCH -->
     <div class="fg" style="position:relative">
       <label class="fl">🔍 Search spot</label>
       <div style="display:flex;gap:6px">
-        <input class="fi" id="osmSearch" placeholder="pvz. Kauno pilis..." style="flex:1" oninput="osmSearchDebounce()">
+        <input class="fi" id="osmSearch" placeholder="e.g. Brooklyn Bridge..." style="flex:1" oninput="osmSearchDebounce()">
         <button onclick="doOsmSearch()" style="background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;padding:0 12px;color:var(--td);cursor:pointer;font-size:.85rem;white-space:nowrap">Search</button>
       </div>
       <div id="osmResults" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:10;background:var(--surf);border:1px solid var(--bdr);border-radius:8px;margin-top:3px;max-height:180px;overflow-y:auto;box-shadow:0 4px 16px var(--sh)"></div>
     </div>
     <input type="hidden" id="eId">
-    <div class="fg"><label class="fl">Pavadinimas</label><input class="fi" id="eName"></div>
+    <div class="fg"><label class="fl">Name</label><input class="fi" id="eName"></div>
     <div class="frow">
       <div class="fg">
-        <label class="fl">Kategorija</label>
+        <label class="fl">Category</label>
         <select class="fs" id="eCat">
-          <optgroup label="— Heritage —">
-          <option value="fort">🏰 Forts</option>
+          <optgroup label="— Buildings & Homes —">
+          <option value="house">🏠 Houses</option>
           <option value="church">⛪ Churches</option>
-          <option value="museum">🏛 Museums</option>
-          <option value="history">⚔ History</option>
-          <option value="monument">🗿 Monuments</option>
-          <option value="mound">⛰ Hillforts</option>
-          <option value="cemetery">⚱️ Cemeteries</option>
+          <option value="school">🎓 Schools</option>
+          <option value="civic">🏛️ Civic & Gov</option>
+          <option value="hotel">🏨 Hotels & Inns</option>
+          <option value="theater">🎭 Theaters</option>
+          <option value="museum">🏺 Museums</option>
+          <option value="commerce">🏪 Commerce</option>
           </optgroup>
-          <optgroup label="— Nature —">
-          <option value="nature">🌿 Nature</option>
-          <option value="viewpoint">🔭 Viewpoints</option>
-          </optgroup>
-          <optgroup label="— Urban —">
-          <option value="mural">🎨 Street Art</option>
+          <optgroup label="— Engineering & Industry —">
+          <option value="bridge">🌉 Bridges</option>
+          <option value="railroad">🚂 Railroads</option>
+          <option value="mill">⚙️ Mills & Industry</option>
           <option value="watertower">🗼 Water Towers</option>
+          <option value="maritime">⚓ Maritime</option>
+          <option value="military">🏰 Military</option>
           </optgroup>
-          <optgroup label="— Hidden —">
-          <option value="hidden">🔮 Hidden vieta</option>
+          <optgroup label="— Land & Memory —">
+          <option value="farm">🌾 Farms & Barns</option>
+          <option value="district">🏘️ Districts</option>
+          <option value="monument">🗿 Monuments</option>
+          <option value="cemetery">⚱️ Cemeteries</option>
+          <option value="mound">⛰️ Mounds</option>
+          <option value="history">⚔️ History</option>
+          </optgroup>
+          <optgroup label="— Nature & Urban —">
+          <option value="nature">🌿 Nature & Parks</option>
+          <option value="viewpoint">🔭 Viewpoints</option>
+          <option value="mural">🎨 Street Art</option>
+          <option value="abandoned">🏚️ Ruins</option>
+          <option value="hidden">🔮 Hidden</option>
           </optgroup>
         </select>
       </div>
@@ -1097,7 +1120,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
     <div class="frow">
     </div>
     <div class="frow">
-      <div class="fg"><label class="fl">Metai</label><input class="fi" id="eYear" placeholder="1930"></div>
+      <div class="fg"><label class="fl">Year</label><input class="fi" id="eYear" placeholder="1930"></div>
       <div class="fg"><label class="fl">Zona (m)</label><input class="fi" id="eRadius" type="number" placeholder="80" min="30" max="500"></div>
     </div>
     <div class="fg"><label class="fl">Tag</label><input class="fi" id="eTag" placeholder="Modernizmas"></div>
@@ -1112,11 +1135,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
       <button class="mbtn dan" id="edDelBtn" onclick="deleteSpot()" style="display:none">🗑</button>
       <button class="mbtn pri" onclick="saveSpot()">Save</button>
     </div>
-    <div style="border-top:1px solid var(--bdr);margin-top:14px;padding-top:12px">
-      <div class="hint" style="margin-bottom:8px">📥 Import spots from CSV file</div>
-      <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="importCSV(event)">
-      <button class="mbtn sec" onclick="document.getElementById('csvFileInput').click()" style="width:100%;padding:10px;font-size:.82rem">📂 Load CSV file</button>
-    </div>
+    
   </div>
 </div>
 
@@ -1153,7 +1172,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
   <div class="mob-filter-bg" onclick="closeMobFilterSheet()"></div>
   <div class="mob-filter-panel">
     <div class="mob-filter-header">
-      <div class="mob-filter-title">Filtruoti vietas</div>
+      <div class="mob-filter-title">Filter spots</div>
       <div class="mob-filter-close" onclick="closeMobFilterSheet()">✕</div>
     </div>
     <div class="mob-filter-chips">
@@ -1170,7 +1189,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
   <div class="settings-bg" onclick="closeSettings()"></div>
   <div class="settings-panel">
     <div class="settings-header">
-      <div class="settings-title">⚙️ Nustatymai</div>
+      <div class="settings-title">⚙️ Settings</div>
       <div class="settings-close" onclick="closeSettings()">✕</div>
     </div>
     <div class="settings-row" onclick="toggleTheme();updateSettingsUI()">
@@ -1312,32 +1331,43 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 // ═══════════ CONSTANTS ═══════════
 
 const CATS={
-  // — Heritage —
-  fort:{label:'Forts',emoji:'🏰',color:'#8B4513'},
+  // — Buildings & Homes —
+  house:{label:'Houses',emoji:'🏠',color:'#8a6a4a'},
   church:{label:'Churches',emoji:'⛪',color:'#4a6fa5'},
-  museum:{label:'Museums',emoji:'🏛',color:'#5a7a5a'},
-  history:{label:'History',emoji:'⚔',color:'#7a5c00'},
-  monument:{label:'Monuments',emoji:'🗿',color:'#8B6914'},
-  mound:{label:'Hillforts',emoji:'⛰',color:'#5a7a3a'},
-  cemetery:{label:'Cemeteries',emoji:'⚱️',color:'#5a5a6a'},
-  // — Nature —
-  nature:{label:'Nature',emoji:'🌿',color:'#2e7d32'},
-  viewpoint:{label:'Viewpoints',emoji:'🔭',color:'#1a6b8a'},
+  school:{label:'Schools',emoji:'🎓',color:'#6a5a9a'},
+  civic:{label:'Civic & Gov',emoji:'🏛️',color:'#5a7a5a'},
+  hotel:{label:'Hotels & Inns',emoji:'🏨',color:'#a06a8a'},
+  theater:{label:'Theaters',emoji:'🎭',color:'#8a3a5a'},
+  museum:{label:'Museums',emoji:'🏺',color:'#7a5a3a'},
+  commerce:{label:'Commerce',emoji:'🏪',color:'#7a6a3a'},
+  // — Engineering & Industry —
   bridge:{label:'Bridges',emoji:'🌉',color:'#4a6a8a'},
-  // — Urban / City —
-  mural:{label:'Street Art',emoji:'🎨',color:'#8a3a7a'},
+  railroad:{label:'Railroads',emoji:'🚂',color:'#6a4a3a'},
+  mill:{label:'Mills & Industry',emoji:'⚙️',color:'#6a6a6a'},
   watertower:{label:'Water Towers',emoji:'🗼',color:'#4a5a8a'},
-  // — Abandoned —
-  abandoned:{label:'Ruins',emoji:'🏚',color:'#6a5a4a'},
-  // — Hidden —
+  maritime:{label:'Maritime',emoji:'⚓',color:'#2a5a7a'},
+  military:{label:'Military',emoji:'🏰',color:'#8B4513'},
+  // — Land & Memory —
+  farm:{label:'Farms & Barns',emoji:'🌾',color:'#7a8a3a'},
+  district:{label:'Districts',emoji:'🏘️',color:'#9a7a5a'},
+  monument:{label:'Monuments',emoji:'🗿',color:'#8B6914'},
+  cemetery:{label:'Cemeteries',emoji:'⚱️',color:'#5a5a6a'},
+  mound:{label:'Mounds',emoji:'⛰️',color:'#5a7a3a'},
+  history:{label:'History',emoji:'⚔️',color:'#7a5c00'},
+  // — Nature & Urban (OSM-fed) —
+  nature:{label:'Nature & Parks',emoji:'🌿',color:'#2e7d32'},
+  viewpoint:{label:'Viewpoints',emoji:'🔭',color:'#1a6b8a'},
+  mural:{label:'Street Art',emoji:'🎨',color:'#8a3a7a'},
+  abandoned:{label:'Ruins',emoji:'🏚️',color:'#6a5a4a'},
   hidden:{label:'Hidden',emoji:'🔮',color:'#6a3a8a'},
 };
 
 const FILTER_GROUPS=[
-  {id:'heritage',label:'Heritage',emoji:'🏛',cats:['church','monument','mound','fort','museum','history','cemetery']},
-  {id:'nature',label:'Nature',emoji:'🌿',cats:['nature','viewpoint','bridge','trail']},
-  {id:'urban',label:'Urban',emoji:'🏙',cats:['mural','watertower']},
-  {id:'urbex',label:'Ruins',emoji:'🏚',cats:['abandoned']},
+  {id:'heritage',label:'Heritage',emoji:'🏛',cats:['house','church','school','civic','hotel','theater','museum','commerce','district','history']},
+  {id:'engineering',label:'Engineering',emoji:'⚙️',cats:['bridge','railroad','mill','watertower','maritime','military']},
+  {id:'land',label:'Land & Legacy',emoji:'🌾',cats:['farm','monument','cemetery','mound']},
+  {id:'nature',label:'Nature',emoji:'🌿',cats:['nature','viewpoint']},
+  {id:'urban',label:'Urban',emoji:'🎨',cats:['mural','abandoned']},
 ];
 
 // TIER_CONFIG kept for display labels only — unlock logic replaced by player level system
@@ -1350,79 +1380,170 @@ const TIER_CONFIG={
 
 // Default collection radius per spot in metres (can be overridden per spot)
 const DEFAULT_RADIUS=80;
-const APP_VERSION='1.01';
+const APP_VERSION='usa-1.1';
 
 // Per-category sensible defaults — used when no explicit radius is set
 const CAT_DEFAULT_RADIUS={
-  viewpoint:50,
-  monument:55,
-  mural:55,
-  church:65,
-  museum:65,
-  watertower:70,
-  history:80,
-  fort:130,
-  nature:150,
-  mound:160,
-  cemetery:220,
-  abandoned:120,
+  viewpoint:50,monument:55,mural:55,commerce:60,house:60,theater:60,
+  church:65,museum:65,hotel:65,watertower:70,school:80,civic:80,
+  railroad:80,history:80,bridge:90,mill:90,maritime:100,abandoned:120,
+  military:130,nature:150,farm:150,mound:160,cemetery:220,district:250,
 };
 
 const DEFAULT_SPOTS=[]; // removed — KV/Firestore is always populated
 
 const BADGE_GROUPS=[
-  // ── Heritage ──
-  {id:'forts',title:'Fort Collector',icon:'🏰',cat:'fort',sub:true,badges:[
-    {id:'f1',name:'Pirmasis fortas',desc:'Visit 1 fort',icon:'🏰',need:1,xpReward:10},
-    {id:'f2',name:'Fort Keeper',desc:'Visit 3 forts',icon:'🛡',need:3,xpReward:10},
-    {id:'f3',name:'Fort Lord',desc:'Visit 6 forts',icon:'⚔️',need:6,xpReward:20},
-    {id:'f4',name:'Iron Defender',desc:'Visit 10 forts',icon:'👑',need:10,xpReward:20},
-    {id:'f5',name:'Fortress Emperor',desc:'Visit 20 forts',icon:'💎',need:20,xpReward:50},
-    {id:'f6',name:'Fort Legend',desc:'Visit 50 forts',icon:'🌟',need:50,xpReward:150},
-    {id:'f7',name:'Unconquerable',desc:'Aplankyk visus fortus',icon:'🏆',need:119,xpReward:500},
+  // ── Buildings & Homes ──
+  {id:'houses',title:'House Collector',icon:'🏠',cat:'house',sub:true,badges:[
+    {id:'ho1',name:'First Doorstep',desc:'Visit 1 historic house',icon:'🏠',need:1,xpReward:10},
+    {id:'ho2',name:'Neighborhood Walker',desc:'Visit 10 houses',icon:'🚪',need:10,xpReward:15},
+    {id:'ho3',name:'Porch Hopper',desc:'Visit 50 houses',icon:'🪟',need:50,xpReward:40},
+    {id:'ho4',name:'Estate Expert',desc:'Visit 150 houses',icon:'🏡',need:150,xpReward:100},
+    {id:'ho5',name:'Mansion Master',desc:'Visit 500 houses',icon:'⭐',need:500,xpReward:300},
+    {id:'ho6',name:'Keeper of Homes',desc:'Visit 1500 houses',icon:'💎',need:1500,xpReward:1000},
+    {id:'ho7',name:'America Lives Here',desc:'Visit 5000 houses',icon:'👑',need:5000,xpReward:3000},
   ]},
   {id:'churches',title:'Church Pilgrim',icon:'⛪',cat:'church',sub:true,badges:[
-    {id:'c1',name:'Piligimas',desc:'Visit 1 church',icon:'⛪',need:1,xpReward:10},
+    {id:'c1',name:'First Pilgrimage',desc:'Visit 1 church',icon:'⛪',need:1,xpReward:10},
     {id:'c2',name:'Sacred Explorer',desc:'Visit 5 churches',icon:'✝️',need:5,xpReward:10},
-    {id:'c3',name:'Dvasios keliautojas',desc:'Visit 10 churches',icon:'🕊️',need:10,xpReward:20},
+    {id:'c3',name:'Spirit Traveler',desc:'Visit 10 churches',icon:'🕊️',need:10,xpReward:20},
     {id:'c4b',name:'Church Expert',desc:'Visit 25 churches',icon:'🏛',need:25,xpReward:40},
     {id:'c5b',name:'Church Master',desc:'Visit 75 churches',icon:'⭐',need:75,xpReward:100},
     {id:'c6b',name:'Church Legend',desc:'Visit 200 churches',icon:'💎',need:200,xpReward:300},
-    {id:'c7b',name:'Lietuvos piligimas',desc:'Visit 500 churches',icon:'👑',need:500,xpReward:800},
+    {id:'c7b',name:'American Pilgrimage',desc:'Visit 500 churches',icon:'👑',need:500,xpReward:800},
   ]},
-  {id:'museums',title:'Museum Curator',icon:'🏛',cat:'museum',sub:true,badges:[
-    {id:'m1',name:'Lankytojas',desc:'Visit 1 museum',icon:'🎟️',need:1,xpReward:10},
-    {id:'m2',name:'Kuratorius',desc:'Aplankyk 5 muziejus',icon:'🏛️',need:5,xpReward:10},
+  {id:'schools',title:'Schoolhouse Scholar',icon:'🎓',cat:'school',sub:true,badges:[
+    {id:'sc1',name:'First Bell',desc:'Visit 1 historic school',icon:'🎓',need:1,xpReward:10},
+    {id:'sc2',name:'Honor Roll',desc:'Visit 5 schools',icon:'📚',need:5,xpReward:15},
+    {id:'sc3',name:'Class Valedictorian',desc:'Visit 15 schools',icon:'🏫',need:15,xpReward:30},
+    {id:'sc4',name:'Old School',desc:'Visit 50 schools',icon:'⭐',need:50,xpReward:80},
+    {id:'sc5',name:'Dean of History',desc:'Visit 150 schools',icon:'💎',need:150,xpReward:250},
+    {id:'sc6',name:'Professor Emeritus',desc:'Visit 400 schools',icon:'👑',need:400,xpReward:700},
+  ]},
+  {id:'civics',title:'Civic Servant',icon:'🏛️',cat:'civic',sub:true,badges:[
+    {id:'cv1',name:'First in Line',desc:'Visit 1 civic building',icon:'🏛️',need:1,xpReward:10},
+    {id:'cv2',name:'Courthouse Regular',desc:'Visit 5 civic buildings',icon:'⚖️',need:5,xpReward:15},
+    {id:'cv3',name:'County Crawler',desc:'Visit 15 civic buildings',icon:'📜',need:15,xpReward:30},
+    {id:'cv4',name:'Hall Monitor',desc:'Visit 50 civic buildings',icon:'⭐',need:50,xpReward:80},
+    {id:'cv5',name:'Pillar of Society',desc:'Visit 150 civic buildings',icon:'💎',need:150,xpReward:250},
+    {id:'cv6',name:'Founding Spirit',desc:'Visit 400 civic buildings',icon:'👑',need:400,xpReward:700},
+  ]},
+  {id:'hotels',title:'Grand Tour Guest',icon:'🏨',cat:'hotel',sub:true,badges:[
+    {id:'ht1',name:'Check-In',desc:'Visit 1 historic hotel',icon:'🏨',need:1,xpReward:10},
+    {id:'ht2',name:'Frequent Guest',desc:'Visit 5 hotels & inns',icon:'🛎️',need:5,xpReward:15},
+    {id:'ht3',name:'Road Tripper',desc:'Visit 15 hotels & inns',icon:'🧳',need:15,xpReward:30},
+    {id:'ht4',name:'Tavern Tales',desc:'Visit 50 hotels & inns',icon:'⭐',need:50,xpReward:80},
+    {id:'ht5',name:'Grand Tour Legend',desc:'Visit 150 hotels & inns',icon:'💎',need:150,xpReward:250},
+  ]},
+  {id:'theaters',title:'Showtime Seeker',icon:'🎭',cat:'theater',sub:true,badges:[
+    {id:'th1',name:'Opening Night',desc:'Visit 1 historic theater',icon:'🎭',need:1,xpReward:10},
+    {id:'th2',name:'Season Ticket',desc:'Visit 3 theaters',icon:'🎟️',need:3,xpReward:15},
+    {id:'th3',name:'Marquee Hunter',desc:'Visit 10 theaters',icon:'💡',need:10,xpReward:30},
+    {id:'th4',name:'Standing Ovation',desc:'Visit 30 theaters',icon:'⭐',need:30,xpReward:80},
+    {id:'th5',name:'Vaudeville Legend',desc:'Visit 100 theaters',icon:'💎',need:100,xpReward:300},
+  ]},
+  {id:'museums',title:'Museum Curator',icon:'🏺',cat:'museum',sub:true,badges:[
+    {id:'m1',name:'First Visitor',desc:'Visit 1 museum',icon:'🎟️',need:1,xpReward:10},
+    {id:'m2',name:'Curator',desc:'Visit 5 museums',icon:'🏛️',need:5,xpReward:10},
     {id:'m3',name:'Culture Keeper',desc:'Visit 10 museums',icon:'🎭',need:10,xpReward:20},
     {id:'m4',name:'Museum Mouse',desc:'Visit 20 museums',icon:'🐭',need:20,xpReward:20},
-    {id:'m5',name:'Gyvas Eksponatas',desc:'Visit 40 museums',icon:'💎',need:40,xpReward:50},
+    {id:'m5',name:'Living Exhibit',desc:'Visit 40 museums',icon:'💎',need:40,xpReward:50},
   ]},
-  {id:'history',title:'History Seeker',icon:'⚔️',cat:'history',sub:true,badges:[
-    {id:'h1',name:'Kronikininkas',desc:'Aplankyk 3 istorines vietas',icon:'📜',need:3,xpReward:10},
-    {id:'h2',name:'Praeities balsas',desc:'Visit 10 historic spots',icon:'⚔️',need:10,xpReward:20},
-    {id:'h3',name:'Time Machine',desc:'Visit 25 historic spots',icon:'⏳',need:25,xpReward:20},
-    {id:'h4',name:'Living History Book',desc:'Visit 50 historic spots',icon:'💎',need:50,xpReward:50},
+  {id:'commerces',title:'Main Street Mogul',icon:'🏪',cat:'commerce',sub:true,badges:[
+    {id:'cm1',name:'Window Shopper',desc:'Visit 1 commercial landmark',icon:'🏪',need:1,xpReward:10},
+    {id:'cm2',name:'Main Street Stroller',desc:'Visit 10 commercial landmarks',icon:'🛍️',need:10,xpReward:15},
+    {id:'cm3',name:'Storefront Scout',desc:'Visit 30 commercial landmarks',icon:'🏦',need:30,xpReward:40},
+    {id:'cm4',name:'Boomtown Baron',desc:'Visit 100 commercial landmarks',icon:'⭐',need:100,xpReward:100},
+    {id:'cm5',name:'Commerce King',desc:'Visit 300 commercial landmarks',icon:'💎',need:300,xpReward:300},
+    {id:'cm6',name:'Captain of Industry',desc:'Visit 1000 commercial landmarks',icon:'👑',need:1000,xpReward:1000},
   ]},
-  {id:'abandoned',title:'Urbex Explorer',icon:'🏚',cat:'abandoned',sub:true,badges:[
-    {id:'ab1',name:'First Ruin',desc:'Visit 1 abandoned spot',icon:'🏚',need:1,xpReward:15},
-    {id:'ab2',name:'Urbex pradedantysis',desc:'Aplankyk 5 apleistas vietas',icon:'🔦',need:5,xpReward:30},
-    {id:'ab3',name:'Ruins Explorer',desc:'Visit 15 abandoned spots',icon:'🗺',need:15,xpReward:60},
-    {id:'ab4',name:'Urbex meistras',desc:'Visit 30 abandoned spots',icon:'💎',need:30,xpReward:120},
+  // ── Engineering & Industry ──
+  {id:'bridges',title:'Bridge Collector',icon:'🌉',cat:'bridge',sub:true,badges:[
+    {id:'br1',name:'First Crossing',desc:'Visit 1 bridge',icon:'🌉',need:1,xpReward:10},
+    {id:'br2',name:'River Connector',desc:'Visit 5 bridges',icon:'🔗',need:5,xpReward:15},
+    {id:'br3',name:'Bridge Expert',desc:'Visit 15 bridges',icon:'⚙️',need:15,xpReward:30},
+    {id:'br4',name:'Engineering Enthusiast',desc:'Visit 40 bridges',icon:'🏗',need:40,xpReward:75},
+    {id:'br5',name:'Bridge Master',desc:'Visit 80 bridges',icon:'🌟',need:80,xpReward:150},
+    {id:'br6',name:'USA Bridge Legend',desc:'Visit 300 bridges',icon:'💎',need:300,xpReward:400},
+  ]},
+  {id:'railroads',title:'Railroad Baron',icon:'🚂',cat:'railroad',sub:true,badges:[
+    {id:'rr1',name:'All Aboard',desc:'Visit 1 railroad landmark',icon:'🚂',need:1,xpReward:10},
+    {id:'rr2',name:'Depot Hopper',desc:'Visit 5 railroad landmarks',icon:'🛤️',need:5,xpReward:15},
+    {id:'rr3',name:'Conductor',desc:'Visit 15 railroad landmarks',icon:'🚉',need:15,xpReward:30},
+    {id:'rr4',name:'Iron Horse Rider',desc:'Visit 50 railroad landmarks',icon:'⭐',need:50,xpReward:80},
+    {id:'rr5',name:'Transcontinental',desc:'Visit 150 railroad landmarks',icon:'💎',need:150,xpReward:250},
+    {id:'rr6',name:'Railroad Baron',desc:'Visit 400 railroad landmarks',icon:'👑',need:400,xpReward:700},
+  ]},
+  {id:'mills',title:'Industrial Age',icon:'⚙️',cat:'mill',sub:true,badges:[
+    {id:'mi1',name:'First Shift',desc:'Visit 1 mill or factory',icon:'⚙️',need:1,xpReward:10},
+    {id:'mi2',name:'Gears Turning',desc:'Visit 5 industrial landmarks',icon:'🏭',need:5,xpReward:15},
+    {id:'mi3',name:'Foreman',desc:'Visit 15 industrial landmarks',icon:'🔧',need:15,xpReward:30},
+    {id:'mi4',name:'Steam Power',desc:'Visit 50 industrial landmarks',icon:'⭐',need:50,xpReward:80},
+    {id:'mi5',name:'Industrial Titan',desc:'Visit 150 industrial landmarks',icon:'💎',need:150,xpReward:250},
   ]},
   {id:'watertowers',title:'Water Tower Hunter',icon:'🗼',cat:'watertower',sub:true,badges:[
     {id:'wt1',name:'First Tower',desc:'Visit 1 water tower',icon:'🗼',need:1,xpReward:10},
     {id:'wt2',name:'Tower Collector',desc:'Visit 5 water towers',icon:'🏗️',need:5,xpReward:20},
     {id:'wt3',name:'Hydro Enthusiast',desc:'Visit 12 water towers',icon:'💎',need:12,xpReward:50},
+    {id:'wt4',name:'Standpipe Legend',desc:'Visit 30 water towers',icon:'👑',need:30,xpReward:150},
   ]},
-  {id:'bridges',title:'Bridge Collector',icon:'🌉',cat:'bridge',sub:true,badges:[
-    {id:'br1',name:'Pirmasis tiltas',desc:'Visit 1 bridge',icon:'🌉',need:1,xpReward:10},
-    {id:'br2',name:'River Connector',desc:'Visit 5 bridges',icon:'🔗',need:5,xpReward:15},
-    {id:'br3',name:'Bridge Expert',desc:'Visit 15 bridges',icon:'⚙️',need:15,xpReward:30},
-    {id:'br4',name:'Engineering Enthusiast',desc:'Visit 40 bridges',icon:'🏗',need:40,xpReward:75},
-    {id:'br5',name:'Bridge Master',desc:'Visit 80 bridges',icon:'🌟',need:80,xpReward:150},
-    {id:'br6',name:'USA Bridge Legend',desc:'Aplankyk visus 142 tiltus',icon:'💎',need:142,xpReward:400},
+  {id:'maritimes',title:'Coastal Keeper',icon:'⚓',cat:'maritime',sub:true,badges:[
+    {id:'ma1',name:'First Light',desc:'Visit 1 maritime landmark',icon:'⚓',need:1,xpReward:10},
+    {id:'ma2',name:'Harbor Pilot',desc:'Visit 3 maritime landmarks',icon:'🚢',need:3,xpReward:15},
+    {id:'ma3',name:'Lighthouse Keeper',desc:'Visit 10 maritime landmarks',icon:'🕯️',need:10,xpReward:30},
+    {id:'ma4',name:'Old Salt',desc:'Visit 30 maritime landmarks',icon:'⭐',need:30,xpReward:80},
+    {id:'ma5',name:'Master & Commander',desc:'Visit 100 maritime landmarks',icon:'💎',need:100,xpReward:300},
   ]},
-  // ── Nature ──
+  {id:'military',title:'Fort Commander',icon:'🏰',cat:'military',sub:true,badges:[
+    {id:'f1',name:'First Fort',desc:'Visit 1 military landmark',icon:'🏰',need:1,xpReward:10},
+    {id:'f2',name:'Fort Keeper',desc:'Visit 3 military landmarks',icon:'🛡',need:3,xpReward:10},
+    {id:'f3',name:'Garrison Guard',desc:'Visit 6 military landmarks',icon:'⚔️',need:6,xpReward:20},
+    {id:'f4',name:'Iron Defender',desc:'Visit 10 military landmarks',icon:'👑',need:10,xpReward:20},
+    {id:'f5',name:'Fortress Emperor',desc:'Visit 20 military landmarks',icon:'💎',need:20,xpReward:50},
+    {id:'f6',name:'Battlefield Historian',desc:'Visit 50 military landmarks',icon:'🌟',need:50,xpReward:150},
+    {id:'f7',name:'Unconquerable',desc:'Visit 200 military landmarks',icon:'🏆',need:200,xpReward:500},
+  ]},
+  // ── Land & Legacy ──
+  {id:'farms',title:'Heartland Harvester',icon:'🌾',cat:'farm',sub:true,badges:[
+    {id:'fa1',name:'First Harvest',desc:'Visit 1 farm or barn',icon:'🌾',need:1,xpReward:10},
+    {id:'fa2',name:'Barn Raiser',desc:'Visit 5 farms & barns',icon:'🛖',need:5,xpReward:15},
+    {id:'fa3',name:'County Fair',desc:'Visit 15 farms & barns',icon:'🚜',need:15,xpReward:30},
+    {id:'fa4',name:'Homesteader',desc:'Visit 50 farms & barns',icon:'⭐',need:50,xpReward:80},
+    {id:'fa5',name:'Heartland Legend',desc:'Visit 150 farms & barns',icon:'💎',need:150,xpReward:250},
+  ]},
+  {id:'districts',title:'District Wanderer',icon:'🏘️',cat:'district',sub:true,badges:[
+    {id:'di1',name:'First Block',desc:'Visit 1 historic district',icon:'🏘️',need:1,xpReward:10},
+    {id:'di2',name:'Walking Tour',desc:'Visit 5 districts',icon:'🚶',need:5,xpReward:15},
+    {id:'di3',name:'Old Town Regular',desc:'Visit 15 districts',icon:'🗺️',need:15,xpReward:30},
+    {id:'di4',name:'Preservationist',desc:'Visit 50 districts',icon:'⭐',need:50,xpReward:80},
+    {id:'di5',name:'District Legend',desc:'Visit 150 districts',icon:'💎',need:150,xpReward:250},
+  ]},
+  {id:'monuments',title:'Monument Collector',icon:'🗿',cat:'monument',sub:true,badges:[
+    {id:'mn1',name:'First Monument',desc:'Visit 1 monument',icon:'🗿',need:1,xpReward:10},
+    {id:'mn2',name:'Sculpture Expert',desc:'Visit 10 monuments',icon:'🏛',need:10,xpReward:25},
+    {id:'mn3',name:'Monument Master',desc:'Visit 30 monuments',icon:'⭐',need:30,xpReward:75},
+    {id:'mn4',name:'Memory Collector',desc:'Visit 100 monuments',icon:'💎',need:100,xpReward:300},
+  ]},
+  {id:'cemeteries',title:'Cemetery Explorer',icon:'⚱️',cat:'cemetery',sub:true,badges:[
+    {id:'ce1',name:'First Cemetery',desc:'Visit 1 cemetery',icon:'⚱️',need:1,xpReward:10},
+    {id:'ce2',name:'Memory Keeper',desc:'Visit 5 cemeteries',icon:'🕯',need:5,xpReward:20},
+    {id:'ce3',name:'Keeper of Eternal Rest',desc:'Visit 20 cemeteries',icon:'🌹',need:20,xpReward:60},
+    {id:'ce4',name:'Cemetery Meditator',desc:'Visit 50 cemeteries',icon:'💫',need:50,xpReward:150},
+    {id:'ce5',name:'Eternity Keeper',desc:'Visit 150 cemeteries',icon:'💎',need:150,xpReward:500},
+  ]},
+  {id:'mounds',title:'Mound Builder',icon:'⛰️',cat:'mound',sub:true,badges:[
+    {id:'mo1',name:'First Mound',desc:'Visit 1 mound or earthwork',icon:'⛰️',need:1,xpReward:15},
+    {id:'mo2',name:'Ancient Paths',desc:'Visit 5 mounds & earthworks',icon:'🗿',need:5,xpReward:25},
+    {id:'mo3',name:'Earthwork Expert',desc:'Visit 15 mounds & earthworks',icon:'🌾',need:15,xpReward:60},
+    {id:'mo4',name:'Keeper of the Ancients',desc:'Visit 40 mounds & earthworks',icon:'💎',need:40,xpReward:150},
+  ]},
+  {id:'history',title:'History Seeker',icon:'⚔️',cat:'history',sub:true,badges:[
+    {id:'h1',name:'Chronicler',desc:'Visit 3 historic spots',icon:'📜',need:3,xpReward:10},
+    {id:'h2',name:'Voice of the Past',desc:'Visit 10 historic spots',icon:'⚔️',need:10,xpReward:20},
+    {id:'h3',name:'Time Machine',desc:'Visit 25 historic spots',icon:'⏳',need:25,xpReward:20},
+    {id:'h4',name:'Living History Book',desc:'Visit 50 historic spots',icon:'💎',need:50,xpReward:50},
+  ]},
+  // ── Nature & Urban ──
   {id:'nature',title:'Nature Explorer',icon:'🌿',cat:'nature',sub:true,badges:[
     {id:'n1',name:'Green City',desc:'Visit 3 nature spots',icon:'🌿',need:3,xpReward:10},
     {id:'n2',name:'Forest Spirit',desc:'Visit 8 nature spots',icon:'🌳',need:8,xpReward:10},
@@ -1430,86 +1551,73 @@ const BADGE_GROUPS=[
     {id:'n4',name:'Nature Person',desc:'Visit 40 nature spots',icon:'💎',need:40,xpReward:50},
   ]},
   {id:'viewpoints',title:'Panorama Hunter',icon:'🔭',cat:'viewpoint',sub:true,badges:[
-    {id:'vp1',name:'Pirmoji panorama',desc:'Visit 1 viewpoint',icon:'🔭',need:1,xpReward:10},
+    {id:'vp1',name:'First Panorama',desc:'Visit 1 viewpoint',icon:'🔭',need:1,xpReward:10},
     {id:'vp2',name:'Cloud Walker',desc:'Visit 5 viewpoints',icon:'🌄',need:5,xpReward:10},
     {id:'vp3',name:'Horizon Collector',desc:'Visit 12 viewpoints',icon:'🌅',need:12,xpReward:20},
     {id:'vp4',name:'One High — All Low',desc:'Visit 25 viewpoints',icon:'💎',need:25,xpReward:50},
   ]},
-  // ── Progress ──
-  {id:'tiers',title:'Tier progress',icon:'⭐',cat:null,badges:[
-    {id:'t1all',name:'T1 Champion',desc:'All T1 spots collected',icon:'🥉',tierComplete:1,xpReward:100},
-    {id:'t2all',name:'T2 Master',desc:'All T2 spots collected',icon:'🥈',tierComplete:2,xpReward:200},
-    {id:'t3all',name:'USA Legend',desc:'All T3 spots collected',icon:'🥇',tierComplete:3,xpReward:500},
+  {id:'murals',title:'Street Art Expert',icon:'🎨',cat:'mural',sub:true,badges:[
+    {id:'mu1',name:'First Piece',desc:'Visit 1 street art piece',icon:'🎨',need:1,xpReward:10},
+    {id:'mu2',name:'Street Artist',desc:'Visit 10 pieces',icon:'🖌',need:10,xpReward:25},
+    {id:'mu3',name:'City Painter',desc:'Visit 30 pieces',icon:'🌈',need:30,xpReward:75},
+    {id:'mu4',name:'Street Art Legend',desc:'Visit 80 pieces',icon:'💎',need:80,xpReward:250},
   ]},
-  {id:'general',title:'Overall progress',icon:'🗺',cat:null,badges:[
-    {id:'g1',name:'First Step',desc:'1 spot collected',icon:'🗺',need:1,all:true,xpReward:10},
-    {id:'g2',name:'Scout',desc:'10 spots collected',icon:'🔭',need:10,all:true,xpReward:10},
-    {id:'g3',name:'Serious Explorer',desc:'25 spots collected',icon:'🌟',need:25,all:true,xpReward:20},
-    {id:'g4',name:'Profesionalus Klajoklis',desc:'50 spots collected',icon:'🏆',need:50,all:true,xpReward:20},
-    {id:'g5',name:'Country in my Backyard',desc:'100 spots collected',icon:'👑',need:100,all:true,xpReward:50},
-    {id:'g6',name:'GPS Person',desc:'250 spots collected',icon:'📡',need:250,all:true,xpReward:50},
-    {id:'g7',name:'Lietuva Atrasta',desc:'500 spots collected',icon:'🌍',need:500,all:true,xpReward:50},
-    {id:'g8',name:'Immortal Explorer',desc:'1000 spots collected',icon:'⚜️',need:1000,all:true,xpReward:50},
-  ]},
-  {id:'streaks',title:'Serijos',icon:'🔥',cat:null,badges:[
-    {id:'st3',name:'Pradedantysis',desc:'3 days in a row',icon:'🔥',streak:3,xpReward:10},
-    {id:'st7',name:'Savaitinis fanatikas',desc:'7 days in a row',icon:'⚡',streak:7,xpReward:10},
-    {id:'st14',name:'Two-Week Warrior',desc:'14 days in a row',icon:'🌊',streak:14,xpReward:20},
-    {id:'st30',name:'Monthly Devotee',desc:'30 days in a row',icon:'🏅',streak:30,xpReward:20},
-    {id:'st60',name:'Telefonas — Mano Kojas',desc:'60 days in a row',icon:'📱',streak:60,xpReward:50},
-    {id:'st100',name:'Hundred Day Legend',desc:'100 days in a row',icon:'👑',streak:100,xpReward:50},
-    {id:'st200',name:'Life is the Game',desc:'200 days in a row',icon:'💎',streak:200,xpReward:50},
+  {id:'abandoned',title:'Urbex Explorer',icon:'🏚',cat:'abandoned',sub:true,badges:[
+    {id:'ab1',name:'First Ruin',desc:'Visit 1 abandoned spot',icon:'🏚',need:1,xpReward:15},
+    {id:'ab2',name:'Urbex Beginner',desc:'Visit 5 abandoned spots',icon:'🔦',need:5,xpReward:30},
+    {id:'ab3',name:'Ruins Explorer',desc:'Visit 15 abandoned spots',icon:'🗺',need:15,xpReward:60},
+    {id:'ab4',name:'Urbex Master',desc:'Visit 30 abandoned spots',icon:'💎',need:30,xpReward:120},
   ]},
   {id:'hidden',title:'Hidden Spot Finds',icon:'🔮',cat:'hidden',sub:true,badges:[
-    {id:'hid1',name:'Pirmasis radinys',desc:'Find 1 hidden spot',icon:'🔮',need:1,xpReward:10},
+    {id:'hid1',name:'First Find',desc:'Find 1 hidden spot',icon:'🔮',need:1,xpReward:10},
     {id:'hid2',name:'Seeker',desc:'Find 3 hidden spots',icon:'🗝️',need:3,xpReward:20},
     {id:'hid3',name:'Secret Explorer',desc:'Find 7 hidden spots',icon:'🕵️',need:7,xpReward:20},
     {id:'hid4',name:'Shadow Master',desc:'Find 15 hidden spots',icon:'🌑',need:15,xpReward:50},
     {id:'hid5',name:'???',desc:'???',icon:'👁️',need:30,xpReward:50},
   ]},
-  {id:'mounds',title:'Hillfort Expert',icon:'⛰',cat:'mound',sub:true,badges:[
-    {id:'mo1',name:'Pirmasis piliakalnis',desc:'Visit 1 hillfort',icon:'⛰',need:1,xpReward:15},
-    {id:'mo2',name:'History Seeker',desc:'Visit 5 hillforts',icon:'🗡',need:5,xpReward:25},
-    {id:'mo3',name:'Heritage Descendant',desc:'Visit 15 hillforts',icon:'🌾',need:15,xpReward:60},
-    {id:'mo4',name:'Hillfort Lord',desc:'Visit 40 hillforts',icon:'👑',need:40,xpReward:150},
-    {id:'mo5',name:'Legendary Defender',desc:'Visit 100 hillforts',icon:'💎',need:100,xpReward:400},
+  // ── Progress ──
+  {id:'tiers',title:'Tier progress',icon:'⭐',cat:null,badges:[
+    {id:'t1all',name:'Landmark Champion',desc:'All Landmark spots collected',icon:'🥉',tierComplete:1,xpReward:100},
+    {id:'t2all',name:'National Master',desc:'All National spots collected',icon:'🥈',tierComplete:2,xpReward:200},
+    {id:'t3all',name:'USA Legend',desc:'All State spots collected',icon:'🥇',tierComplete:3,xpReward:500},
   ]},
-  {id:'cemeteries',title:'Cemetery Explorer',icon:'⚱️',cat:'cemetery',sub:true,badges:[
-    {id:'ce1',name:'First Cemetery',desc:'Aplankyk 1 kapines',icon:'⚱️',need:1,xpReward:10},
-    {id:'ce2',name:'Atminties saugotojas',desc:'Visit 5 cemeteries',icon:'🕯',need:5,xpReward:20},
-    {id:'ce3',name:'Keeper of Eternal Rest',desc:'Visit 20 cemeteries',icon:'🌹',need:20,xpReward:60},
-    {id:'ce4',name:'Cemetery Meditator',desc:'Visit 50 cemeteries',icon:'💫',need:50,xpReward:150},
-    {id:'ce5',name:'Eternity Keeper',desc:'Visit 150 cemeteries',icon:'💎',need:150,xpReward:500},
+  {id:'general',title:'Overall progress',icon:'🗺',cat:null,badges:[
+    {id:'g1',name:'First Step',desc:'1 spot collected',icon:'🗺',need:1,all:true,xpReward:10},
+    {id:'g2',name:'Scout',desc:'10 spots collected',icon:'🔭',need:10,all:true,xpReward:10},
+    {id:'g3',name:'Serious Explorer',desc:'25 spots collected',icon:'🌟',need:25,all:true,xpReward:20},
+    {id:'g4',name:'Professional Wanderer',desc:'50 spots collected',icon:'🏆',need:50,all:true,xpReward:20},
+    {id:'g5',name:'Country in my Backyard',desc:'100 spots collected',icon:'👑',need:100,all:true,xpReward:50},
+    {id:'g6',name:'GPS Person',desc:'250 spots collected',icon:'📡',need:250,all:true,xpReward:50},
+    {id:'g7',name:'America Discovered',desc:'500 spots collected',icon:'🌍',need:500,all:true,xpReward:50},
+    {id:'g8',name:'Immortal Explorer',desc:'1000 spots collected',icon:'⚜️',need:1000,all:true,xpReward:50},
+    {id:'g9',name:'Coast to Coast',desc:'2500 spots collected',icon:'🦅',need:2500,all:true,xpReward:200},
+    {id:'g10',name:'Manifest Destiny',desc:'5000 spots collected',icon:'💎',need:5000,all:true,xpReward:500},
   ]},
-  {id:'monuments',title:'Monument Collector',icon:'🗿',cat:'monument',sub:true,badges:[
-    {id:'mn1',name:'Pirmasis monumentas',desc:'Visit 1 monument',icon:'🗿',need:1,xpReward:10},
-    {id:'mn2',name:'Sculpture Expert',desc:'Visit 10 monuments',icon:'🏛',need:10,xpReward:25},
-    {id:'mn3',name:'Monument Master',desc:'Visit 30 monuments',icon:'⭐',need:30,xpReward:75},
-    {id:'mn4',name:'Atminties kolekcionierius',desc:'Visit 100 monuments',icon:'💎',need:100,xpReward:300},
-  ]},
-  {id:'murals',title:'Street Art Expert',icon:'🎨',cat:'mural',sub:true,badges:[
-    {id:'mu1',name:'First Piece',desc:'Visit 1 street art piece',icon:'🎨',need:1,xpReward:10},
-    {id:'mu2',name:'Street Artist',desc:'Visit 10 pieces',icon:'🖌',need:10,xpReward:25},
-    {id:'mu3',name:'City menininkas',desc:'Visit 30 pieces',icon:'🌈',need:30,xpReward:75},
-    {id:'mu4',name:'Street Art Legend',desc:'Visit 80 pieces',icon:'💎',need:80,xpReward:250},
+  {id:'streaks',title:'Streaks',icon:'🔥',cat:null,badges:[
+    {id:'st3',name:'Getting Started',desc:'3 days in a row',icon:'🔥',streak:3,xpReward:10},
+    {id:'st7',name:'Weekly Devotee',desc:'7 days in a row',icon:'⚡',streak:7,xpReward:10},
+    {id:'st14',name:'Two-Week Warrior',desc:'14 days in a row',icon:'🌊',streak:14,xpReward:20},
+    {id:'st30',name:'Monthly Devotee',desc:'30 days in a row',icon:'🏅',streak:30,xpReward:20},
+    {id:'st60',name:'My Phone, My Feet',desc:'60 days in a row',icon:'📱',streak:60,xpReward:50},
+    {id:'st100',name:'Hundred Day Legend',desc:'100 days in a row',icon:'👑',streak:100,xpReward:50},
+    {id:'st200',name:'Life is the Game',desc:'200 days in a row',icon:'💎',streak:200,xpReward:50},
   ]},
   {id:'explorer',title:'Overall Exploration',icon:'🧭',cat:null,sub:true,badges:[
     {id:'ex1',name:'First Steps',desc:'Collect 10 spots',icon:'👣',all:true,need:10,xpReward:20},
-    {id:'ex2',name:'Smalsus keliautojas',desc:'Collect 50 spots',icon:'🧭',all:true,need:50,xpReward:60},
+    {id:'ex2',name:'Curious Traveler',desc:'Collect 50 spots',icon:'🧭',all:true,need:50,xpReward:60},
     {id:'ex3',name:'True Explorer',desc:'Collect 100 spots',icon:'🗺',all:true,need:100,xpReward:120},
     {id:'ex4',name:'America Expert',desc:'Collect 250 spots',icon:'🏅',all:true,need:250,xpReward:300},
-    {id:'ex5',name:'Legendinis keliautojas',desc:'Collect 500 spots',icon:'⭐',all:true,need:500,xpReward:600},
+    {id:'ex5',name:'Legendary Traveler',desc:'Collect 500 spots',icon:'⭐',all:true,need:500,xpReward:600},
     {id:'ex6',name:'Immortal Explorer',desc:'Collect 1000 spots',icon:'💫',all:true,need:1000,xpReward:1500},
-    {id:'ex7',name:'Lietuvos legenda',desc:'Collect 2000 spots',icon:'💎',all:true,need:2000,xpReward:5000},
+    {id:'ex7',name:'American Legend',desc:'Collect 2000 spots',icon:'💎',all:true,need:2000,xpReward:5000},
   ]},
   {id:'contributor',title:'Community Builder',icon:'🗺️',cat:null,badges:[
     {id:'con1',name:'Spot Creator',desc:'1 suggested spot approved',icon:'📍',contribNeed:1,xpReward:50},
     {id:'con2',name:'Community Explorer',desc:'3 suggested spots approved',icon:'🗺️',contribNeed:3,xpReward:100},
     {id:'con3',name:'Spot Expert',desc:'10 suggested spots approved',icon:'🏅',contribNeed:10,xpReward:200},
-    {id:'con4',name:'Lietuvos kartografas',desc:'25 suggested spots approved',icon:'💎',contribNeed:25,xpReward:500},
+    {id:'con4',name:'Master Cartographer',desc:'25 suggested spots approved',icon:'💎',contribNeed:25,xpReward:500},
   ]},
 ];
-
 // ═══════════ LEVEL SYSTEM ═══════════
 const LEVELS=[
   {level:1,name:'Newcomer',icon:'🐣',xp:0},
@@ -1820,7 +1928,7 @@ function deleteAccountConfirmed(){
     closeDeleteModal();
     toast('Account deleted','info');
     setTimeout(()=>location.reload(),1500);
-  }).catch(e=>{toast('Klaida: '+e.message,'info');});
+  }).catch(e=>{toast('Error: '+e.message,'info');});
 }
 
 // ═══════════ MAP ═══════════
@@ -1886,60 +1994,6 @@ function startMapPick(){
 }
 
 // ═══════════ CSV IMPORT ═══════════
-
-function importCSV(event){
-  const file=event.target.files[0];
-  if(!file) return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const lines=e.target.result.split('\n').map(l=>l.trim()).filter(Boolean);
-    let imported=0,skipped=0;
-    // Skip header rows (first 3 rows are headers/comments/examples in template)
-    for(let i=0;i<lines.length;i++){
-      const line=lines[i];
-      // Skip comment/header rows
-      if(line.startsWith('name,') || line.startsWith('PAVADINIMAS') || line.startsWith('"---')) continue;
-      const cols=parseCSVLine(line);
-      if(cols.length<12) {skipped++;continue;}
-      const [name,cat,tier,year,time,price,tag,history,bring,radius,lat,lng]=cols;
-      const latN=parseFloat(lat),lngN=parseFloat(lng);
-      if(!name||isNaN(latN)||isNaN(lngN)){skipped++;continue;}
-      const spot={
-        id:Date.now()+imported,
-        name:name.trim(),
-        cat:(cat||'history').trim().toLowerCase(),
-        tier:parseInt(tier)||1,
-        year:(year||'').trim(),
-        time:(time||'').trim(),
-        price:(price||'').trim(),
-        tag:(tag||'').trim(),
-        history:(history||'').trim(),
-        bring:(bring||'').split(';').map(b=>b.trim()).filter(Boolean),
-        radius:parseInt(radius)||DEFAULT_RADIUS,
-        lat:latN,lng:lngN
-      };
-      SPOTS.push(spot);
-      imported++;
-    }
-    event.target.value=''; // reset input
-    save();refreshMarkers();updateAll();closeEditor();
-    if(imported>0) toast(`📥 Imported: ${imported} spots${skipped?' ('+skipped+' skipped)':''}`, 'success');
-    else toast('⚠ No valid rows found in CSV file','info');
-  };
-  reader.readAsText(file,'UTF-8');
-}
-
-function parseCSVLine(line){
-  const cols=[];let cur='',inQ=false;
-  for(let i=0;i<line.length;i++){
-    const c=line[i];
-    if(c==='"'){inQ=!inQ;}
-    else if(c===','&&!inQ){cols.push(cur);cur='';}
-    else cur+=c;
-  }
-  cols.push(cur);
-  return cols.map(c=>c.trim().replace(/^"|"$/g,''));
-}
 
 function makeIcon(spot){
   const cat=CATS[spot.cat]||CATS.history;
@@ -2333,7 +2387,7 @@ function refreshGPS(){
   _gpsRefreshTs=now;
   const icon=document.getElementById('gpsRefreshIcon');
   if(icon){icon.style.display='inline-block';icon.style.animation='gpsRefreshSpin .8s ease';setTimeout(()=>{icon.style.animation='';},900);}
-  if(!navigator.geolocation){toast('📍 GPS nepasiekiamas','info');return;}
+  if(!navigator.geolocation){toast('📍 GPS unavailable','info');return;}
   navigator.geolocation.getCurrentPosition(pos=>{
     userLat=pos.coords.latitude;userLng=pos.coords.longitude;
     document.getElementById('gpsDot').className='gd on';
@@ -2341,7 +2395,7 @@ function refreshGPS(){
     else userMarker=L.circleMarker([userLat,userLng],{radius:9,fillColor:'#c9a84c',color:'#e8c878',weight:2,fillOpacity:.95}).addTo(map);
     wxLoaded=false;fetchWeather(userLat,userLng);
     checkProximity();
-    toast('📍 GPS atnaujintas','success');
+    toast('📍 GPS updateds','success');
   },()=>{toast('📍 GPS klaida','info');},{enableHighAccuracy:true,timeout:10000});
 }
 
@@ -2531,7 +2585,7 @@ const PANEL_TITLES={
   zenklai:'🏅 Badges',
   social:'👥 Draugai',
   osm:'🗺 OSM Import',
-  reviews:'💬 Atsiliepimai',
+  reviews:'💬 Reviews',
   suggestions:'📬 User suggestions',
   mysuggestions:'🗂 My suggestions',
 };
@@ -2693,6 +2747,58 @@ function showXPBurst(amount){
 
 // ═══════════ SHEET ═══════════
 
+// ═══════════ WIKIPEDIA SPOT DESCRIPTIONS (on-demand, cached) ═══════════
+const WP_CACHE_KEY='ss_wp_cache_v1';
+function _wpCache(){try{return JSON.parse(localStorage.getItem(WP_CACHE_KEY)||'{}');}catch(e){return{};}}
+function _wpCacheSave(c){
+  try{
+    const keys=Object.keys(c);
+    if(keys.length>250) keys.slice(0,keys.length-200).forEach(k=>delete c[k]);
+    localStorage.setItem(WP_CACHE_KEY,JSON.stringify(c));
+  }catch(e){}
+}
+async function loadWikiDesc(spot){
+  const box=document.getElementById('wikiDescBox');
+  if(!box) return;
+  const cache=_wpCache();
+  const ck=String(spot.id);
+  if(ck in cache){_renderWikiDesc(box,cache[ck]);return;}
+  box.innerHTML='<div style="font-size:.7rem;color:var(--tm);padding:6px 0">📖 Checking Wikipedia...</div>';
+  try{
+    const gs=await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${spot.lat}%7C${spot.lng}&gsradius=400&gslimit=5&format=json&origin=*`,{signal:AbortSignal.timeout(8000)});
+    const gj=await gs.json();
+    const pages=(gj&&gj.query&&gj.query.geosearch)||[];
+    let best=null,bestScore=0;
+    for(const p of pages){
+      const sim=nameSimilarity(p.title,spot.name);
+      if(sim>bestScore){bestScore=sim;best=p;}
+    }
+    if(bestScore<0.45) best=(pages[0]&&pages[0].dist<60)?pages[0]:null;
+    let result=null;
+    if(best){
+      const sr=await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(best.title)}`,{signal:AbortSignal.timeout(8000)});
+      if(sr.ok){
+        const d=await sr.json();
+        const sentences=(d.extract||'').trim().split('. ').slice(0,3).join('. ').trim();
+        if(sentences) result={
+          text:sentences+(sentences.endsWith('.')?'':'.'),
+          title:best.title,
+          url:(d.content_urls&&d.content_urls.desktop&&d.content_urls.desktop.page)||('https://en.wikipedia.org/wiki/'+encodeURIComponent(best.title))
+        };
+      }
+    }
+    cache[ck]=result;
+    _wpCacheSave(cache);
+    if(selectedSpot&&String(selectedSpot.id)===ck) _renderWikiDesc(document.getElementById('wikiDescBox'),result);
+  }catch(e){box.innerHTML='';}
+}
+function _renderWikiDesc(box,result){
+  if(!box) return;
+  if(!result){box.innerHTML='';return;}
+  box.innerHTML=`<div class="shist" style="margin-top:4px">${result.text}
+    <a href="${result.url}" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:none;font-size:.72rem;white-space:nowrap"> — Wikipedia ↗</a></div>`;
+}
+
 function openSheet(spot){
   // Route edit mode: tap = toggle spot in route
   if(_routeEditMode&&_routeEditRouteId){
@@ -2760,13 +2866,14 @@ function openSheet(spot){
           :`<div class="year-block"><span class="year-label">📅</span><span class="year-text">${yr}</span></div>`;
       })():''}
       <div class="sinfo">
-        <div class="ic"><div class="ii">${cat.emoji}</div><div class="iv">${cat.label}</div><div class="il">Tipas</div></div>
-        <div class="ic"><div class="ii">🏅</div><div class="iv">${tc.label}</div><div class="il">Lygis</div></div>
+        <div class="ic"><div class="ii">${cat.emoji}</div><div class="iv">${cat.label}</div><div class="il">Type</div></div>
+        <div class="ic"><div class="ii">🏅</div><div class="iv">${tc.label}</div><div class="il">Tier</div></div>
       </div>
       ${histHtml}
-      ${isF?`<div class="note-box"><div class="note-t">📝 Mano pastaba</div><textarea class="note-area" id="noteArea" placeholder="Add your thoughts...">${notes[spot.id]||''}</textarea><button class="note-save" onclick="saveNote()">Save</button></div>`:''}
-      ${spot.kpdUrl?`<a href="${spot.kpdUrl}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:.65rem;color:var(--gold);text-decoration:none;margin-bottom:6px;opacity:.85">📖 KPD registras ↗</a>`:''}
-      <div class="area-hint">📡 Surinkimo zona: ${r}m from spot</div>
+      ${(!histFull&&!locked)?`<div id="wikiDescBox"></div>`:''}
+      ${isF?`<div class="note-box"><div class="note-t">📝 My note</div><textarea class="note-area" id="noteArea" placeholder="Add your thoughts...">${notes[spot.id]||''}</textarea><button class="note-save" onclick="saveNote()">Save</button></div>`:''}
+      
+      <div class="area-hint">📡 Collection zone: ${r}m from spot</div>
       <div class="crow">
         <div class="dbadge" id="distBadge">—</div>
         <button class="${isF?'cbtn done':'cbtn gps-wait'}" id="collectBtn" onclick="collectCurrent()">${isF?'✓ Collected':'⌛ Get closer'}</button>
@@ -2779,6 +2886,7 @@ function openSheet(spot){
   updateDist(spot);
   updateCollectBtn(spot);
   updateFavBtn();
+  if(!locked&&!spot.history) loadWikiDesc(spot);
   map.panTo([spot.lat,spot.lng]);
   document.getElementById('sheet').classList.add('open');
   document.getElementById('sback').classList.add('open');
@@ -2857,7 +2965,7 @@ function collectCurrent(){
       const btn=document.getElementById('collectBtn');
       if(btn&&!btn.dataset.forceConfirm){
         btn.dataset.forceConfirm='1';
-        btn.textContent=`⚠️ Patvirtinti (${Math.round(d)}m from spot)`;
+        btn.textContent=`⚠️ Confirm (${Math.round(d)}m from spot)`;
         btn.className='cbtn gps-force';
         setTimeout(()=>{if(btn.dataset.forceConfirm){delete btn.dataset.forceConfirm;updateCollectBtn(selectedSpot);}},4000);
         toast('📍 GPS may be imprecise. Tap again to confirm.','info');
@@ -3067,6 +3175,7 @@ function renderAboutMe(){
 
     <!-- City completion -->
     <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.08em;margin-bottom:-4px">City completion</div>
+    <div id="aboutMeStates">${renderStateConquest()}</div>
     <div id="aboutMeCity">${renderCityCompletion()}</div>
 
   </div>`;
@@ -3102,45 +3211,34 @@ function renderBadges(){
 // ═══════════ WEEKLY CHALLENGE ═══════════
 const WEEKLY_CHALLENGES=[
   // Category-based
+  {id:'w_house',cat:'house',goal:5,label:'Visit 5 historic houses this week',icon:'🏠',xp:60},
+  {id:'w_house2',cat:'house',goal:10,label:'Visit 10 historic houses this week',icon:'🏠',xp:100},
   {id:'w_church',cat:'church',goal:3,label:'Visit 3 churches this week',icon:'⛪',xp:60},
   {id:'w_church2',cat:'church',goal:5,label:'Visit 5 churches this week',icon:'⛪',xp:90},
-  {id:'w_nature',cat:'nature',goal:3,label:'Visit 3 nature spots this week',icon:'🌿',xp:60},
-  {id:'w_nature2',cat:'nature',goal:5,label:'Visit 5 nature spots this week',icon:'🌿',xp:90},
-  {id:'w_fort',cat:'fort',goal:2,label:'Visit 2 forts this week',icon:'🏰',xp:80},
-  {id:'w_fort2',cat:'fort',goal:3,label:'Visit 3 forts this week',icon:'🏰',xp:110},
-  {id:'w_museum',cat:'museum',goal:2,label:'Visit 2 museums this week',icon:'🏛',xp:60},
-  {id:'w_museum2',cat:'museum',goal:4,label:'Visit 4 museums this week',icon:'🏛',xp:90},
-  {id:'w_history',cat:'history',goal:4,label:'Visit 4 historic spots this week',icon:'⚔️',xp:70},
-  {id:'w_history2',cat:'history',goal:7,label:'Visit 7 historic spots this week',icon:'⚔️',xp:110},
-  {id:'w_viewpoint',cat:'viewpoint',goal:2,label:'Visit 2 viewpoints this week',icon:'🔭',xp:60},
-  {id:'w_viewpoint2',cat:'viewpoint',goal:4,label:'Visit 4 viewpoints this week',icon:'🔭',xp:90},
-  {id:'w_mound',cat:'mound',goal:2,label:'Visit 2 hillforts this week',icon:'⛰️',xp:80},
-  {id:'w_mound2',cat:'mound',goal:4,label:'Visit 4 hillforts this week',icon:'⛰️',xp:120},
-  {id:'w_cemetery',cat:'cemetery',goal:2,label:'Visit 2 cemeteries this week',icon:'⚱️',xp:100},
-  {id:'w_mural',cat:'mural',goal:3,label:'Visit 3 street art pieces this week',icon:'🎨',xp:60},
-  {id:'w_mural2',cat:'mural',goal:5,label:'Visit 5 street art pieces this week',icon:'🎨',xp:90},
-  {id:'w_monument',cat:'monument',goal:3,label:'Visit 3 monuments this week',icon:'🗿',xp:70},
-  {id:'w_monument2',cat:'monument',goal:5,label:'Visit 5 monuments this week',icon:'🗿',xp:100},
+  {id:'w_school',cat:'school',goal:3,label:'Visit 3 historic schools this week',icon:'🎓',xp:60},
+  {id:'w_civic',cat:'civic',goal:3,label:'Visit 3 civic buildings this week',icon:'🏛️',xp:60},
+  {id:'w_civic2',cat:'civic',goal:5,label:'Visit 5 civic buildings this week',icon:'🏛️',xp:90},
+  {id:'w_hotel',cat:'hotel',goal:2,label:'Visit 2 historic hotels this week',icon:'🏨',xp:60},
+  {id:'w_theater',cat:'theater',goal:2,label:'Visit 2 historic theaters this week',icon:'🎭',xp:70},
+  {id:'w_museum',cat:'museum',goal:2,label:'Visit 2 museums this week',icon:'🏺',xp:60},
+  {id:'w_commerce',cat:'commerce',goal:4,label:'Visit 4 commercial landmarks this week',icon:'🏪',xp:60},
+  {id:'w_bridge',cat:'bridge',goal:2,label:'Visit 2 bridges this week',icon:'🌉',xp:60},
+  {id:'w_bridge2',cat:'bridge',goal:4,label:'Visit 4 bridges this week',icon:'🌉',xp:100},
+  {id:'w_railroad',cat:'railroad',goal:2,label:'Visit 2 railroad landmarks this week',icon:'🚂',xp:70},
+  {id:'w_mill',cat:'mill',goal:2,label:'Visit 2 mills or factories this week',icon:'⚙️',xp:70},
   {id:'w_watertower',cat:'watertower',goal:2,label:'Visit 2 water towers this week',icon:'🗼',xp:80},
-  // Any-category challenges
-  {id:'w_any3',cat:null,goal:3,label:'Collect any 3 spots this week',icon:'🗺',xp:40},
-  {id:'w_any5',cat:null,goal:5,label:'Collect any 5 spots this week',icon:'🗺',xp:60},
-  {id:'w_any8',cat:null,goal:8,label:'Collect at least 8 spots this week',icon:'🗺',xp:90},
-  {id:'w_any10',cat:null,goal:10,label:'Collect 10 spots this week — Seeker\'io norma!',icon:'🗺',xp:120},
-  // Tier-based
-  {id:'w_t2a',cat:null,tier:2,goal:2,label:'Collect 2 rare (T2) spots this week',icon:'🥈',xp:100},
-  {id:'w_t3a',cat:null,tier:3,goal:1,label:'Collect at least 1 legendary (T3) spot this week',icon:'🥇',xp:120},
-  {id:'w_t3b',cat:null,tier:3,goal:2,label:'Collect 2 legendary (T3) spots this week',icon:'🥇',xp:180},
-  // Heritage combo
-  {id:'w_heritage',cat:null,cats:['church','monument','mound'],goal:4,label:'Visit 4 heritage spots (churches, monuments or hillforts)',icon:'🏛',xp:90},
-  {id:'w_heritage2',cat:null,cats:['fort','mound','history'],goal:3,label:'Aplankyk 3 gynybines ar istorines vietas',icon:'⚔️',xp:90},
-  // Nature combo
-  {id:'w_outdoors',cat:null,cats:['nature','viewpoint','mound'],goal:4,label:'Visit 4 outdoor spots (nature, viewpoints or hillforts)',icon:'🌄',xp:80},
-  // Urban combo
-  {id:'w_urban',cat:null,cats:['mural','monument','watertower'],goal:4,label:'Visit 4 urban spots (street art, towers or monuments)',icon:'🏙',xp:80},
-  // Streak boosters
-  {id:'w_streak3',cat:null,goal:1,streakBonus:3,label:'Visit at least 1 spot and hold a 3-day streak this week',icon:'🔥',xp:70},
-  {id:'w_daily',cat:null,goal:7,perDay:true,label:'Visit at least 1 spot every day this week',icon:'📅',xp:150},
+  {id:'w_maritime',cat:'maritime',goal:2,label:'Visit 2 maritime landmarks this week',icon:'⚓',xp:80},
+  {id:'w_military',cat:'military',goal:2,label:'Visit 2 military landmarks this week',icon:'🏰',xp:80},
+  {id:'w_military2',cat:'military',goal:3,label:'Visit 3 military landmarks this week',icon:'🏰',xp:110},
+  {id:'w_farm',cat:'farm',goal:3,label:'Visit 3 farms or barns this week',icon:'🌾',xp:60},
+  {id:'w_district',cat:'district',goal:3,label:'Visit 3 historic districts this week',icon:'🏘️',xp:60},
+  {id:'w_monument',cat:'monument',goal:3,label:'Visit 3 monuments this week',icon:'🗿',xp:70},
+  {id:'w_cemetery',cat:'cemetery',goal:2,label:'Visit 2 cemeteries this week',icon:'⚱️',xp:100},
+  {id:'w_mound',cat:'mound',goal:2,label:'Visit 2 mounds this week',icon:'⛰️',xp:120},
+  {id:'w_history',cat:'history',goal:4,label:'Visit 4 historic spots this week',icon:'⚔️',xp:70},
+  {id:'w_nature',cat:'nature',goal:3,label:'Visit 3 nature spots this week',icon:'🌿',xp:60},
+  {id:'w_viewpoint',cat:'viewpoint',goal:2,label:'Visit 2 viewpoints this week',icon:'🔭',xp:60},
+  {id:'w_mural',cat:'mural',goal:3,label:'Visit 3 street art pieces this week',icon:'🎨',xp:60},
 ];
 
 // Seeded shuffle — produces a stable but year+week unique order
@@ -3371,6 +3469,53 @@ function getCityStats(){
   }).filter(x=>x.total>0).sort((a,b)=>b.pct-a.pct||b.total-a.total);
 }
 
+// ═══════════ STATE CONQUEST ═══════════
+function getStateStats(){
+  const m=new Map();
+  for(const s of SPOTS){
+    if(!s.state||s.cat==='hidden') continue;
+    let e=m.get(s.state);
+    if(!e){e={state:s.state,total:0,done:0};m.set(s.state,e);}
+    e.total++;
+    if(found.has(s.id)) e.done++;
+  }
+  return [...m.values()].map(e=>({...e,pct:e.total?Math.round(e.done/e.total*1000)/10:0}));
+}
+
+function renderStateConquest(){
+  const stats=getStateStats();
+  if(!stats.length) return'';
+  const visited=stats.filter(s=>s.done>0).sort((a,b)=>b.pct-a.pct||b.done-a.done);
+  const totalStates=stats.length;
+  const conquered=stats.filter(s=>s.pct>=100).length;
+
+  function stateRow(s){
+    const col=s.pct>=100?'var(--gold)':s.pct>=25?'#7ac47a':'var(--tm)';
+    const flag=s.pct>=100?' 👑':'';
+    return`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <span style="font-family:'DM Mono',monospace;font-size:.68rem;min-width:106px;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.state}${flag}</span>
+      <div style="flex:1;height:5px;background:var(--surf2);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${Math.max(s.pct,1)}%;background:${col};border-radius:3px;transition:width .5s"></div>
+      </div>
+      <span style="font-family:'DM Mono',monospace;font-size:.62rem;color:${col};min-width:70px;text-align:right">${s.done}/${s.total} · ${s.pct}%</span>
+    </div>`;
+  }
+
+  const top=visited.slice(0,6);
+  const rest=visited.slice(6);
+  const restHtml=rest.length?`<div id="stateRestRows" style="display:none">${rest.map(stateRow).join('')}</div>
+    <button onclick="this.style.display='none';document.getElementById('stateRestRows').style.display='block'" style="background:none;border:1px solid var(--bdr);border-radius:8px;padding:4px 10px;font-family:'DM Mono',monospace;font-size:.62rem;color:var(--td);cursor:pointer;margin-top:4px">+ Show ${rest.length} more</button>`:'';
+
+  return`<div class="streak-card" style="margin-bottom:8px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px">
+      <span style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--gold)">🇺🇸 State Conquest</span>
+      <span style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm)">${visited.length}/${totalStates} explored${conquered?` · ${conquered} 👑`:''}</span>
+    </div>
+    ${visited.length?top.map(stateRow).join(''):'<div style="font-size:.72rem;color:var(--tm)">Collect your first spot to start conquering states!</div>'}
+    ${restHtml}
+  </div>`;
+}
+
 function renderCityCompletion(){
   const stats=getCityStats().sort((a,b)=>b.done-a.done||b.total-a.total);
   if(!stats.length) return'';
@@ -3392,7 +3537,7 @@ function renderCityCompletion(){
 
   const restRows=rest.map(cityRow).join('');
   const restHtml=hasMore?`<div id="cityRestRows" style="display:none">${restRows}</div>
-    <button onclick="this.style.display='none';document.getElementById('cityRestRows').style.display='block'" style="background:none;border:1px solid var(--bdr);border-radius:8px;padding:4px 10px;font-family:'DM Mono',monospace;font-size:.62rem;color:var(--td);cursor:pointer;margin-top:4px">+ Rodyti dar ${rest.length}</button>`:'';
+    <button onclick="this.style.display='none';document.getElementById('cityRestRows').style.display='block'" style="background:none;border:1px solid var(--bdr);border-radius:8px;padding:4px 10px;font-family:'DM Mono',monospace;font-size:.62rem;color:var(--td);cursor:pointer;margin-top:4px">+ Show ${rest.length} more</button>`:'';
 
   return`<div class="streak-card" style="margin-bottom:8px">
     <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--gold);margin-bottom:10px">🏙 City progress</div>
@@ -3440,7 +3585,7 @@ function renderDrawerStats(){
     +renderQuestCard()
     +renderWeeklySummary()
     +renderWeeklyChallenge()
-    +renderCityCompletion()
+    +renderStateConquest()+renderCityCompletion()
     +renderNearbySuggestions();
 }
 
@@ -3485,7 +3630,7 @@ function renderList(){
       .filter(s=>(s.name||'').toLowerCase().includes(searchVal))
       .sort((a,b)=>(a.name||'').localeCompare(b.name||'','en'));
     if(results.length===0){
-      h+=`<div style="text-align:center;padding:24px;color:var(--tm);font-size:.8rem">Nerasta</div>`;
+      h+=`<div style="text-align:center;padding:24px;color:var(--tm);font-size:.8rem">Nothing found</div>`;
     } else {
       h+=`<div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);padding:4px 2px;margin-bottom:2px">${results.length} result${results.length===1?'':'s'}</div>`;
       results.forEach(s=>{
@@ -3704,11 +3849,11 @@ function renderSocial(){
       <div class="msc-grid">
         <div class="msc-cell"><div class="msc-val">${found.size}</div><div class="msc-lbl">Vietos</div></div>
         <div class="msc-cell"><div class="msc-val">${totalXP}</div><div class="msc-lbl">XP</div></div>
-        <div class="msc-cell"><div class="msc-val">${streak}</div><div class="msc-lbl">🔥 Serija</div></div>
+        <div class="msc-cell"><div class="msc-val">${streak}</div><div class="msc-lbl">🔥 Streak</div></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
         <div class="msc-cell"><div class="msc-val">${badgeCount}</div><div class="msc-lbl">🏅 Badges</div></div>
-        <div class="msc-cell"><div class="msc-val">${streak}</div><div class="msc-lbl">🔥 Serija</div></div>
+        <div class="msc-cell"><div class="msc-val">${streak}</div><div class="msc-lbl">🔥 Streak</div></div>
       </div>
       <div style="margin-top:10px">
         <div style="height:4px;background:var(--bdr);border-radius:2px;overflow:hidden">
@@ -3720,7 +3865,7 @@ function renderSocial(){
 
     <!-- NAME + SHARE -->
     <div class="name-row" style="margin-bottom:6px">
-      <input class="fi" id="nameInput" value="${playerName}" placeholder="Tavo vardas">
+      <input class="fi" id="nameInput" value="${playerName}" placeholder="Your name">
       <button class="name-save-btn" onclick="saveName()">✓</button>
     </div>
     <button class="social-btn pri-btn" onclick="shareInvite()" style="margin-bottom:8px">
@@ -3749,7 +3894,7 @@ function renderSocial(){
     <div class="lb-tabs">
       <div class="lb-tab ${_lbTab==='xp'?'on':''}" onclick="setLbTab('xp')">⭐ XP</div>
       <div class="lb-tab ${_lbTab==='spots'?'on':''}" onclick="setLbTab('spots')">📍 Spots</div>
-      <div class="lb-tab ${_lbTab==='streak'?'on':''}" onclick="setLbTab('streak')">🔥 Serija</div>
+      <div class="lb-tab ${_lbTab==='streak'?'on':''}" onclick="setLbTab('streak')">🔥 Streak</div>
     </div>
     <div id="lbList" style="padding-bottom:40px"><div class="lb-loading">Kraunama...</div></div>
   </div>`;
@@ -3873,18 +4018,18 @@ function saveName(){
   playerName=n;
   save();
   renderSocial();
-  toast(`👤 Vardas: ${n}`,'success');
+  toast(`👤 Name: ${n}`,'success');
 }
 
 // ═══════════ EDITOR ═══════════
 
 function openEditor(spot){
   const isNew=!spot;
-  document.getElementById('editorTitle').textContent=isNew?'Nauja vieta':'Edit spot';
+  document.getElementById('editorTitle').textContent=isNew?'New spot':'Edit spot';
   document.getElementById('edDelBtn').style.display=isNew?'none':'';
   document.getElementById('eId').value=spot?spot.id:'';
   document.getElementById('eName').value=spot?spot.name:'';
-  document.getElementById('eCat').value=spot?spot.cat:'fort';
+  document.getElementById('eCat').value=spot?spot.cat:'history';
   document.getElementById('eTier').value=spot?spot.tier||1:1;
   document.getElementById('eHist').value=spot?spot.history:'';
   document.getElementById('eYear').value=spot?spot.year:'';
@@ -3909,7 +4054,7 @@ function saveSpot(){
   const id=document.getElementById('eId').value;
   if(id){
     const idx=SPOTS.findIndex(s=>s.id==id);
-    if(idx!==-1){SPOTS[idx]={...SPOTS[idx],...data};toast(`✅ ${name} atnaujinta`,'success');}
+    if(idx!==-1){SPOTS[idx]={...SPOTS[idx],...data};toast(`✅ ${name} updated`,'success');}
   } else {
     data.id=Date.now();data.country='LT';SPOTS.push(data);toast(`📍 ${name} added!`,'success');
   }
@@ -4109,8 +4254,8 @@ async function doOsmSearch(){
   box.style.display='block';
   box.innerHTML=`<div style="padding:10px;font-size:.78rem;color:var(--td);font-family:'DM Mono',monospace">Searching...</div>`;
   try{
-    const url=`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q+' Lietuva')}&format=json&limit=5&accept-language=lt`;
-    const res=await fetch(url,{headers:{'Accept-Language':'lt'}});
+    const url=`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&countrycodes=us&accept-language=en`;
+    const res=await fetch(url,{headers:{'Accept-Language':'en'}});
     const data=await res.json();
     if(!data.length){
       box.innerHTML=`<div style="padding:10px;font-size:.78rem;color:var(--td);font-family:'DM Mono',monospace">Nieko nerasta</div>`;
@@ -4142,37 +4287,84 @@ function osmPick(lat,lng,name){
 // ═══════════ OSM BULK IMPORT ═══════════
 
 // Smart OSM category resolver — handles tag priority and Lithuanian-specific quirks
+// ═══ Duplicate detection: name ≥80% similar AND within ~100 m ═══
+function _nameBigrams(s){
+  s=(s||'').toLowerCase().replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
+  const set=new Set();
+  for(let i=0;i<s.length-1;i++) set.add(s.slice(i,i+2));
+  return set;
+}
+function nameSimilarity(a,b){
+  const A=_nameBigrams(a),B=_nameBigrams(b);
+  if(!A.size||!B.size) return 0;
+  let inter=0;
+  for(const g of A) if(B.has(g)) inter++;
+  return (2*inter)/(A.size+B.size); // Dice coefficient, 0..1
+}
+// Grid-indexed duplicate check against SPOTS (rebuilt lazily per import session)
+let _dupGrid=null,_dupGridSize=0;
+function _buildDupGrid(){
+  _dupGrid=new Map();
+  for(const s of SPOTS){
+    const key=Math.round(s.lat*100)+':'+Math.round(s.lng*100); // ~1.1 km cells
+    let arr=_dupGrid.get(key);
+    if(!arr){arr=[];_dupGrid.set(key,arr);}
+    arr.push(s);
+  }
+  _dupGridSize=SPOTS.length;
+}
+function isDuplicateSpot(name,lat,lng){
+  if(!_dupGrid||_dupGridSize!==SPOTS.length) _buildDupGrid();
+  const cy=Math.round(lat*100),cx=Math.round(lng*100);
+  for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+    const arr=_dupGrid.get((cy+dy)+':'+(cx+dx));
+    if(!arr) continue;
+    for(const s of arr){
+      const dLat=(s.lat-lat)*111320;
+      const dLng=(s.lng-lng)*111320*Math.cos(lat*Math.PI/180);
+      if(dLat*dLat+dLng*dLng>100*100) continue;           // >100 m apart
+      if(nameSimilarity(name,s.name)>=0.8) return true;   // same-ish name
+    }
+  }
+  return false;
+}
+
 function resolveOsmCat(t){
   const name=(t.name||'').toLowerCase();
 
   // ── HISTORIC namespace (most specific first) ──
   if(t.historic){
     const h=t.historic;
-    // Mounds: explicit tag OR archaeological_site + site_type=mound OR name contains piliakalnis
     if(h==='mound') return 'mound';
-    if(h==='archaeological_site'&&(t.site_type==='mound'||name.includes('piliakalnis')||name.includes('pilis'))) return 'mound';
-    if(h==='castle'||h==='fort') return 'fort';
-    if(h==='bunker') return 'fort';
-    if(h==='monument'||h==='wayside_shrine'||h==='stone') return 'monument';
+    if(h==='archaeological_site'&&(t.site_type==='mound'||/mound|earthwork|petroglyph/.test(name))) return 'mound';
+    if(h==='archaeological_site') return 'mound';
+    if(h==='castle'||h==='fort'||h==='battlefield'||h==='bunker'||h==='cannon') return 'military';
+    if(h==='monument'||h==='memorial'||h==='wayside_shrine'||h==='stone'||h==='boundary_stone') return 'monument';
     if(h==='bridge') return 'bridge';
+    if(h==='lighthouse'||h==='ship'||h==='wreck') return 'maritime';
+    if(h==='locomotive'||h==='railway_car'||h==='railway_station') return 'railroad';
+    if(h==='mill'||h==='mine'||h==='quarry') return 'mill';
+    if(h==='farm') return 'farm';
+    if(h==='church'||h==='chapel'||h==='wayside_cross') return 'church';
+    if(h==='hotel') return 'hotel';
+    if(h==='theatre') return 'theater';
+    if(h==='house'||h==='manor') return 'house';
     if(h==='artwork') return 'mural';
-    if(h==='memorial'||h==='ruins'||h==='archaeological_site') return 'history';
+    if(h==='district') return 'district';
+    if(h==='ruins') return 'abandoned';
     return 'history';
   }
 
   // ── TOURISM namespace ──
   if(t.tourism){
-    if(t.tourism==='museum') return 'museum';
-    if(t.tourism==='gallery') return 'museum';
+    if(t.tourism==='museum'||t.tourism==='gallery') return 'museum';
     if(t.tourism==='viewpoint') return 'viewpoint';
+    if(t.tourism==='hotel'||t.tourism==='motel') return 'hotel';
     if(t.tourism==='artwork'){
-      // Try to distinguish murals from sculptures
       const at=(t.artwork_type||'').toLowerCase();
-      if(at==='mural'||at==='graffiti'||at==='street_art') return 'mural';
-      if(at==='sculpture'||at==='statue') return 'monument';
-      return 'mural'; // artwork default → mural
+      if(at==='sculpture'||at==='statue'||at==='installation') return 'monument';
+      return 'mural'; // mural / graffiti / street_art / default
     }
-    if(t.tourism==='attraction') return 'history'; // broad fallback
     return 'history';
   }
 
@@ -4180,43 +4372,50 @@ function resolveOsmCat(t){
   if(t.amenity){
     if(t.amenity==='place_of_worship') return 'church';
     if(t.amenity==='grave_yard') return 'cemetery';
+    if(t.amenity==='theatre') return 'theater';
+    if(t.amenity==='courthouse'||t.amenity==='townhall'||t.amenity==='post_office'||t.amenity==='library'||t.amenity==='fire_station'||t.amenity==='police'||t.amenity==='hospital') return 'civic';
+    if(t.amenity==='school'||t.amenity==='college'||t.amenity==='university') return 'school';
+    if(t.amenity==='marketplace'||t.amenity==='bank') return 'commerce';
     return 'history';
   }
 
   // ── LEISURE namespace ──
-  if(t.leisure){
-    if(t.leisure==='park'||t.leisure==='garden') return 'nature';
-    if(t.leisure==='nature_reserve') return 'nature';
-    return 'nature';
-  }
+  if(t.leisure) return 'nature';
 
   // ── MILITARY namespace ──
-  if(t.military){
-    return 'fort';
-  }
+  if(t.military) return 'military';
 
   // ── MAN_MADE namespace ──
   if(t.man_made){
     if(t.man_made==='water_tower') return 'watertower';
-    if(t.man_made==='chimney') return 'history'; // chimneys → history now
+    if(t.man_made==='lighthouse') return 'maritime';
+    if(t.man_made==='windmill'||t.man_made==='watermill'||t.man_made==='works'||t.man_made==='mineshaft'||t.man_made==='adit') return 'mill';
+    if(t.man_made==='tower'&&(t['tower:type']==='observation')) return 'viewpoint';
     return 'history';
   }
 
-  // ── NATURAL namespace ──
-  if(t.natural){
-    if(t.natural==='cliff') return 'nature'; // cliffs → nature
-    return 'nature';
+  // ── RAILWAY namespace ──
+  if(t.railway){
+    if(t.railway==='station'||t.railway==='halt'||t.railway==='roundhouse'||t.railway==='turntable') return 'railroad';
+    return 'railroad';
   }
+
+  // ── SHOP namespace (historic storefronts) ──
+  if(t.shop) return 'commerce';
+
+  // ── NATURAL namespace ──
+  if(t.natural) return 'nature';
 
   // ── LANDUSE namespace ──
   if(t.landuse){
     if(t.landuse==='cemetery') return 'cemetery';
+    if(t.landuse==='farmland'||t.landuse==='farmyard') return 'farm';
     return 'history';
   }
 
   // ── ROUTE namespace (hiking trails) ──
-  if(t.route==='hiking'||t.route==='foot') return 'trail';
-  if(t.highway==='trailhead') return 'trail';
+  if(t.route==='hiking'||t.route==='foot') return 'nature';
+  if(t.highway==='trailhead') return 'nature';
 
   // ── BRIDGE property on highway/railway ways ──
   if(t.bridge==='yes') return 'bridge';
@@ -4224,9 +4423,10 @@ function resolveOsmCat(t){
   return 'history';
 }
 const OSM_CAT_EMOJI={
-  church:'⛪',museum:'🏛',fort:'🏰',nature:'🌿',history:'⚔',
-  monument:'🗿',mound:'⛰',viewpoint:'🔭',watertower:'🗼',
-  trail:'🥾',mural:'🎨',cemetery:'⚱️',abandoned:'🏚',
+  house:'🏠',church:'⛪',school:'🎓',civic:'🏛️',hotel:'🏨',theater:'🎭',museum:'🏺',commerce:'🏪',
+  bridge:'🌉',railroad:'🚂',mill:'⚙️',watertower:'🗼',maritime:'⚓',military:'🏰',
+  farm:'🌾',district:'🏘️',monument:'🗿',cemetery:'⚱️',mound:'⛰️',history:'⚔️',
+  nature:'🌿',viewpoint:'🔭',mural:'🎨',abandoned:'🏚️',
 };
 
 let _osmImportData=[];
@@ -4297,7 +4497,7 @@ function processOsmElement(e){
   const name=t['name:en']||t.name||osmGenerateName(t,cat);
   if(!name||name==='Unknown') return null;
   const typeKey=t.historic||t.tourism||t.amenity||t.leisure||t.military||t.man_made||t.natural||t.landuse||t.route||t.highway||t.bridge||'';
-  const alreadyIn=SPOTS.some(s=>Math.abs(s.lat-lat)<0.0005&&Math.abs(s.lng-lng)<0.0005);
+  const alreadyIn=isDuplicateSpot(name,lat,lng);
   return{name,nameLt:t['name:en']||'',cat,lat,lng,typeKey,alreadyIn,tags:t};
 }
 
@@ -4389,7 +4589,7 @@ async function fetchOsmRegion(cityName, bbox, btnId){
         osmSetStatus(`⚠ ${cityName} · mirror ${mi+1} klaida, bandau mirror ${mi+2}...`);
         await new Promise(r=>setTimeout(r,1500));
       } else {
-        osmSetStatus(`❌ ${cityName}: visi ${MIRRORS.length} serveriai nepasiekiami`);
+        osmSetStatus(`❌ ${cityName}: all ${MIRRORS.length} servers unavailable`);
         if(btn){ btn.disabled=false; btn.textContent='🔄 Retry'; }
         return;
       }
@@ -4428,7 +4628,7 @@ function renderOsmManualUI(){
     <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
       <button class="osm-ctrl-btn" onclick="osmCheckAll(true)">☑ Visi</button>
       <button class="osm-ctrl-btn" onclick="osmCheckAll(false)">☐ Jokie</button>
-      <button class="osm-ctrl-btn pri" onclick="osmFetchChecked()" id="osmFetchCheckedBtn">🔄 Fetch pasirinktus</button>
+      <button class="osm-ctrl-btn pri" onclick="osmFetchChecked()" id="osmFetchCheckedBtn">🔄 Fetch selected</button>
     </div>
     ${CITY_BBOXES_GLOBAL.map(([city,bbox],i)=>{
       const c=cache[city];
@@ -4470,7 +4670,7 @@ async function osmFetchChecked(){
     await fetchOsmRegion(city,bbox,tmpId);
     if(i<selected.length-1) await new Promise(r=>setTimeout(r,1200));
   }
-  if(btn){btn.disabled=false;btn.textContent='🔄 Fetch pasirinktus';}
+  if(btn){btn.disabled=false;btn.textContent='🔄 Fetch selected';}
   toast(`✅ Done! ${selected.length} cities imported`,'success');
 }
 
@@ -4502,10 +4702,7 @@ function processAbandonedElement(e, idx){
   // Determine subtype for display
   const typeKey=t.historic||t['abandoned:building']||t['abandoned:amenity']||t.building||t.amenity||t.man_made||t.ruins||'abandoned';
   // Already imported? Check by OSM ID tag first, then tight coord radius
-  const alreadyIn=SPOTS.some(s=>
-    (s.tag&&s.tag===osmTag)
-    ||(Math.abs(s.lat-lat)<0.0003&&Math.abs(s.lng-lng)<0.0003&&s.cat==='abandoned')
-  );
+  const alreadyIn=SPOTS.some(s=>s.tag&&s.tag===osmTag)||isDuplicateSpot(name,lat,lng);
   return{name,lat,lng,cat:'abandoned',typeKey,osmTag,alreadyIn,tags:t};
 }
 
@@ -4521,10 +4718,7 @@ async function fetchAbandonedData(forceRefresh){
         _abandonedData=c.data;
         // Recheck alreadyIn against current SPOTS
         _abandonedData.forEach(x=>{
-          x.alreadyIn=SPOTS.some(s=>
-            (s.tag&&s.tag===x.osmTag)
-            ||(Math.abs(s.lat-x.lat)<0.0003&&Math.abs(s.lng-x.lng)<0.0003&&s.cat==='abandoned')
-          );
+          x.alreadyIn=SPOTS.some(s=>s.tag&&s.tag===x.osmTag)||isDuplicateSpot(x.name,x.lat,x.lng);
         });
         abandonedSetStatus(`✅ ${_abandonedData.length} spots (cached · ${new Date(c.ts).toLocaleDateString('en-US')}) · Already added: ${_abandonedData.filter(x=>x.alreadyIn).length}`);
         _abandonedLoading=false;
@@ -4582,7 +4776,7 @@ out center tags;`,
       }catch(e){
         console.warn(`Abandoned Q${qi+1} mirror ${mi+1} failed:`,e.message);
         if(mi<MIRRORS.length-1){
-          abandonedSetStatus(`⚠ Q${qi+1} serveris ${mi+1} nepasiekiamas, bandau ${mi+2}...`);
+          abandonedSetStatus(`⚠ Q${qi+1} server ${mi+1} unavailable, trying ${mi+2}...`);
           await new Promise(r=>setTimeout(r,1500));
         } else {
           abandonedSetStatus(`❌ Q${qi+1}: all servers unreachable. Try again later.`);
@@ -4620,7 +4814,7 @@ out center tags;`,
     abandonedSetStatus(`✅ ${_abandonedData.length} spots found · ${alreadyCount} already in DB · ${newCount} new`);
     renderAbandonedList();
   }catch(e){
-    abandonedSetStatus('❌ Klaida apdorojant duomenis: '+e.message);
+    abandonedSetStatus('❌ Error apdorojant duomenis: '+e.message);
     console.error('Abandoned processing error',e);
   }
   _abandonedLoading=false;
@@ -4632,7 +4826,7 @@ function renderAbandonedPanel(){
   const newOnes=total-alreadyIn;
   return`<div>
     <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);margin-bottom:8px">
-      Abandoned spots · OpenStreetMap · abandoned/ruins/disused tags · visas Lietuvos bbox
+      Abandoned spots · OpenStreetMap · abandoned/ruins/disused tags · USA-wide bbox
     </div>
     ${total>0?`<div style="background:var(--surf2);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-family:'DM Mono',monospace;font-size:.68rem;display:flex;gap:12px;flex-wrap:wrap">
       <span>📦 Total: <strong style="color:var(--txt)">${total}</strong></span>
@@ -4702,85 +4896,26 @@ function abandonedSetTier(t){
 async function abandonedImportSelected(){
   if(_abandonedSelected.size===0){toast('⚠ No spots selected','info');return;}
   const btn=document.getElementById('abandonedImportBtn');
-  const{db,collection,doc,writeBatch,serverTimestamp}=window._fb||{};
-  if(!db){toast('Firebase nepasiekiamas','info');return;}
-
-  const toImport=[..._abandonedSelected]
-    .map(idx=>_abandonedData[idx])
-    .filter(item=>item&&!item.alreadyIn);
-
+  const toImport=[..._abandonedSelected].map(idx=>_abandonedData[idx]).filter(item=>item&&!item.alreadyIn);
   if(!toImport.length){toast('⚠ All selected spots already imported','info');return;}
-
-  if(btn){btn.disabled=true;}
-
-  const CHUNK=200; // writeBatch hard limit is 500; 200 is safe
-  let imported=0;
-  const localNewSpots=[];
-
-  for(let i=0;i<toImport.length;i+=CHUNK){
-    const chunk=toImport.slice(i,i+CHUNK);
-    abandonedSetStatus(`⏳ Importuojama... ${Math.min(i+CHUNK,toImport.length)} / ${toImport.length}`);
-    if(btn) btn.textContent=`⏳ ${Math.min(i+CHUNK,toImport.length)}/${toImport.length}`;
-
-    const batch=writeBatch(db);
-    const refs=[];
-    for(const item of chunk){
-      const ref=doc(collection(db,'spots'));
-      refs.push({ref,item});
-      const spot={
-        name:item.name,
-        cat:'abandoned',
-        tier:_abandonedTier,
-        lat:item.lat,
-        lng:item.lng,
-        country:'US',
-        radius:CAT_DEFAULT_RADIUS['abandoned']||DEFAULT_RADIUS,
-        time:'',price:'',year:'',
-        tag:item.osmTag,
-        history:'',
-        bring:[],
-        createdAt:serverTimestamp(),
-      };
-      batch.set(ref,spot);
-    }
-    try{
-      await batch.commit();
-      // Update local state
-      for(const{ref,item} of refs){
-        item.alreadyIn=true;
-        const localSpot={
-          id:ref.id,_fid:ref.id,
-          name:item.name,cat:'abandoned',tier:_abandonedTier,
-          lat:item.lat,lng:item.lng,
-          country:'US',
-          radius:CAT_DEFAULT_RADIUS['abandoned']||DEFAULT_RADIUS,
-          time:'',price:'',year:'',tag:item.osmTag,history:'',bring:[],
-        };
-        localNewSpots.push(localSpot);
-        imported++;
-      }
-    }catch(e){
-      console.error('Batch import error (chunk '+i+')',e);
-      abandonedSetStatus(`❌ Klaida importuojant (chunk ${i/CHUNK+1}): ${e.message}`);
-    }
-    // Breathe between chunks so browser doesn't freeze
-    await new Promise(r=>setTimeout(r,300));
+  if(btn){btn.disabled=true;btn.textContent='☁️ Publishing...';}
+  abandonedSetStatus(`☁️ Publishing ${toImport.length} spots to KV...`);
+  const ok=await kvImportSpots(toImport.map(item=>({
+    id:item.osmId?('osm_'+item.osmId):undefined,
+    name:item.name,cat:'abandoned',tier:_abandonedTier,
+    lat:item.lat,lng:item.lng,tag:item.osmTag
+  })),'Ruins import');
+  if(ok){
+    toImport.forEach(item=>item.alreadyIn=true);
+    _abandonedSelected.clear();
+    abandonedSetStatus(`✅ ${toImport.length} spots imported & published`);
+    try{localStorage.setItem(ABANDONED_CACHE_KEY,JSON.stringify({ts:Date.now(),data:_abandonedData}));}catch(e){}
+    renderAbandonedList&&renderAbandonedList();
+  }else{
+    abandonedSetStatus('❌ Import failed — nothing was saved');
   }
-
-  // Push all new spots into local SPOTS array and refresh map + sidebar
-  if(localNewSpots.length){
-    SPOTS.push(...localNewSpots);
-    refreshMarkers();
-    updateAll();
-  }
-
-  _abandonedSelected.clear();
   if(btn){btn.disabled=false;btn.textContent='✅ Import';}
-  toast(`🏚 Imported ${imported} ruins!`,'success');
-  abandonedSetStatus(`✅ Importuota ${imported}. Jau DB: ${_abandonedData.filter(x=>x.alreadyIn).length} / ${_abandonedData.length}`);
-  renderAbandonedList();
 }
-
 async function fetchOsmData(){
   if(_osmLoading) return;
   _osmLoading=true;
@@ -4814,7 +4949,7 @@ async function fetchOsmData(){
           text=t; break;
         }catch(e){
           if(mi<MIRRORS.length-1){osmSetStatus(`⏳ ${i+1}/${CITY_BBOXES_GLOBAL.length} · ${cityName} · mirror ${mi+2}...`);await new Promise(r=>setTimeout(r,1500));}
-          else throw new Error(`${cityName}: visi serveriai nepasiekiami`);
+          else throw new Error(`${cityName}: all servers unavailable`);
         }
       }
       if(text.trim().startsWith('<')){
@@ -4838,7 +4973,7 @@ async function fetchOsmData(){
     try{ localStorage.setItem(OSM_CACHE_KEY,JSON.stringify({ts:Date.now(),data:_osmImportData})); }catch(e){}
     renderOsmList();
   }catch(e){
-    osmSetStatus('❌ Klaida: '+e.message);
+    osmSetStatus('❌ Error: '+e.message);
   }
   _osmLoading=false;
 }
@@ -4894,67 +5029,27 @@ function renderOsmList(){
 async function osmImportSelected(){
   if(_osmSelected.size===0){toast('⚠ No spots selected','info');return;}
   const btn=document.getElementById('osmImportBtn');
-  if(btn){btn.disabled=true;btn.textContent='Importuojama...';}
-  const{db,collection,doc,writeBatch,serverTimestamp}=window._fb||{};
-  if(!db){toast('Firebase nepasiekiamas','info');if(btn)btn.disabled=false;return;}
-
-  const toImport=[..._osmSelected]
-    .map(idx=>_osmImportData[idx])
-    .filter(item=>item&&!item.alreadyIn);
-
-  const CHUNK=200;
-  let imported=0;
-  const localNewSpots=[];
-
-  for(let i=0;i<toImport.length;i+=CHUNK){
-    const chunk=toImport.slice(i,i+CHUNK);
-    if(btn) btn.textContent=`⏳ ${Math.min(i+CHUNK,toImport.length)}/${toImport.length}`;
-    const batch=writeBatch(db);
-    const refs=[];
-    for(const item of chunk){
-      const ref=doc(collection(db,'spots'));
-      refs.push({ref,item});
-      batch.set(ref,{
-        name:item.name,cat:item.cat,tier:_osmTier,
-        lat:item.lat,lng:item.lng,
-        country:_getImportCountry(),
-        radius:CAT_DEFAULT_RADIUS[item.cat]||DEFAULT_RADIUS,
-        time:'',price:'',year:'',tag:item.typeKey,
-        history:'',bring:[],createdAt:serverTimestamp()
-      });
-    }
-    try{
-      await batch.commit();
-      for(const{ref,item} of refs){
-        item.alreadyIn=true;
-        localNewSpots.push({
-          id:ref.id,_fid:ref.id,
-          name:item.name,cat:item.cat,tier:_osmTier,
-          lat:item.lat,lng:item.lng,
-          country:_getImportCountry(),
-          radius:CAT_DEFAULT_RADIUS[item.cat]||DEFAULT_RADIUS,
-          time:'',price:'',year:'',tag:item.typeKey,history:'',bring:[],
-        });
-        imported++;
-      }
-    }catch(e){console.error('OSM batch import error',e);}
-    await new Promise(r=>setTimeout(r,300));
+  const toImport=[..._osmSelected].map(idx=>_osmImportData[idx]).filter(item=>item&&!item.alreadyIn);
+  if(!toImport.length){toast('⚠ All selected spots already imported','info');return;}
+  if(btn){btn.disabled=true;btn.textContent='☁️ Publishing...';}
+  const ok=await kvImportSpots(toImport.map(item=>({
+    id:item.osmId?('osm_'+item.osmId):undefined,
+    name:item.name,cat:item.cat,tier:_osmTier,
+    lat:item.lat,lng:item.lng,tag:item.typeKey
+  })),'OSM import');
+  if(ok){
+    toImport.forEach(item=>item.alreadyIn=true);
+    _osmSelected.clear();
+    renderOsmList&&renderOsmList();
   }
-
-  if(localNewSpots.length){SPOTS.push(...localNewSpots);refreshMarkers();updateAll();}
-  _osmSelected.clear();
   if(btn){btn.disabled=false;btn.textContent='✅ Import';}
-  toast(`📍 Imported ${imported} spots!`,'success');
-  osmSetStatus(`✅ Imported ${imported}. Total in DB: ${_osmImportData.filter(x=>x.alreadyIn).length} / ${_osmImportData.length}`);
-  renderOsmList();
 }
-
-let _importTab='osm'; // 'osm' | 'wikidata' | 'kpd'
+let _importTab='osm'; // 'osm' | 'wikidata' | 'abandoned'
 
 function _getImportCountry(){return 'US';}
 
 function _tabBar(){
-  const tabs=[['osm','🗺 OSM'],['wikidata','📚 Wikidata'],['kpd','🏛 KPD'],['abandoned','🏚 Ruins']];
+  const tabs=[['osm','🗺 OSM'],['wikidata','📚 Wikidata'],['abandoned','🏚 Ruins']];
   return`<div style="display:flex;gap:0;margin-bottom:12px;border-bottom:1px solid var(--bdr)">
     ${tabs.map(([id,label])=>`<button onclick="_importTab='${id}';renderOsmImport()" style="flex:1;padding:7px;background:none;border:none;border-bottom:2px solid ${_importTab===id?'var(--gold)':'transparent'};font-family:'DM Mono',monospace;font-size:.68rem;color:${_importTab===id?'var(--gold)':'var(--tm)'};cursor:pointer">${label}</button>`).join('')}
   </div>`;
@@ -4972,11 +5067,6 @@ function renderOsmImport(){
     return;
   }
 
-  if(_importTab==='kpd'){
-    body.innerHTML=`<div class="osm-wrap">${_tabBar()}${renderKpdPanel()}</div>`;
-    if(_kpdData.length) setTimeout(()=>renderKpdList(),0);
-    return;
-  }
 
   if(_importTab==='abandoned'){
     body.innerHTML=`<div class="osm-wrap">${_tabBar()}${renderAbandonedPanel()}</div>`;
@@ -4988,7 +5078,7 @@ function renderOsmImport(){
   body.innerHTML=`<div class="osm-wrap">
     ${_tabBar()}
     <div style="margin-bottom:10px">
-      <div style="font-family:'DM Mono',monospace;font-size:.72rem;color:var(--gold);margin-bottom:4px">🇺🇸 Lietuva · area filtrais</div>
+      <div style="font-family:'DM Mono',monospace;font-size:.72rem;color:var(--gold);margin-bottom:4px">🇺🇸 USA · area filters</div>
       <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm)">⚠ Faster query than usual. Check duplicates before adding.</div>
     </div>
     <div class="osm-controls">
@@ -5000,7 +5090,7 @@ function renderOsmImport(){
       <button class="osm-ctrl-btn pri" id="osmImportBtn" onclick="osmImportSelected()">✅ Import</button>
       <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red)" onclick="findDuplicateSpots()">🔍 Dublikatai</button>
       <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red);background:rgba(140,74,74,.1)" onclick="autoDeleteAllDuplicates()">🗑 Delete all</button>
-      <button class="osm-ctrl-btn" style="border-color:#b07aaa;color:#b07aaa" onclick="reclassifyKpdSpots()">🏷 Reclassify KPD</button>
+      
     </div>
     ${_osmManualMode?`<div id="osmManualGrid" style="margin:8px 0;max-height:260px;overflow-y:auto;padding:0 2px"></div>`:''}
     <div class="osm-filter-row">
@@ -5017,483 +5107,12 @@ function renderOsmImport(){
   if(_osmManualMode) renderOsmManualUI();
 }
 
-
-// ═══════════ KPD IMPORT (LT Cultural Heritage Registry — legacy) ═══════════
-
-const KPD_CACHE_KEY='kex_kpd_cache_v1';
-const KPD_CACHE_TTL=Infinity; // permanent — KPD data changes rarely
-const KPD_URL='https://osp-sdg.stat.gov.lt/arcgis/rest/services/KPD/kvr_taskai_enriched/FeatureServer/0/query';
-const KPD_BATCH=1000;
-
-let _kpdData=[];
-let _kpdSelected=new Set();
-let _kpdLoading=false;
-let _kpdFilter='all';       // category filter
-let _kpdSigFilter='all';    // significance filter
-let _kpdCityFilter='all';   // city filter
-
-// ── LKS94 (EPSG:3346) → WGS84 conversion ──
-function lks94toWGS84(x,y){
-  const a=6378137.0;
-  const f=1/298.257222101; // GRS80 flattening (not WGS84)
-  const k0=0.9998;
-  const e2=2*f-f*f;
-  const lon0=24*Math.PI/180;
-  const FE=500000;
-  const FN=0; // LKS94 has NO false northing
-
-  const xm=x-FE;
-  const ym=y-FN;
-  const e1=(1-Math.sqrt(1-e2))/(1+Math.sqrt(1-e2));
-  const M=ym/k0;
-  const mu=M/(a*(1-e2/4-3*e2*e2/64-5*e2*e2*e2/256));
-  const lat1=mu+(3*e1/2-27*e1*e1*e1/32)*Math.sin(2*mu)+(21*e1*e1/16-55*e1*e1*e1*e1/32)*Math.sin(4*mu)+(151*e1*e1*e1/96)*Math.sin(6*mu)+(1097*e1*e1*e1*e1/512)*Math.sin(8*mu);
-  const sinLat1=Math.sin(lat1);const cosLat1=Math.cos(lat1);const tanLat1=Math.tan(lat1);
-  const N1=a/Math.sqrt(1-e2*sinLat1*sinLat1);
-  const T1=tanLat1*tanLat1;
-  const C1=(e2/(1-e2))*cosLat1*cosLat1;
-  const R1=a*(1-e2)/Math.pow(1-e2*sinLat1*sinLat1,1.5);
-  const D=xm/(N1*k0);
-  const D2=D*D;const D3=D2*D;const D4=D2*D2;const D5=D4*D;const D6=D4*D2;
-  const lat=lat1-(N1*tanLat1/R1)*(D2/2-(5+3*T1+10*C1-4*C1*C1-9*e2/(1-e2))*D4/24+(61+90*T1+298*C1+45*T1*T1-252*e2/(1-e2)-3*C1*C1)*D6/720);
-  const lng=lon0+(D-(1+2*T1+C1)*D3/6+(5-2*C1+28*T1-3*C1*C1+8*e2/(1-e2)+24*T1*T1)*D5/120)/cosLat1;
-  return{lat:lat*180/Math.PI,lng:lng*180/Math.PI};
-}
-
-// ── Map KPD klasifikatorius → app category ──
-const KPD_CAT_MAP={
-  // Churches / sacred
-  'church':'church','chapel':'church','wayside shrine':'church',
-  'orthodox church':'church','sinagoga':'church','mosque':'church',
-  'vienuolynas':'church','church complex':'church',
-  // Museums
-  'muziejus':'museum','muziejaus pastatas':'museum',
-  // Forts / castles / military
-  'pilis':'fort','castle ruins':'fort','fortas':'fort',
-  'fortress':'fort','bunker':'fort','defensive structure':'fort',
-  'castle tower':'fort','pilies kompleksas':'fort',
-  // Mounds
-  'piliakalnis':'mound','gynybinis piliakalnis':'mound',
-  'piliakalnio kompleksas':'mound',
-  // Monuments / sculptures
-  'paminklas':'monument','sculpture':'monument','obeliskas':'monument',
-  'stela':'monument','kolona':'monument','bell tower':'monument',
-  // History / heritage
-  'sodyba':'history','dvaro sodyba':'history','dvaras':'history',
-  'palivarkas':'history','mill':'history','tavern':'history',
-  'forge':'history','inn':'history','spirito varykla':'history',
-  'sawmill':'history','water mill':'history','windmill':'history',
-  'alaus darykla':'history','oil mill':'history',
-  // Cemeteries
-  'cemetery':'cemetery','kapinynas':'cemetery','kapas':'cemetery',
-  'old cemetery':'cemetery','jewish cemetery':'cemetery',
-  'military cemetery':'cemetery','war cemetery':'cemetery',
-  // Nature / parks
-  'parkas':'nature','dendrologinis parkas':'nature',
-  'botanikos sodas':'nature','gamtos paminklas':'nature',
-  // Archaeological
-  'settlement':'history','pilkapiai':'history','pilkapis':'history',
-  'senkapis':'cemetery','akmuo':'monument','riedulys':'monument',
-  // Urban / architecture
-  'namas':'history','pastatas':'history','palace':'history',
-  'rezidencija':'history','hotel':'history','teatro pastatas':'museum',
-  'mokyklos pastatas':'history','hospital building':'history',
-  // Bridges
-  'tiltas':'bridge',
-  // Viewpoints
-  'observation tower':'viewpoint',
-  // Water towers
-  'water tower':'watertower',
-};
-
-function kpdMapCat(klasifikatorius){
-  if(!klasifikatorius) return 'history';
-  const k=klasifikatorius.toLowerCase().trim();
-  // Exact match first
-  if(KPD_CAT_MAP[k]) return KPD_CAT_MAP[k];
-  // Partial match
-  for(const[key,val] of Object.entries(KPD_CAT_MAP)){
-    if(k.includes(key)||key.includes(k)) return val;
-  }
-  // Fallback by heritage type flags (set during processing)
-  return 'history';
-}
-
-function kpdMapTier(reiksmingumas){
-  if(!reiksmingumas) return 1;
-  const r=reiksmingumas.toLowerCase();
-  if(r.includes('nacionalinis')||r.includes('national')) return 3;
-  if(r.includes('regioninis')||r.includes('regional')) return 2;
-  return 1; // Vietinis / local
-}
-
-function kpdProcessFeature(f){
-  const a=f.attributes;
-  const g=f.geometry;
-  if(!g||!a.pavadinimas) return null;
-  // Convert LKS94 → WGS84
-  let lat,lng;
-  try{
-    const wgs=lks94toWGS84(g.x,g.y);
-    lat=wgs.lat;lng=wgs.lng;
-  }catch(e){return null;}
-  // Sanity check — must be inside continental USA bbox
-  if(lat<24.5||lat>49.4||lng<-125.0||lng>-66.9) return null;
-  const cat=kpdMapCat(a.klasifikatorius);
-  const tier=kpdMapTier(a.reiksmingumas);
-  // Build description from available fields
-  const desc=[];
-  if(a.klasifikatorius) desc.push(a.klasifikatorius.charAt(0).toUpperCase()+a.klasifikatorius.slice(1));
-  if(a.reiksmingumas) desc.push(`${a.reiksmingumas} significance object`);
-  if(a.adresas) desc.push(a.adresas);
-  return{
-    name:a.pavadinimas,
-    cat,tier,
-    lat:Math.round(lat*100000)/100000,
-    lng:Math.round(lng*100000)/100000,
-    year:a.amzius||'',
-    tag:a.unikalus_kodas?`KPD-${a.unikalus_kodas}`:'',
-    history:desc.join('. ')+'.',
-    address:a.adresas||'',
-    kpdCode:a.unikalus_kodas||'',
-    kpdUrl:a.nuoroda||'',
-    reiksmingumas:a.reiksmingumas||'',
-    klasifikatorius:a.klasifikatorius||'',
-    radius:CAT_DEFAULT_RADIUS[cat]||DEFAULT_RADIUS,
-    bring:[],
-    alreadyIn:false,
-  };
-}
-
-async function fetchKpdData(forceRefresh){
-  if(_kpdLoading) return;
-  _kpdLoading=true;
-  const setS=m=>{const e=document.getElementById('kpdStatus');if(e)e.textContent=m;};
-
-  // Check cache
-  if(!forceRefresh){
-    try{
-      const c=JSON.parse(localStorage.getItem(KPD_CACHE_KEY)||'null');
-      if(c&&Date.now()-c.ts<KPD_CACHE_TTL&&c.data?.length){
-        _kpdData=c.data;
-        // Recheck alreadyIn with tight radius
-        _kpdData.forEach(x=>{
-          x.alreadyIn=SPOTS.some(s=>
-            (s.tag&&s.tag===x.tag)
-            ||(Math.abs(s.lat-x.lat)<0.0001&&Math.abs(s.lng-x.lng)<0.0001)
-          );
-        });
-        setS(`✅ ${_kpdData.length} objects (cached · ${new Date(c.ts).toLocaleDateString('en-US')})`);
-        renderOsmImport();
-        setTimeout(()=>renderKpdList(),0);
-        _kpdLoading=false;
-        return;
-      }
-    }catch(e){}
-  }
-
-  setS('⏳ Loading from KPD registry...');
-  const allFeatures=[];
-  let offset=0;
-  let total=null;
-
-  try{
-    while(true){
-      const url=`${KPD_URL}?where=1%3D1&outFields=objectid,unikalus_kodas,pavadinimas,klasifikatorius,statusas,adresas,tipas,istorinis,architekturinis,sakralinis,archeologinis,memorialinis,amzius,reiksmingumas,nuoroda,sav_pav&returnGeometry=true&resultRecordCount=${KPD_BATCH}&resultOffset=${offset}&f=json`;
-      setS(`⏳ Loading... ${allFeatures.length} objects (batch ${Math.floor(offset/KPD_BATCH)+1})`);
-      const r=await fetch(url,{signal:AbortSignal.timeout(30000)});
-      if(!r.ok) throw new Error(`HTTP ${r.status}`);
-      const json=await r.json();
-      if(json.error) throw new Error(json.error.message||'ArcGIS error');
-      const features=json.features||[];
-      allFeatures.push(...features);
-      if(total===null&&json.count) total=json.count;
-      // Stop if we got fewer than batch size (last page)
-      if(features.length<KPD_BATCH) break;
-      offset+=KPD_BATCH;
-      // Safety limit — 30 batches = 30,000 records max
-      if(offset>30000) break;
-      await new Promise(r=>setTimeout(r,300));
-    }
-
-    setS(`⏳ Processing ${allFeatures.length} objects...`);
-    const processed=allFeatures
-      .map(f=>kpdProcessFeature(f))
-      .filter(Boolean)
-      // Dedupe by coords + name
-      .filter((x,i,arr)=>arr.findIndex(y=>Math.abs(y.lat-x.lat)<0.0002&&Math.abs(y.lng-x.lng)<0.0002&&y.name===x.name)===i);
-
-    // Check alreadyIn against current SPOTS — use tight 10m radius
-    // 0.0001° ≈ 10m — only exact same location counts as duplicate
-    processed.forEach(x=>{
-      x.alreadyIn=SPOTS.some(s=>
-        s.tag&&s.tag===x.tag  // same KPD code = definite duplicate
-        ||(Math.abs(s.lat-x.lat)<0.0001&&Math.abs(s.lng-x.lng)<0.0001) // same coords ~10m
-      );
-    });
-
-    _kpdData=processed;
-    // Save cache — skip if too large
-    try{
-      const cacheStr=JSON.stringify({ts:Date.now(),data:_kpdData});
-      if(cacheStr.length<4500000){ // 4.5MB safety limit
-        localStorage.setItem(KPD_CACHE_KEY,cacheStr);
-      } else {
-        console.warn(`KPD cache too large (${Math.round(cacheStr.length/1024)}KB), skipping localStorage`);
-      }
-    }catch(e){
-      console.warn('KPD cache save failed',e);
-    }
-    const newCount=_kpdData.filter(x=>!x.alreadyIn).length;
-    const alreadyCount=_kpdData.filter(x=>x.alreadyIn).length;
-    setS(`✅ ${_kpdData.length} objects loaded · ${alreadyCount} already in DB · ${newCount} new`);
-    // Rebuild panel then list
-    renderOsmImport();
-    // Give DOM time to rebuild before populating list
-    setTimeout(()=>{
-      const el=document.getElementById('kpdList');
-      if(el) renderKpdList();
-      else console.warn('kpdList element not found after renderOsmImport');
-    },100);
-  }catch(e){
-    setS(`❌ Klaida: ${e.message}`);
-    console.error('KPD fetch error',e);
-  }
-  _kpdLoading=false;
-}
-
-function renderKpdPanel(){
-  const total=_kpdData.length;
-  const alreadyIn=_kpdData.filter(x=>x.alreadyIn).length;
-  const newOnes=total-alreadyIn;
-
-  // Significance options present in data
-  const sigs=['all','Nacionalinis','Regioninis','Vietinis'];
-  // Categories present
-  const cats=['all','church','fort','mound','history','monument','cemetery','nature','museum','bridge','viewpoint','watertower'];
-  const catLabels={all:'All',church:'⛪',fort:'🏰',mound:'⛰',history:'⚔',monument:'🗿',cemetery:'⚱️',nature:'🌿',museum:'🏛',bridge:'🌉',viewpoint:'🔭',watertower:'🗼'};
-
-  // Cities with KPD spots
-  const citiesWithKpd=total>0
-    ?Object.keys(getCityBounds()).filter(city=>{
-        const b=getCityBounds()[city];
-        return _kpdData.some(x=>x.lat>=b.sw[0]-0.05&&x.lat<=b.ne[0]+0.05&&x.lng>=b.sw[1]-0.05&&x.lng<=b.ne[1]+0.05);
-      }).sort()
-    :[];
-
-  // Filtered count
-  const filteredNew=total>0?_kpdData.filter(x=>{
-    if(x.alreadyIn) return false;
-    if(_kpdFilter!=='all'&&x.cat!==_kpdFilter) return false;
-    if(_kpdSigFilter!=='all'&&x.reiksmingumas!==_kpdSigFilter) return false;
-    if(_kpdCityFilter!=='all'){
-      const b=getCityBounds()[_kpdCityFilter];
-      if(!b||x.lat<b.sw[0]-0.05||x.lat>b.ne[0]+0.05||x.lng<b.sw[1]-0.05||x.lng>b.ne[1]+0.05) return false;
-    }
-    return true;
-  }).length:0;
-
-  return`<div>
-    <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);margin-bottom:6px">
-      LT Cultural Heritage Registry · osp-sdg.stat.gov.lt · Non-commercial use only
-    </div>
-    ${total>0?`<div style="background:var(--surf2);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-family:'DM Mono',monospace;font-size:.68rem;display:flex;gap:12px;flex-wrap:wrap">
-      <span>📦 Total: <strong style="color:var(--txt)">${total}</strong></span>
-      <span>✅ DB: <strong style="color:var(--green)">${alreadyIn}</strong></span>
-      <span>🆕 Nauja: <strong style="color:var(--gold)">${newOnes}</strong></span>
-      ${_kpdFilter!=='all'||_kpdSigFilter!=='all'||_kpdCityFilter!=='all'?`<span>🔍 Filtruota: <strong style="color:var(--gold)">${filteredNew}</strong></span>`:''}
-    </div>`:''}
-    <div class="osm-controls">
-      <button class="osm-ctrl-btn" onclick="fetchKpdData(false)">🔄 Load</button>
-      <button class="osm-ctrl-btn" onclick="fetchKpdData(true)">♻️ Refresh</button>
-      <button class="osm-ctrl-btn" onclick="clearKpdCache()">🗑 Clear cache</button>
-      <button class="osm-ctrl-btn" onclick="kpdSelectAll()">☑ All</button>
-      <button class="osm-ctrl-btn" onclick="kpdSelectNone()">☐ None</button>
-      <button class="osm-ctrl-btn pri" onclick="kpdImportSelected()">✅ Import</button>
-    </div>
-    ${total>0?`
-    <div style="margin:8px 0 4px;font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.07em">Significancemas</div>
-    <div class="osm-filter-row" style="flex-wrap:wrap;gap:4px;margin-bottom:6px">
-      ${sigs.map(s=>`<div class="osm-fchip ${_kpdSigFilter===s?'on':''}" onclick="setKpdSigFilter('${s}')">${s==='all'?'Visi':s}</div>`).join('')}
-    </div>
-    <div style="margin:8px 0 4px;font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.07em">Kategorija</div>
-    <div class="osm-filter-row" style="flex-wrap:wrap;gap:4px;margin-bottom:6px">
-      ${cats.map(c=>`<div class="osm-fchip ${_kpdFilter===c?'on':''}" onclick="setKpdCatFilter('${c}')">${catLabels[c]||c}</div>`).join('')}
-    </div>
-    ${citiesWithKpd.length>0?`
-    <div style="margin:8px 0 4px;font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.07em">Urban</div>
-    <div class="osm-filter-row" style="flex-wrap:wrap;gap:4px;margin-bottom:6px">
-      <div class="osm-fchip ${_kpdCityFilter==='all'?'on':''}" onclick="setKpdCityFilter('all')">🇺🇸 Visi</div>
-      ${citiesWithKpd.map(c=>`<div class="osm-fchip ${_kpdCityFilter===c?'on':''}" onclick="setKpdCityFilter('${c}')">${c}</div>`).join('')}
-    </div>`:''}
-    `:''}
-    <div class="osm-status" id="kpdStatus">${total?`${total} objects · ${alreadyIn} already in DB · ${newOnes} new`:'Tap "Load" to start — loading ~10-20k objects'}</div>
-    <div class="osm-list" id="kpdList"></div>
-  </div>`;
-}
-
-function clearKpdCache(){
-  localStorage.removeItem(KPD_CACHE_KEY);
-  _kpdData=[];_kpdSelected.clear();
-  toast('🗑 KPD cache cleared','info');
-  renderOsmImport();
-}
-function setKpdSigFilter(v){_kpdSigFilter=v;renderOsmImport();setTimeout(()=>renderKpdList(),0);}
-function setKpdCatFilter(v){_kpdFilter=v;renderOsmImport();setTimeout(()=>renderKpdList(),0);}
-function setKpdCityFilter(v){_kpdCityFilter=v;renderOsmImport();setTimeout(()=>renderKpdList(),0);}
-
-function _kpdFiltered(){
-  const result=[];
-  _kpdData.forEach((item,i)=>{
-    if(_kpdFilter!=='all'&&item.cat!==_kpdFilter) return;
-    if(_kpdSigFilter!=='all'&&item.reiksmingumas!==_kpdSigFilter) return;
-    if(_kpdCityFilter!=='all'){
-      const b=getCityBounds()[_kpdCityFilter];
-      if(!b||item.lat<b.sw[0]-0.05||item.lat>b.ne[0]+0.05||item.lng<b.sw[1]-0.05||item.lng>b.ne[1]+0.05) return;
-    }
-    result.push({item,i});
-  });
-  return result;
-}
-
-function renderKpdList(){
-  const el=document.getElementById('kpdList');if(!el) return;
-  const filtered=_kpdFiltered();
-  const newOnes=filtered.filter(({item})=>!item.alreadyIn);
-
-  if(!filtered.length){
-    el.innerHTML=`<div style="padding:24px;text-align:center;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--td)">${_kpdData.length?'No objects match these filters':'Tap "Load" to fetch KPD data'}</div>`;
-    return;
-  }
-  if(!newOnes.length){
-    el.innerHTML=`<div style="padding:24px;text-align:center;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--green)">✅ Visi ${filtered.length} objektai jau yra DB!</div>`;
-    return;
-  }
-
-  const sigColor={Nacionalinis:'var(--t3)',Regioninis:'var(--t2)',Vietinis:'var(--t1)'};
-
-  el.innerHTML=`
-    <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);padding:6px 0">${newOnes.length} new · ${filtered.length-newOnes.length} jau DB</div>
-    ${filtered.map(({item,i})=>{
-      if(item.alreadyIn) return'';
-      const sel=_kpdSelected.has(i);
-      const cat=CATS[item.cat]||CATS.history;
-      return`<div class="osm-item ${sel?'selected':''}" onclick="kpdToggleItem(${i})">
-        <div class="osm-check">${sel?'✓':''}</div>
-        <div class="osm-emoji">${cat.emoji}</div>
-        <div class="osm-info">
-          <div class="osm-name">${item.name}</div>
-          <div class="osm-meta">
-            ${cat.label} · <span style="color:${sigColor[item.reiksmingumas]||'var(--td)'}">${item.reiksmingumas||''}</span>
-            ${item.klasifikatorius?` · ${item.klasifikatorius}`:''}
-            ${item.year?` · ${item.year}`:''}
-            ${item.kpdUrl?`<a href="${item.kpdUrl}" target="_blank" onclick="event.stopPropagation()" style="color:var(--gold);text-decoration:none;margin-left:6px">KPD↗</a>`:''}
-          </div>
-          ${item.address?`<div class="osm-meta" style="color:var(--tm)">${item.address}</div>`:''}
-        </div>
-      </div>`;
-    }).join('')}
-  `;
-}
-
-function kpdToggleItem(idx){
-  if(_kpdSelected.has(idx))_kpdSelected.delete(idx);
-  else _kpdSelected.add(idx);
-  renderKpdList();
-}
-
-function kpdSelectAll(){
-  _kpdFiltered().forEach(({item,i})=>{
-    if(!item.alreadyIn) _kpdSelected.add(i);
-  });
-  renderKpdList();
-}
-
-function kpdSelectNone(){_kpdSelected.clear();renderKpdList();}
-
-async function kpdImportSelected(){
-  if(!_kpdSelected.size){toast('Nieko nepasirinkta','info');return;}
-  const setS=m=>{const e=document.getElementById('kpdStatus');if(e)e.textContent=m;};
-  const{db,collection,writeBatch,doc,serverTimestamp}=window._fb||{};
-  if(!db){toast('Firebase nepasiekiamas','info');return;}
-
-  const items=[..._kpdSelected].map(i=>_kpdData[i]).filter(x=>x&&!x.alreadyIn);
-  if(!items.length){toast('All selected spots already in DB','info');return;}
-
-  const BATCH_SIZE=400; // Firestore max is 500, use 400 for safety
-  let imported=0;
-  let failed=0;
-  const colRef=collection(db,'spots');
-
-  setS(`⏳ Importing ${items.length} objects (batches of ${BATCH_SIZE})...`);
-
-  for(let batchStart=0;batchStart<items.length;batchStart+=BATCH_SIZE){
-    const batchItems=items.slice(batchStart,batchStart+BATCH_SIZE);
-    const batch=writeBatch(db);
-    const newDocs=[];
-
-    for(const item of batchItems){
-      const newRef=doc(colRef);
-      const spot={
-        name:item.name,cat:item.cat,tier:item.tier,
-        lat:item.lat,lng:item.lng,
-        history:item.history||'',
-        year:item.year||'',
-        tag:item.tag||'',
-        bring:[],
-        radius:item.radius,
-        kpdCode:item.kpdCode||'',
-        kpdUrl:item.kpdUrl||'',
-        address:item.address||'',
-        createdAt:serverTimestamp(),
-      };
-      batch.set(newRef,spot);
-      newDocs.push({ref:newRef,item,spot});
-    }
-
-    try{
-      await batch.commit();
-      // Update local state after successful commit
-      for(const{ref,item,spot} of newDocs){
-        const fid=ref.id;
-        spot.id=fid;spot._fid=fid;
-        SPOTS.push(spot);
-        item.alreadyIn=true;
-        imported++;
-      }
-      setS(`⏳ Importuota ${imported}/${items.length} (${Math.round(imported/items.length*100)}%)...`);
-    }catch(e){
-      console.error('KPD batch failed',e);
-      failed+=batchItems.length;
-      setS(`⚠ Error in batch ${Math.floor(batchStart/BATCH_SIZE)+1}: ${e.message}. Continuing...`);
-    }
-    // Pause between batches to avoid rate limiting
-    if(batchStart+BATCH_SIZE<items.length){
-      await new Promise(r=>setTimeout(r,800));
-    }
-  }
-
-  _kpdSelected.clear();
-  if(imported>0){refreshMarkers();updateAll();}
-
-  const msg=failed>0
-    ?`✅ Imported ${imported}, failed ${failed}. Refresh the KV cache!`
-    :`✅ Imported ${imported} objects! Refresh the KV cache.`;
-  setS(msg);
-  toast(msg,'success');
-  renderKpdList();
-
-  // Update cache alreadyIn states
-  try{localStorage.setItem(KPD_CACHE_KEY,JSON.stringify({ts:Date.now(),data:_kpdData}));}catch(e){
-    console.warn('KPD cache save failed (too large?)',e);
-  }
-}
 const DEG_50M=0.00045; // ~50 metres in degrees
 
 function findDuplicateSpots(){
   const ic=_getImportCountry();
-  const countrySpots=SPOTS.filter(s=>s.country==='LT'||!s.country);
-  osmSetStatus(`🔍 Searching for duplicates (${ic})...`);
+  const countrySpots=SPOTS;
+  osmSetStatus(`🔍 Searching for duplicates (USA)...`);
   const groups=[];
   const used=new Set();
   for(let i=0;i<countrySpots.length;i++){
@@ -5551,8 +5170,6 @@ function _spotScore(s){
   if(s.history&&s.history.length>30) score+=3;     // has description
   if(s.history&&s.history.length>100) score+=2;    // long description
   if(s.year&&s.year.length>0) score+=2;             // has year
-  if(s.kpdCode) score+=5;                           // from KPD (official)
-  if(s.tag&&s.tag.startsWith('KPD')) score+=5;      // KPD tag
   if(s.address&&s.address.length>5) score+=2;       // has address
   if(s.tag&&s.tag.startsWith('Q')) score+=1;        // from Wikidata
   if(s.tier&&s.tier>1) score+=s.tier;               // higher tier
@@ -5561,7 +5178,7 @@ function _spotScore(s){
 
 async function autoDeleteAllDuplicates(){
   if(!isAdmin()) return;
-  if(!confirm(`Automatically delete all duplicates?\n\nAlgorithm keeps the best spot in each group (KPD > Wikidata > OSM, longer description = better).\n\nContinue?`)) return;
+  if(!confirm(`Automatically delete all duplicates?\n\nAlgorithm keeps the best spot in each group (longer description, higher tier = better).\n\nContinue?`)) return;
 
   osmSetStatus('🔍 Searching for duplicates...');
   const groups=[];
@@ -5606,101 +5223,20 @@ async function autoDeleteAllDuplicates(){
   }
 
   osmSetStatus(`⏳ Deleting ${toDelete.length} duplicates...`);
-
-  let deleted=0;
-  let failed=0;
-  for(const fid of toDelete){
-    try{
-      await fbDeleteSpot(fid);
-      SPOTS=SPOTS.filter(s=>s._fid!==fid&&String(s.id)!==String(fid));
-      deleted++;
-      if(deleted%10===0) osmSetStatus(`⏳ Deleted ${deleted}/${toDelete.length}...`);
-    }catch(e){
-      failed++;
-      console.error('autoDelete failed',fid,e);
-    }
-    await new Promise(r=>setTimeout(r,100)); // small delay
+  const ok=await kvDeleteSpots(toDelete,'Delete duplicates');
+  if(ok){
+    osmSetStatus(`✅ Deleted ${toDelete.length} duplicates from ${groups.length} groups`);
+    const list=document.getElementById('osmList');
+    if(list) list.innerHTML='';
   }
-
-  refreshMarkers();updateAll();
-  const msg=`✅ Deleted ${deleted} duplicates${failed>0?`, ${failed} failed`:''} of ${groups.length} groups. Refresh the KV cache!`;
-  osmSetStatus(msg);
-  toast(msg,'success');
-  const list=document.getElementById('osmList');
-  if(list) list.innerHTML='';
 }
 
-async function deleteDuplicateSpot(fid){
+async function deleteDuplicateSpot(id){
   if(!isAdmin()) return;
   if(!confirm('Delete this spot?')) return;
-  try{
-    await fbDeleteSpot(fid);
-    SPOTS=SPOTS.filter(s=>s._fid!==fid&&s.id!==fid);
-    refreshMarkers();updateAll();
-    toast('🗑 Spot deleted','success');
-    findDuplicateSpots();
-  }catch(e){
-    toast('Klaida: '+e.message,'info');
-  }
+  const ok=await kvDeleteSpots([id],'Delete spot');
+  if(ok) findDuplicateSpots();
 }
-// ═══════════ KPD CATEGORY RECLASSIFIER (Admin) ═══════════
-// Fixes ~547 history spots that were miscategorised during KPD import.
-// Uses spot name keywords to determine correct category.
-
-function resolveKpdCatFromName(name){
-  const n=name.toLowerCase();
-  // Mound complex sub-objects
-  if(/piliakalnio|pilkapis|piliakalniui|senojo piliakalnio/.test(n)) return 'mound';
-  // Cemetery objects
-  if(/antkapinis|antkapis/.test(n)) return 'cemetery';
-  // Church objects
-  if(/wayside shrine(?!stulp)|chapel|bell tower|rectory|churchyard wall|church/.test(n)) return 'church';
-  // Monument/sculpture
-  if(/koplytstulpis|sculpture|obeliskas/.test(n)) return 'monument';
-  // Fort/bunker
-  if(/hideout|bunker|fortresss/.test(n)) return 'fort';
-  return null; // no change
-}
-
-async function reclassifyKpdSpots(){
-  if(!isAdmin()){toast('Tik adminui','info');return;}
-  const{db,doc,updateDoc}=window._fb||{};
-  if(!db){toast('Firebase nepasiekiamas','info');return;}
-
-  const candidates=SPOTS.filter(s=>s.cat==='history'&&s.tag&&s.tag.startsWith('KPD-'));
-  const toReclassify=[];
-  candidates.forEach(s=>{
-    const newCat=resolveKpdCatFromName(s.name);
-    if(newCat) toReclassify.push({spot:s,newCat});
-  });
-
-  osmSetStatus(`🔍 Found ${toReclassify.length} spots to reclassify out of ${candidates.length} historical...`);
-  if(!toReclassify.length){toast('Nothing to reclassify','info');return;}
-
-  if(!confirm(`Reclassify ${toReclassify.length} spots?\n\nExamples:\n${toReclassify.slice(0,5).map(x=>`${x.spot.name.slice(0,40)} → ${x.newCat}`).join('\n')}\n\nContinue?`)) return;
-
-  let done=0,failed=0;
-  for(const{spot,newCat} of toReclassify){
-    try{
-      const fid=spot._fid||spot.id;
-      await updateDoc(doc(db,'spots',fid),{cat:newCat});
-      spot.cat=newCat; // update local
-      done++;
-      if(done%20===0) osmSetStatus(`⏳ Reclassified ${done}/${toReclassify.length}...`);
-    }catch(e){
-      failed++;
-      console.error('reclassify fail',spot.name,e);
-    }
-    if(done%50===0) await new Promise(r=>setTimeout(r,200));
-  }
-
-  // Rebuild spot level map after category changes
-  refreshMarkers();updateAll();
-  const msg=`✅ Reclassified ${done} spots${failed>0?`, klaida ${failed}`:''}.`;
-  osmSetStatus(msg);
-  toast(msg,'success');
-}
-
 let _wikiData=[];
 let _wikiSelected=new Set();
 let _wikiLoading=false;
@@ -5709,7 +5245,7 @@ let _wikiFilter='all';
 const WIKIDATA_CAT_MAP={
   Q16970:'church',Q2977:'church',Q108325:'church',Q44539:'church',
   Q33506:'museum',Q207694:'museum',
-  Q16831714:'fort',Q57831:'fort',Q23413:'fort',Q44450:'fort',
+  Q16831714:'military',Q57831:'military',Q23413:'military',Q44450:'military',
   Q570116:'mound',Q371204:'mound',
   Q747074:'history',Q839954:'history',
   Q5003624:'monument',Q4989906:'monument',Q179700:'monument',
@@ -5734,8 +5270,8 @@ const WIKIDATA_COUNTRY_CFG={
 function renderWikidataPanel(){
   const cached=JSON.parse(localStorage.getItem(wikiCacheKey())||'null');
   const cacheInfo=cached?`<span style="color:var(--tm);font-size:.6rem">· ${_wikiData.length} (${new Date(cached.ts).toLocaleDateString('en-US')})</span>`:'';
-  const wcats=['all','church','museum','fort','mound','history','monument','nature','viewpoint','bridge','cemetery'];
-  const wcatLabels={all:'All',church:'⛪',museum:'🏛',fort:'🏰',mound:'⛰',history:'⚔',monument:'🗿',nature:'🌿',viewpoint:'🔭',bridge:'🌉',cemetery:'⚱️'};
+  const wcats=['all','church','museum','military','mound','history','monument','nature','viewpoint','bridge','cemetery'];
+  const wcatLabels={all:'All',church:'⛪',museum:'🏺',military:'🏰',mound:'⛰',history:'⚔',monument:'🗿',nature:'🌿',viewpoint:'🔭',bridge:'🌉',cemetery:'⚱️'};
   const ic=_getImportCountry();
   return`<div>
     <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);margin-bottom:8px">🇺🇸 Wikidata · US. ${cacheInfo}</div>
@@ -5766,7 +5302,7 @@ async function fetchWikidata(forceRefresh){
       _wikiLoading=false;renderWikidataList();return;
     }
   }
-  const cc=WIKIDATA_COUNTRY_CFG[_getImportCountry()]||WIKIDATA_COUNTRY_CFG.LT;
+  const cc=WIKIDATA_COUNTRY_CFG[_getImportCountry()]||WIKIDATA_COUNTRY_CFG.US;
   const sparql=`SELECT DISTINCT ?item ?itemLabel ?itemDescription ?lat ?lon ?instanceOf ?wpLocal ?wpEN WHERE {
   ?item wdt:P17 wd:${cc.qid}.
   ?item p:P625 ?coord.
@@ -5804,20 +5340,20 @@ async function fetchWikidata(forceRefresh){
     }
     const processed=Object.values(byItem)
       .filter(x=>x.name&&!x.name.startsWith('Q'))
-      .map(x=>({...x,cat:wikidataCat(x.instances),alreadyIn:SPOTS.some(s=>Math.abs(s.lat-x.lat)<0.0005&&Math.abs(s.lng-x.lng)<0.0005)}))
+      .map(x=>({...x,cat:wikidataCat(x.instances),alreadyIn:isDuplicateSpot(x.name,x.lat,x.lng)}))
       .filter((x,i,arr)=>arr.findIndex(y=>Math.abs(y.lat-x.lat)<0.0003&&Math.abs(y.lng-x.lng)<0.0003&&y.cat===x.cat)===i)
       .sort((a,b)=>a.name.localeCompare(b.name));
     _wikiData=processed;
     try{localStorage.setItem(wikiCacheKey(),JSON.stringify({ts:Date.now(),data:_wikiData}));}catch(e){}
     setS(`✅ ${_wikiData.length} spots. Already added: ${_wikiData.filter(x=>x.alreadyIn).length}`);
     renderWikidataList();
-  }catch(e){setS('❌ Klaida: '+e.message);}
+  }catch(e){setS('❌ Error: '+e.message);}
   _wikiLoading=false;
 }
 
 function renderWikidataList(){
   const el=document.getElementById('wikiList');if(!el) return;
-  const cc=WIKIDATA_COUNTRY_CFG[_getImportCountry()]||WIKIDATA_COUNTRY_CFG.LT;
+  const cc=WIKIDATA_COUNTRY_CFG[_getImportCountry()]||WIKIDATA_COUNTRY_CFG.US;
   const filtered=_wikiData.filter(x=>_wikiFilter==='all'||x.cat===_wikiFilter);
   el.innerHTML=filtered.map((item,i)=>{
     if(item.alreadyIn) return'';
@@ -5843,52 +5379,49 @@ function wikiSelectAll(){_wikiData.forEach((x,i)=>{if(!x.alreadyIn&&(_wikiFilter
 function wikiSelectNone(){_wikiSelected.clear();renderWikidataList();}
 
 async function wikiImportSelected(){
-  if(!_wikiSelected.size){toast('Nieko nepasirinkta','info');return;}
-  const cc=WIKIDATA_COUNTRY_CFG[_getImportCountry()]||WIKIDATA_COUNTRY_CFG.LT;
+  if(!_wikiSelected.size){toast('⚠ No spots selected','info');return;}
+  const cc=WIKIDATA_COUNTRY_CFG[_getImportCountry()]||WIKIDATA_COUNTRY_CFG.US;
   const setS=m=>{const e=document.getElementById('wikiStatus');if(e)e.textContent=m;};
-  let imported=0;const toEnrich=[];
-  for(const idx of _wikiSelected){
-    const item=_wikiData[idx];if(!item||item.alreadyIn) continue;
-    const spot={name:item.name,cat:item.cat,tier:2,lat:item.lat,lng:item.lng,
-      radius:CAT_DEFAULT_RADIUS[item.cat]||DEFAULT_RADIUS,
-      history:item.wdDesc?item.wdDesc+'.':'',year:'',tag:item.wdId,bring:[],
-      country:_getImportCountry()};
-    try{
-      const fid=await fbSaveSpot(spot);
-      if(fid){spot.id=fid;spot._fid=fid;SPOTS.push(spot);item.alreadyIn=true;imported++;
-        if(item.wpLocal||item.wpEN) toEnrich.push({item,fid,lang:item.wpLocal?cc.wpLang:'en',title:item.wpLocal||item.wpEN});}
-    }catch(e){console.error('wikiImport',e);}
-  }
-  _wikiSelected.clear();
-  if(imported>0){refreshMarkers();updateAll();}
-  setS(`✅ Importuota ${imported}.${toEnrich.length?' Loading Wikipedia descriptions...':''}`);
-  renderWikidataList();
-  if(toEnrich.length) enrichWithWikipedia(toEnrich,setS);
-}
+  const toImport=[..._wikiSelected].map(idx=>_wikiData[idx]).filter(item=>item&&!item.alreadyIn);
+  if(!toImport.length){toast('⚠ All selected spots already imported','info');return;}
 
-async function enrichWithWikipedia(items,setS){
+  // 1. Enrich with Wikipedia extracts FIRST (so descriptions ship in the publish)
   let done=0;
-  for(const{fid,lang,title} of items){
-    try{
-      const r=await fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(decodeURIComponent(title))}`,{signal:AbortSignal.timeout(8000)});
-      if(r.ok){
-        const d=await r.json();
-        const extract=(d.extract||'').split('. ').slice(0,3).join('. ').trim();
-        if(extract&&window._fb){
-          const{db,doc,updateDoc}=window._fb;
-          await updateDoc(doc(db,'spots',fid),{history:extract+(extract.endsWith('.')?'':'.'),wpTitle:title,wpLang:lang});
-          const spot=SPOTS.find(s=>s._fid===fid||s.id===fid);
-          if(spot) spot.history=extract;
+  for(const item of toImport){
+    const title=item.wpLocal||item.wpEN;
+    if(title){
+      try{
+        const lang=item.wpLocal?cc.wpLang:'en';
+        const r=await fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(decodeURIComponent(title))}`,{signal:AbortSignal.timeout(8000)});
+        if(r.ok){
+          const d=await r.json();
+          const extract=(d.extract||'').split('. ').slice(0,3).join('. ').trim();
+          if(extract) item._wpDesc=extract+(extract.endsWith('.')?'':'.');
         }
-      }
-    }catch(e){}
+      }catch(e){}
+      await new Promise(r=>setTimeout(r,300));
+    }
     done++;
-    if(setS) setS(`⏳ Wikipedia: ${done}/${items.length}...`);
-    await new Promise(r=>setTimeout(r,350));
+    setS(`⏳ Wikipedia descriptions: ${done}/${toImport.length}...`);
   }
-  if(setS) setS(`✅ Wikipedia descriptions added (${done}/${items.length})`);
-}
 
+  // 2. Publish everything in one KV round trip
+  setS(`☁️ Publishing ${toImport.length} spots to KV...`);
+  const ok=await kvImportSpots(toImport.map(item=>({
+    id:item.wdId?('wd_'+item.wdId):undefined,
+    name:item.name,cat:item.cat,tier:2,
+    lat:item.lat,lng:item.lng,tag:item.wdId,
+    history:item._wpDesc||(item.wdDesc?item.wdDesc+'.':'')
+  })),'Wikidata import');
+  if(ok){
+    toImport.forEach(item=>item.alreadyIn=true);
+    _wikiSelected.clear();
+    setS(`✅ ${toImport.length} spots imported & published`);
+    renderWikidataList();
+  }else{
+    setS('❌ Import failed — nothing was saved');
+  }
+}
 
 function osmToggleManual(){
   _osmManualMode=!_osmManualMode;
@@ -5909,7 +5442,7 @@ function openSuggestModal(){
   document.getElementById('sugName').value='';
   document.getElementById('sugCat').value='history';
   document.getElementById('sugDesc').value='';
-  document.getElementById('sugCoords').textContent='Vieta nepasirinkta';
+  document.getElementById('sugCoords').textContent='No location selected';
   document.getElementById('sugErr').textContent='';
   document.getElementById('sugSubmitBtn').disabled=false;
   document.getElementById('suggestOverlay').classList.add('show');
@@ -6011,7 +5544,7 @@ async function renderMySuggestions(){
       </div>`;
       return;
     }
-    const statusLabel={pending:'⏳ Laukiama',approved:'✅ Patvirtinta',rejected:'❌ Atmesta'};
+    const statusLabel={pending:'⏳ Pending',approved:'✅ Approved',rejected:'❌ Rejected'};
     const statusColor={pending:'var(--gold)',approved:'var(--green)',rejected:'var(--red)'};
     let html='<div style="padding:12px 14px">';
     snap.forEach(d=>{
@@ -6029,7 +5562,7 @@ async function renderMySuggestions(){
     html+='</div>';
     body.innerHTML=html;
   } catch(e){
-    body.innerHTML=`<div style="padding:20px;text-align:center;font-size:.8rem;color:var(--td)">Klaida: ${e.message}</div>`;
+    body.innerHTML=`<div style="padding:20px;text-align:center;font-size:.8rem;color:var(--td)">Error: ${e.message}</div>`;
   }
 }
 
@@ -6058,15 +5591,15 @@ async function renderAdminSuggestions(){
         <div class="sug-card-meta" style="color:var(--gold)">📍 ${s.lat?.toFixed(5)}, ${s.lng?.toFixed(5)}</div>
         <div class="sug-card-desc">${s.description||''}</div>
         <div class="sug-card-btns">
-          <button class="sug-approve" onclick="approveSuggestion('${d.id}','${s.uid}',this)">✅ Patvirtinti</button>
-          <button class="sug-reject" onclick="rejectSuggestion('${d.id}','${s.uid}',this)">❌ Atmesti</button>
+          <button class="sug-approve" onclick="approveSuggestion('${d.id}','${s.uid}',this)">✅ Approve</button>
+          <button class="sug-reject" onclick="rejectSuggestion('${d.id}','${s.uid}',this)">❌ Reject</button>
         </div>
       </div>`;
     });
     html+='</div>';
     body.innerHTML=html;
   } catch(e){
-    body.innerHTML=`<div style="padding:20px;text-align:center;font-size:.8rem;color:var(--td)">Klaida: ${e.message}</div>`;
+    body.innerHTML=`<div style="padding:20px;text-align:center;font-size:.8rem;color:var(--td)">Error: ${e.message}</div>`;
   }
 }
 
@@ -6074,21 +5607,17 @@ async function approveSuggestion(suggId,suggUid,btn){
   if(!isAdmin()) return;
   btn.disabled=true;btn.textContent='...';
   try{
-    const{db,collection,addDoc,doc,updateDoc,getDoc,setDoc,serverTimestamp}=window._fb;
+    const{db,doc,updateDoc,getDoc,setDoc,serverTimestamp}=window._fb;
     // Get suggestion data
     const suggSnap=await getDoc(doc(db,'suggestions',suggId));
     if(!suggSnap.exists()){toast('Suggestion not found','info');return;}
     const s=suggSnap.data();
-    // Publish to spots
-    await addDoc(collection(db,'spots'),{
+    // Publish to KV (the master spot store)
+    const ok=await kvImportSpots([{
       name:s.name,cat:s.cat,lat:s.lat,lng:s.lng,
-      history:s.description||'',
-      tier:1,radius:CAT_DEFAULT_RADIUS[s.cat]||DEFAULT_RADIUS,
-      time:'',price:'',year:'',tag:'User suggestion',bring:[],
-      suggestedBy:s.uid,
-      suggestedByName:s.displayName||'Anon',
-      createdAt:serverTimestamp(),
-    });
+      history:s.description||'',tier:1,tag:'User suggestion'
+    }],'Approve suggestion');
+    if(!ok){btn.disabled=false;btn.textContent='✅ Approve';return;}
     // Mark suggestion approved
     await updateDoc(doc(db,'suggestions',suggId),{status:'approved',approvedAt:serverTimestamp()});
     // Increment approvedSuggestions on user doc
@@ -6096,12 +5625,12 @@ async function approveSuggestion(suggId,suggUid,btn){
     const userSnap=await getDoc(userRef);
     const prev=userSnap.exists()?(userSnap.data().approvedSuggestions||0):0;
     await setDoc(userRef,{approvedSuggestions:prev+1},{merge:true});
-    toast('✅ Vieta patvirtinta ir paskelbta!','success');
+    toast('✅ Spot approved & published!','success');
     renderAdminSuggestions();
     checkContributorBadges(prev+1,suggUid===window._fbUser?.uid);
   } catch(e){
-    toast('Klaida: '+e.message,'info');
-    btn.disabled=false;btn.textContent='✅ Patvirtinti';
+    toast('Error: '+e.message,'info');
+    btn.disabled=false;btn.textContent='✅ Approve';
   }
 }
 
@@ -6120,8 +5649,8 @@ async function rejectSuggestion(suggId,suggUid,btn){
     toast('❌ Suggestion rejected','info');
     renderAdminSuggestions();
   } catch(e){
-    toast('Klaida: '+e.message,'info');
-    btn.disabled=false;btn.textContent='❌ Atmesti';
+    toast('Error: '+e.message,'info');
+    btn.disabled=false;btn.textContent='❌ Reject';
   }
 }
 
@@ -6276,7 +5805,7 @@ function deleteRoute(id){
 
 function renameRoute(id){
   const r=routes.find(r=>r.id===id);if(!r) return;
-  const name=prompt('Naujas pavadinimas:',r.name);
+  const name=prompt('New name:',r.name);
   if(!name?.trim()) return;
   r.name=name.trim();saveRoutes();renderRoutes();updateRouteBar();
 }
@@ -6401,7 +5930,7 @@ function startRouteEditMode(routeId){
     banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:500;background:var(--gold);color:#0e0c09;padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top));display:flex;align-items:center;gap:10px;box-shadow:0 2px 12px rgba(0,0,0,.3);font-family:"DM Sans",sans-serif;font-size:.85rem;font-weight:600';
     document.body.appendChild(banner);
   }
-  banner.innerHTML=`<span style="flex:1">🗺 ${r.name} — tap spots to add/remove</span><button onclick="exitRouteEditMode()" style="background:#0e0c09;color:var(--gold);border:none;border-radius:8px;padding:6px 14px;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer">Baigti ✓</button>`;
+  banner.innerHTML=`<span style="flex:1">🗺 ${r.name} — tap spots to add/remove</span><button onclick="exitRouteEditMode()" style="background:#0e0c09;color:var(--gold);border:none;border-radius:8px;padding:6px 14px;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer">Done ✓</button>`;
   banner.style.display='flex';
   // Refresh all markers to show gold highlights
   refreshMarkers();
@@ -6530,7 +6059,7 @@ function renderRoutesInto(body){
   }
   let h=`<div style="padding:12px 14px 6px;display:flex;align-items:center;justify-content:space-between">
     <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.08em">${routes.length} route${routes.length===1?'':'s'}</div>
-    <button onclick="promptCreateRoute()" style="background:var(--gold);color:#0e0c09;border:none;border-radius:8px;padding:5px 12px;font-family:'DM Sans',sans-serif;font-size:.75rem;font-weight:600;cursor:pointer">+ Naujas</button>
+    <button onclick="promptCreateRoute()" style="background:var(--gold);color:#0e0c09;border:none;border-radius:8px;padding:5px 12px;font-family:'DM Sans',sans-serif;font-size:.75rem;font-weight:600;cursor:pointer">+ New</button>
   </div>`;
   routes.forEach(r=>{
     const total=r.spots.length;
@@ -6649,7 +6178,7 @@ function autoGenerateRoute(){
   if(city&&city!=='all') pool=pool.filter(s=>spotInCity(s,city));
   if(!pool.length){toast('No suitable spots found','info');return;}
   const catObj=CATS[cat]||{label:cat,emoji:''};
-  const cityLabel=city==='all'?'Lietuva':city;
+  const cityLabel=city==='all'?'USA':city;
   const name=`${catObj.emoji} ${catObj.label} — ${cityLabel}`.trim();
   const r=createRoute(name);
   pool.forEach(s=>r.spots.push(String(s.id)));
@@ -6755,11 +6284,11 @@ async function renderReviews(){
           </div>
           <div style="font-size:1rem;margin-bottom:4px">${stars(r.rating)}</div>
           ${r.text?`<div style="font-size:.8rem;color:var(--td);line-height:1.55;font-style:italic">"${r.text}"</div>`:''}
-          <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);margin-top:4px">📍 ${r.foundCount||0} vietos · ⭐ ${r.totalXP||0} XP</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);margin-top:4px">📍 ${r.foundCount||0} spots · ⭐ ${r.totalXP||0} XP</div>
         </div>`;
       }).join('')}`;
   } catch(e){
-    body.innerHTML=`<div style="padding:20px 16px;text-align:center;font-size:.78rem;color:var(--td)">Klaida: ${e.message}</div>`;
+    body.innerHTML=`<div style="padding:20px 16px;text-align:center;font-size:.78rem;color:var(--td)">Error: ${e.message}</div>`;
   }
 }
 
@@ -6868,29 +6397,50 @@ maybeShowAuthOnFirstVisit();
   // Register service worker for offline caching
   if('serviceWorker' in navigator){
     const swCode=`
-const CACHE='spotseekers-usa-v1';
-// Clear legacy wiki caches that eat localStorage quota
-try{localStorage.removeItem('kex_wiki_cache_lt_v1');localStorage.removeItem('kex_wiki_cache_lt_v2');}catch(e){}
+const CACHE='spotseekers-usa-v2';
+const SPOTS_CACHE='ss-spots-v1';
 const PRECACHE=['/'];
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(PRECACHE)));
   self.skipWaiting();
 });
 self.addEventListener('activate',e=>{
-  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
+  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE&&k!==SPOTS_CACHE).map(k=>caches.delete(k)))));
   self.clients.claim();
 });
 self.addEventListener('fetch',e=>{
-  // Network first for Firebase/API, cache first for app shell
   const url=new URL(e.request.url);
-  if(url.hostname.includes('firebase')||url.hostname.includes('overpass')||url.hostname.includes('openstreetmap')){
+  if(e.request.method!=='GET'){return;}
+  // Spot packs: stale-while-revalidate — instant repeat loads, fresh data next visit
+  if(url.pathname.startsWith('/api/spots/')){
+    e.respondWith(caches.open(SPOTS_CACHE).then(async c=>{
+      const cached=await c.match(e.request);
+      const fresh=fetch(e.request).then(res=>{
+        if(res.ok) c.put(e.request,res.clone());
+        return res;
+      }).catch(()=>null);
+      return cached||fresh.then(r=>r||new Response('[]',{headers:{'Content-Type':'application/json'}}));
+    }));
+    return;
+  }
+  // Other API + third parties: network first
+  if(url.pathname.startsWith('/api/')||url.hostname.includes('firebase')||url.hostname.includes('overpass')||url.hostname.includes('openstreetmap')||url.hostname.includes('wikipedia')||url.hostname.includes('wikidata')){
     e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));
-  } else {
-    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{
+    return;
+  }
+  // App shell (navigations): network first so deploys arrive immediately, cache fallback offline
+  if(e.request.mode==='navigate'||url.pathname==='/'){
+    e.respondWith(fetch(e.request).then(res=>{
       if(res.ok){const clone=res.clone();caches.open(CACHE).then(c=>c.put(e.request,clone));}
       return res;
-    })));
+    }).catch(()=>caches.match(e.request).then(r=>r||caches.match('/'))));
+    return;
   }
+  // Static assets (CDN libs, fonts): cache first
+  e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{
+    if(res.ok){const clone=res.clone();caches.open(CACHE).then(c=>c.put(e.request,clone));}
+    return res;
+  })));
 });`;
     const swBlob=new Blob([swCode],{type:'application/javascript'});
     const swUrl=URL.createObjectURL(swBlob);
@@ -6932,9 +6482,6 @@ window.onFbAuthReady=async function(user){
   document.getElementById('drawerOsmBtn').style.display=isAdmin?'':'none';
   document.getElementById('drawerReviewsBtn').style.display=isAdmin?'':'none';
   document.getElementById('drawerSuggestionsBtn').style.display=isAdmin?'':'none';
-  document.getElementById('kvRebuildBtn').style.display='none'; // now inside adminDataSection
-  document.getElementById('csvExportBtn').style.display=isAdmin?'flex':'none';
-  document.getElementById('csvImportBtn').style.display=isAdmin?'flex':'none';
   const adminSection=document.getElementById('adminDataSection');
   if(adminSection) adminSection.style.display=isAdmin?'block':'none';
   // Show suggest nav for authenticated users
@@ -7114,7 +6661,7 @@ function fbLogout(){
   });
 }
 
-// ═══════════ SPOTS LOADING (KV cache → localStorage fallback) ═══════════
+// ═══════════ SPOTS LOADING (KV skeleton + names) ═══════════
 
 function setSyncDot(state){
   const d=document.getElementById('syncDot');
@@ -7124,6 +6671,8 @@ function setSyncDot(state){
 
 // Lightweight spot validator — trusts cat/tier from KV data, just ensures sane types
 function normalizeSpot(s){
+  // Legacy shim: older packs used 'category' instead of 'cat'
+  if(!s.cat&&s.category) s.cat=s.category;
   // Validate cat against known categories — fallback to 'history' if unknown
   if(!CATS[s.cat]) s.cat='history';
   // Normalize tier: string label → int (landmark=1 rarest … local=4 common)
@@ -7131,10 +6680,8 @@ function normalizeSpot(s){
     const tierMap={landmark:1,national:2,state:3,local:4,t1:1,t2:2,t3:3,t4:4};
     s.tier=tierMap[s.tier.toLowerCase()]||4;
   }
-  // Coerce to a valid 1–4 integer; anything odd → 4 (Local, the safe common default)
   s.tier=parseInt(s.tier,10);
   if(!(s.tier>=1&&s.tier<=4)) s.tier=4;
-  // Ensure name fallback
   if(!s.name) s.name='';
   return s;
 }
@@ -7143,7 +6690,6 @@ async function fbLoadSpots(){
   setSyncDot('syncing');
 
   // ── 1. Skeleton — lightweight lat/lng/cat/tier for all spots ──
-  //    Renders pins immediately, then names load in background
   try{
     const res=await fetch('/api/spots/skeleton');
     if(res.ok){
@@ -7166,8 +6712,7 @@ async function fbLoadSpots(){
 
   if(!SPOTS.length){setSyncDot('');return;}
 
-  // ── 2. Names pack — id+name+state+year+url for all spots, loads in background ──
-  //    Silently enriches SPOTS in place (no full re-render needed)
+  // ── 2. Names pack — name/state/city/year/url (+ details for imported spots) ──
   try{
     const res=await fetch('/api/spots/names');
     if(res.ok){
@@ -7178,8 +6723,6 @@ async function fbLoadSpots(){
           const n=nameMap.get(String(s.id));
           return n?{...s,...n}:s;
         });
-        // No re-render needed — positions unchanged, names only visible when user taps a spot.
-        // renderViewportMarkers() here would re-iterate 67k spots for zero visible benefit.
         renderList();
         const sub=document.getElementById('authSub');
         if(sub) sub.textContent=`${SPOTS.length.toLocaleString()} spots ready`;
@@ -7187,52 +6730,128 @@ async function fbLoadSpots(){
     }
   }catch(e){console.warn('Names pack load failed — spots visible but names missing',e);}
 
-  // ── Phase 3 removed ──
-  // Spots are served entirely from KV (skeleton + names = all 67k). The old
-  // Firestore getDocs(collection(db,'spots')) read the entire spots collection
-  // on every cache-miss load — 1 read/doc = tens of thousands of reads per session,
-  // blowing past the free-tier 50k/day limit. KV already has every spot, so reading
-  // them again from Firestore was pure waste. Firestore now only handles user
-  // progress, suggestions, reviews and the leaderboard.
-
   setSyncDot('synced');
 }
 
-// Direct Firestore load — used as fallback and for initial cache rebuild
-let _fbSeeding=false;
-async function fbLoadSpotsFromFirestore(){
-  const{db,collection,getDocs,doc,getDoc,setDoc}=window._fb||{};
-  if(!db) return;
+// ═══════════ KV PUBLISH PIPELINE (admin) ═══════════
+// KV is the master spot store. Every admin mutation — imports, edits, deletes —
+// flows through here: pull skeleton+names → mutate → push both packs back.
+// The mutator receives (skeleton[], names[]), mutates them in place, and returns
+// the number of changes (or false to abort). Both packs are pushed atomically-ish:
+// skeleton first, then names, with the result verified by the worker's count echo.
+let _kvBusy=false;
+async function kvPublish(mutator,label){
+  if(!isAdmin()){toast('⚠ Admin only','info');return false;}
+  if(_kvBusy){toast('⏳ A KV sync is already running — wait for it to finish','info');return false;}
+  const secret=_getAdminSecret();
+  if(!secret) return false;
+  _kvBusy=true;
+  setSyncDot('syncing');
   try{
-    const snapshot=await getDocs(collection(db,'spots'));
-    if(snapshot.empty){
-      const isAdmin=window._fbUser&&ADMIN_UIDS.includes(window._fbUser.uid);
-      if(!isAdmin||_fbSeeding) return;
-      _fbSeeding=true;
-      const flagRef=doc(db,'_meta','seeded');
-      const flagSnap=await getDoc(flagRef);
-      if(flagSnap.exists()){_fbSeeding=false;return;}
-      await setDoc(flagRef,{at:window._fb.serverTimestamp()});
-      await fbPushDefaultSpots();
-      _fbSeeding=false;
-      return;
-    }
-    const firestoreSpots=[];
-    snapshot.forEach(d=>{
-      const data=d.data();
-      firestoreSpots.push({radius:DEFAULT_RADIUS,...data,_fid:d.id,id:d.id});
-    });
-    SPOTS=firestoreSpots;
-    refreshMarkers();
-    updateAll();
-    setSyncDot('synced');
-    const sub=document.getElementById('authSub');
-    if(sub) sub.textContent=`${SPOTS.length} vietos (Firestore)`;
+    if(typeof osmSetStatus==='function') osmSetStatus(`☁️ ${label}: downloading packs...`);
+    const [skRes,nmRes]=await Promise.all([fetch('/api/spots/skeleton'),fetch('/api/spots/names')]);
+    if(!skRes.ok||!nmRes.ok) throw new Error('pack download failed');
+    const skeleton=await skRes.json();
+    const names=await nmRes.json();
+    if(!Array.isArray(skeleton)||!Array.isArray(names)||skeleton.length<100) throw new Error('packs look corrupt — aborting to protect data');
+    const changed=mutator(skeleton,names);
+    if(!changed){toast('Nothing to publish','info');return false;}
+    if(typeof osmSetStatus==='function') osmSetStatus(`☁️ ${label}: uploading skeleton (${skeleton.length.toLocaleString()} spots)...`);
+    await _kvPush('skeleton',skeleton,secret);
+    if(typeof osmSetStatus==='function') osmSetStatus(`☁️ ${label}: uploading names...`);
+    await _kvPush('names',names,secret);
+    if(typeof osmSetStatus==='function') osmSetStatus(`✅ ${label} — ${changed} change${changed===1?'':'s'} published to KV`);
+    toast(`☁️ ${label}: ${changed} change${changed===1?'':'s'} published`,'success');
+    // Bust the service-worker spot cache so everyone gets fresh packs on next load
+    try{const c=await caches.open('ss-spots-v1');await c.delete('/api/spots/skeleton');await c.delete('/api/spots/names');}catch(e){}
+    return true;
   }catch(e){
-    console.error('fbLoadSpotsFromFirestore',e);
-    setSyncDot('');
-    toast('Could not connect to the database','info');
+    console.error('kvPublish',e);
+    if(typeof osmSetStatus==='function') osmSetStatus(`❌ ${label} failed: ${e.message}`);
+    toast('⚠ KV publish failed: '+e.message,'info');
+    return false;
+  }finally{
+    _kvBusy=false;
+    setSyncDot('synced');
   }
+}
+
+async function _kvPush(pack,arr,secret){
+  const res=await fetch(`/api/admin/rebuild?pack=${pack}`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-Admin-Secret':secret},
+    body:JSON.stringify(arr)
+  });
+  if(res.status===403){localStorage.removeItem('ss_admin_secret');throw new Error('admin secret rejected (cleared — retry to re-enter)');}
+  if(!res.ok){const t=await res.text();throw new Error(`${pack} push HTTP ${res.status}: ${t.slice(0,100)}`);}
+  const j=await res.json();
+  if(!j.ok||j.count!==arr.length) throw new Error(`${pack} push verification failed`);
+  return j;
+}
+
+function _getAdminSecret(){
+  // Transitional: use worker-injected secret if present (remove injection in worker.js — see handoff)
+  if(window._adminSecret&&window._adminSecret.length>3&&!window._adminSecret.includes('PLACEHOLDER')) return window._adminSecret;
+  let s=localStorage.getItem('ss_admin_secret');
+  if(!s){
+    s=prompt('Admin secret (stored locally, used to publish spots to KV):');
+    if(s&&s.trim()) localStorage.setItem('ss_admin_secret',s.trim());
+  }
+  if(!s||!s.trim()){toast('⚠ Admin secret required for publishing','info');return null;}
+  return s.trim();
+}
+
+// Shared import core — builds clean spot objects, appends to packs, publishes.
+async function kvImportSpots(items,label){
+  const stamp=Date.now().toString(36);
+  const newSpots=items.map((it,i)=>({
+    id:String(it.id||('ss_'+stamp+'_'+i)),
+    name:it.name||'',
+    cat:CATS[it.cat]?it.cat:'history',
+    tier:parseInt(it.tier)||4,
+    lat:it.lat,lng:it.lng,
+    radius:it.radius||CAT_DEFAULT_RADIUS[it.cat]||DEFAULT_RADIUS,
+    tag:it.tag||'',history:it.history||'',year:String(it.year||''),
+    state:it.state||'',city:it.city||'',url:it.url||'',
+    time:'',price:'',bring:[],
+  }));
+  const ok=await kvPublish((sk,nm)=>{
+    const have=new Set(sk.map(s=>String(s.id)));
+    let n=0;
+    for(const s of newSpots){
+      if(have.has(s.id)) continue;
+      sk.push({id:s.id,lat:s.lat,lng:s.lng,cat:s.cat,tier:s.tier,pack:'free'});
+      const entry={id:s.id,name:s.name,state:s.state,city:s.city,year:s.year,url:s.url};
+      if(s.tag) entry.tag=s.tag;
+      if(s.history) entry.history=s.history;
+      if(s.radius&&s.radius!==(CAT_DEFAULT_RADIUS[s.cat]||DEFAULT_RADIUS)) entry.radius=s.radius;
+      nm.push(entry);
+      n++;
+    }
+    return n;
+  },label);
+  if(ok){
+    SPOTS.push(...newSpots.map(normalizeSpot));
+    refreshMarkers();updateAll();
+  }
+  return ok;
+}
+
+// Shared delete core — removes ids from both packs, publishes.
+async function kvDeleteSpots(ids,label){
+  const idSet=new Set(ids.map(String));
+  const ok=await kvPublish((sk,nm)=>{
+    const before=sk.length;
+    for(let i=sk.length-1;i>=0;i--) if(idSet.has(String(sk[i].id))) sk.splice(i,1);
+    for(let i=nm.length-1;i>=0;i--) if(idSet.has(String(nm[i].id))) nm.splice(i,1);
+    return before-sk.length;
+  },label);
+  if(ok){
+    SPOTS=SPOTS.filter(s=>!idSet.has(String(s.id))&&!idSet.has(String(s._fid||'')));
+    ids.forEach(id=>{found.delete(id);found.delete(String(id));const n=parseInt(id);if(!isNaN(n))found.delete(n);});
+    refreshMarkers();updateAll();
+  }
+  return ok;
 }
 
 // ── ADMIN: Abandoned Spots Cleanup (remove spots outside USA) ──
@@ -7243,255 +6862,14 @@ function isInsideUSA(lat,lng){
 
 async function openAbandonedCleanup(){
   if(!isAdmin()){toast('⚠ Admin only','info');return;}
-  const{db,collection,getDocs}=window._fb||{};
-  if(!db) return;
-  toast('🔍 Checking...','info');
-  const snap=await getDocs(collection(db,'spots'));
-  const outside=[];
-  snap.forEach(d=>{
-    const s=d.data();
-    if(s.cat==='abandoned'&&!isInsideUSA(s.lat,s.lng)){
-      outside.push({_fid:d.id,name:s.name,lat:s.lat,lng:s.lng});
-    }
-  });
+  const outside=SPOTS.filter(s=>s.cat==='abandoned'&&!isInsideUSA(s.lat,s.lng));
   if(!outside.length){toast('✅ All abandoned spots inside USA — nothing to delete','success');return;}
-  const existing=document.getElementById('abandonedCleanupModal');
-  if(existing) existing.remove();
-  const fidsJson=JSON.stringify(outside.map(x=>x._fid));
-  const modal=document.createElement('div');
-  modal.id='abandonedCleanupModal';
-  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
-  modal.innerHTML=`
-    <div style="background:var(--surf);border-radius:14px;padding:20px;max-width:420px;width:100%;max-height:80vh;display:flex;flex-direction:column">
-      <div style="font-family:'DM Mono',monospace;font-size:.9rem;font-weight:700;color:var(--txt);margin-bottom:8px">🧹 Cleanup: abandoned outside USA</div>
-      <div style="font-size:.78rem;color:var(--tm);margin-bottom:12px">Found <strong style="color:#e07070">${outside.length}</strong> spots outside USA. Are you surerinti?</div>
-      <div style="overflow-y:auto;flex:1;margin-bottom:14px;border:1px solid var(--bdr);border-radius:8px;padding:8px">
-        ${outside.slice(0,60).map(s=>`<div style="font-size:.7rem;color:var(--tm);padding:3px 0;border-bottom:1px solid var(--bdr)">${s.name||'?'} · ${Number(s.lat).toFixed(3)}, ${Number(s.lng).toFixed(3)}</div>`).join('')}
-        ${outside.length>60?`<div style="font-size:.68rem;color:var(--td);padding:4px">...and ${outside.length-60} more spots</div>`:''}
-      </div>
-      <div style="display:flex;gap:8px;flex-shrink:0">
-        <button onclick="document.getElementById('abandonedCleanupModal').remove()" style="flex:1;padding:10px;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;color:var(--txt);cursor:pointer;font-size:.8rem">Cancel</button>
-        <button id="confirmCleanupBtn" onclick="doAbandonedCleanup(${fidsJson.replace(/"/g,"'")})" style="flex:1;padding:10px;background:rgba(180,60,60,.2);border:1px solid #c05050;border-radius:8px;color:#e07070;cursor:pointer;font-size:.8rem;font-weight:700">🗑 Delete ${outside.length}</button>
-      </div>
-    </div>`;
-  document.body.appendChild(modal);
+  const preview=outside.slice(0,25).map(s=>`• ${s.name||'?'} (${Number(s.lat).toFixed(2)}, ${Number(s.lng).toFixed(2)})`).join('\n');
+  if(!confirm(`🧹 Found ${outside.length} abandoned spots outside USA bounds:\n\n${preview}${outside.length>25?'\n...and '+(outside.length-25)+' more':''}\n\nDelete them all? This publishes to KV immediately.`)) return;
+  await kvDeleteSpots(outside.map(s=>s.id),'Cleanup outside-USA');
 }
 
-async function doAbandonedCleanup(fids){
-  const{db,doc,writeBatch}=window._fb||{};
-  if(!db) return;
-  const btn=document.getElementById('confirmCleanupBtn');
-  if(btn){btn.disabled=true;btn.textContent='Trinama...';}
-  const CHUNK=200;
-  let deleted=0;
-  for(let i=0;i<fids.length;i+=CHUNK){
-    const batch=writeBatch(db);
-    fids.slice(i,i+CHUNK).forEach(fid=>batch.delete(doc(db,'spots',fid)));
-    try{await batch.commit();deleted+=Math.min(CHUNK,fids.length-i);}
-    catch(e){console.error('Cleanup batch error',e);}
-    await new Promise(r=>setTimeout(r,300));
-  }
-  const fidSet=new Set(fids);
-  SPOTS=SPOTS.filter(s=>!fidSet.has(s._fid));
-  refreshMarkers();updateAll();
-  document.getElementById('abandonedCleanupModal')?.remove();
-  toast(`🧹 Deleted ${deleted} spots outside USA`,'success');
-  localStorage.removeItem(ABANDONED_CACHE_KEY);
-  _abandonedData=[];
-}
 
-// ── ADMIN: CSV Export ──
-function exportSpotsCSV(){
-  if(!isAdmin()){toast('⚠ Admin only','info');return;}
-  const cols=['id','name','cat','tier','lat','lng','address','kpdCode','kpdUrl','tag','year','history','radius'];
-  const escape=v=>{
-    if(v===null||v===undefined) return '';
-    const s=String(v).replace(/"/g,'""');
-    return s.includes(',')||s.includes('"')||s.includes('\n')?`"${s}"`:s;
-  };
-  const header=cols.join(',');
-  const rows=SPOTS.map(s=>cols.map(c=>escape(s[c])).join(','));
-  // UTF-8 BOM so Excel opens Lithuanian chars correctly
-  const bom='\uFEFF';
-  const csv=bom+header+'\n'+rows.join('\n');
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;a.download=`lithuania-explorer-spots-${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();URL.revokeObjectURL(url);
-  toast(`📥 Exported ${SPOTS.length} spots`,'success');
-}
-
-// ── ADMIN: CSV Import ──
-async function importSpotsCSV(input){
-  if(!isAdmin()){toast('⚠ Admin only','info');return;}
-  const file=input.files[0];
-  if(!file){return;}
-  const btn=document.getElementById('csvImportBtn');
-  btn.textContent='⏳ Importuojama...';
-
-  const text=await file.text();
-  // Strip BOM if present
-  const clean=text.replace(/^\uFEFF/,'');
-  const lines=clean.split('\n').filter(l=>l.trim());
-  if(lines.length<2){toast('❌ CSV is empty or invalid','info');btn.textContent='📤 Import CSV';return;}
-
-  const header=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,''));
-  const required=['id','name','cat','lat','lng'];
-  const missing=required.filter(r=>!header.includes(r));
-  if(missing.length){toast(`❌ Missing columns: ${missing.join(', ')}`,'info');btn.textContent='📤 Import CSV';return;}
-
-  // Parse CSV respecting quoted fields
-  function parseRow(line){
-    const vals=[];let cur='';let inQ=false;
-    for(let i=0;i<line.length;i++){
-      const ch=line[i];
-      if(ch==='"'){
-        if(inQ&&line[i+1]==='"'){cur+='"';i++;}
-        else inQ=!inQ;
-      } else if(ch===','&&!inQ){vals.push(cur);cur='';}
-      else cur+=ch;
-    }
-    vals.push(cur);
-    return vals;
-  }
-
-  let updated=0,errors=0;
-  const updatedSpots=[...SPOTS];
-
-  for(let i=1;i<lines.length;i++){
-    try{
-      const vals=parseRow(lines[i]);
-      const row={};
-      header.forEach((h,idx)=>row[h]=vals[idx]?.trim().replace(/^"|"$/g,'')||'');
-      const id=row.id;
-      if(!id) continue;
-      const idx=updatedSpots.findIndex(s=>String(s.id)===String(id)||s._fid===id);
-      if(idx===-1){errors++;continue;}
-      // Only update editable fields — never touch lat/lng/id from import
-      const editable=['name','cat','tier','address','kpdCode','kpdUrl','tag','year','history','radius'];
-      editable.forEach(f=>{if(row[f]!==undefined&&row[f]!=='') updatedSpots[idx]={...updatedSpots[idx],[f]:f==='tier'||f==='radius'?Number(row[f]):row[f]};});
-      updated++;
-    }catch(e){errors++;}
-  }
-
-  if(updated===0){toast(`❌ No spots updated. Check the ID column.`,'info');btn.textContent='📤 Import CSV';input.value='';return;}
-
-  // Confirm before pushing
-  const ok=confirm(`Update ${updated} spots in KV cache?${errors>0?`\n(${errors} rows skipped)`:''}`);
-  if(!ok){btn.textContent='📤 Import CSV';input.value='';return;}
-
-  SPOTS=updatedSpots;
-  // Push to KV
-  try{
-    const res=await fetch(`/api/admin/rebuild?country=US`,{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Secret':window._adminSecret||'usa2026'},body:JSON.stringify(SPOTS)});
-    if(res.ok){
-      const data=await res.json();
-      try{localStorage.removeItem('usa_firestore_spots_v1');}catch(e){}
-      toast(`✅ ${updated} spots updated, ${data.count} in KV cache`,'success');
-      refreshMarkers();updateAll();
-    } else {throw new Error(`HTTP ${res.status}`);}
-  }catch(e){toast(`❌ KV klaida: ${e.message}`,'info');}
-  btn.textContent='📤 Import CSV';
-  input.value='';
-}
-
-// ── ADMIN: Rebuild KV cache from current SPOTS ──
-async function rebuildKVCache(){
-  if(!isAdmin()){toast('⚠ Admin only','info');return;}
-  const btn=document.querySelector('#adminDataSection div:first-of-type');
-  if(btn){btn.style.opacity='.5';btn.style.pointerEvents='none';btn.textContent='⏳ Loading...';}
-  toast('⏳ Loading all spots from Firestore...','info');
-  try{
-    // Always fetch fresh from Firestore for rebuild
-    await fbLoadSpotsFromFirestore();
-    if(btn){btn.textContent='⏳ Sending to KV...';}
-    // Strip Firestore-only fields that aren't needed client-side
-    const spotsToCache=SPOTS.map(s=>({...s}));
-    const res=await fetch(`/api/admin/rebuild?country=US`,{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'X-Admin-Secret':window._adminSecret||'usa2026'
-      },
-      body:JSON.stringify(spotsToCache)
-    });
-    if(res.ok){
-      const data=await res.json();
-      // Invalidate Firestore localStorage cache to force fresh merge on next load
-      try{localStorage.removeItem('usa_firestore_spots_v1');}catch(e){}
-      toast(`✅ KV refreshed! ${data.count} spots cached.`,'success');
-      if(btn){btn.style.opacity='1';btn.style.pointerEvents='';btn.textContent='🔄 Refresh KV cache';}
-    } else {
-      throw new Error(`HTTP ${res.status}`);
-    }
-  }catch(e){
-    toast(`❌ Klaida: ${e.message}`,'info');
-    if(btn){btn.style.opacity='1';btn.style.pointerEvents='';btn.textContent='🔄 Refresh KV cache';}
-  }
-}
-
-// Clear local spots cache (force fresh load next time)
-function clearSpotsCache(){
-  localStorage.removeItem('usa_firestore_spots_v1');
-  toast('🗑 Cache cleared — reload the page','info');
-}
-
-// Push all DEFAULT_SPOTS to Firestore — called once on first ever load
-async function fbPushDefaultSpots(){
-  const{db,collection,addDoc}=window._fb||{};
-  if(!db) return;
-  setSyncDot('syncing');
-  try{
-    for(const spot of DEFAULT_SPOTS){
-      const{id,...data}=spot;
-      await addDoc(collection(db,'spots'),{...data,createdAt:window._fb.serverTimestamp()});
-    }
-    setSyncDot('synced');
-    toast('📍 Base spots loaded into database','success');
-  } catch(e){
-    console.error('fbPushDefaultSpots',e);
-  }
-}
-
-// Save a single spot to Firestore (called from saveSpot)
-async function fbSaveSpot(spotData){
-  const{db,collection,addDoc,doc,updateDoc,serverTimestamp}=window._fb||{};
-  if(!db) return null;
-  setSyncDot('syncing');
-  try{
-    if(spotData._fid){
-      // Update existing
-      const{_fid,id,...data}=spotData;
-      await updateDoc(doc(db,'spots',_fid),{...data,updatedAt:serverTimestamp()});
-      setSyncDot('synced');
-      return spotData._fid;
-    } else {
-      // New spot — include city for future multi-city filtering
-      const{id,...data}=spotData;
-      const ref=await addDoc(collection(db,'spots'),{...data,createdAt:serverTimestamp()});
-      setSyncDot('synced');
-      return ref.id;
-    }
-  } catch(e){
-    console.error('fbSaveSpot',e);
-    setSyncDot('');
-    toast('Failed to save spot','info');
-    return null;
-  }
-}
-
-// Delete a spot from Firestore
-async function fbDeleteSpot(fid){
-  const{db,doc,deleteDoc}=window._fb||{};
-  if(!db||!fid) return;
-  try{
-    await deleteDoc(doc(db,'spots',fid));
-    setSyncDot('synced');
-  } catch(e){
-    console.error('fbDeleteSpot',e);
-  }
-}
 
 // ═══════════ FIREBASE USER PROGRESS ═══════════
 
@@ -7560,57 +6938,63 @@ save=function(){
   fbSaveUserProgress(); // sync progress to Firestore if logged in
 };
 
-// ═══════════ OVERRIDE saveSpot() TO USE FIRESTORE ═══════════
+// ═══════════ OVERRIDE saveSpot() / deleteSpot() TO PUBLISH TO KV ═══════════
 
 const _origSaveSpot=saveSpot;
 saveSpot=async function(){
-  if(!window._fbUser||!ADMIN_UIDS.includes(window._fbUser.uid)){
-    toast('⚠ Admin only — cannot add spots','info');return;
-  }
+  if(!isAdmin()){toast('⚠ Admin only — cannot add spots','info');return;}
   const name=document.getElementById('eName').value.trim();
   const lat=parseFloat(document.getElementById('eLat').value);
   const lng=parseFloat(document.getElementById('eLng').value);
   if(!name||isNaN(lat)||isNaN(lng)){toast('⚠ Fill in name and coordinates','info');return;}
-  const bring=[];
   const radius=parseInt(document.getElementById('eRadius').value)||DEFAULT_RADIUS;
   const data={name,cat:document.getElementById('eCat').value,tier:parseInt(document.getElementById('eTier').value),
-    history:document.getElementById('eHist').value,time:'',
-    price:'',year:document.getElementById('eYear').value,
-    tag:document.getElementById('eTag').value,bring,lat,lng,radius};
+    history:document.getElementById('eHist').value,year:document.getElementById('eYear').value,
+    tag:document.getElementById('eTag').value,lat,lng,radius};
   const id=document.getElementById('eId').value;
 
   if(id){
-    const idx=SPOTS.findIndex(s=>s.id==id||s._fid==id);
-    if(idx!==-1){
-      SPOTS[idx]={...SPOTS[idx],...data};
-      await fbSaveSpot(SPOTS[idx]);
-      toast(`✅ ${name} atnaujinta`,'success');
+    // Edit existing spot — update both packs in place
+    const sid=String(id);
+    const ok=await kvPublish((sk,nm)=>{
+      let n=0;
+      const ske=sk.find(s=>String(s.id)===sid);
+      if(ske){ske.lat=lat;ske.lng=lng;ske.cat=data.cat;ske.tier=data.tier;n++;}
+      let nme=nm.find(s=>String(s.id)===sid);
+      if(!nme&&ske){nme={id:sid};nm.push(nme);}
+      if(nme){
+        nme.name=name;nme.year=String(data.year||'');
+        if(data.tag) nme.tag=data.tag; else delete nme.tag;
+        if(data.history) nme.history=data.history; else delete nme.history;
+        if(radius&&radius!==(CAT_DEFAULT_RADIUS[data.cat]||DEFAULT_RADIUS)) nme.radius=radius; else delete nme.radius;
+        n++;
+      }
+      return n;
+    },'Edit spot');
+    if(ok){
+      const idx=SPOTS.findIndex(s=>String(s.id)===sid||s._fid==id);
+      if(idx!==-1) SPOTS[idx]=normalizeSpot({...SPOTS[idx],...data});
+      toast(`✅ ${name} updated`,'success');
+      save();refreshMarkers();updateAll();closeEditor();
     }
   } else {
-    data.id=Date.now();
-    const fid=await fbSaveSpot(data);
-    if(fid) data._fid=fid;
-    SPOTS.push(data);
-    toast(`📍 ${name} added!`,'success');
+    // New spot
+    const ok=await kvImportSpots([data],'Add spot');
+    if(ok){
+      toast(`📍 ${name} added!`,'success');
+      save();updateAll();closeEditor();
+    }
   }
-  save();refreshMarkers();updateAll();closeEditor();
 };
-
-// ═══════════ OVERRIDE deleteSpot() TO USE FIRESTORE ═══════════
 
 const _origDeleteSpot=deleteSpot;
 deleteSpot=async function(){
-  if(!window._fbUser||!ADMIN_UIDS.includes(window._fbUser.uid)){
-    toast('⚠ Admin only gali trinti vietas','info');return;
-  }
+  if(!isAdmin()){toast('⚠ Admin only can delete spots','info');return;}
   const id=document.getElementById('eId').value;if(!id)return;
   const sp=SPOTS.find(s=>s.id==id||s._fid==id);
   if(!confirm(`Delete "${sp?.name}"?`))return;
-  if(sp?._fid) await fbDeleteSpot(sp._fid);
-  SPOTS=SPOTS.filter(s=>s.id!=id&&s._fid!=id);
-  found.delete(parseInt(id));
-  save();refreshMarkers();updateAll();closeEditor();
-  toast('🗑 Spot deleted','info');
+  const ok=await kvDeleteSpots([id],'Delete spot');
+  if(ok){save();closeEditor();}
 };
 
 // ═══════════ ANDROID BACK BUTTON (TWA) ═══════════
