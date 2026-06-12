@@ -4432,7 +4432,7 @@ const OSM_CAT_EMOJI={
 let _osmImportData=[];
 let _osmSelected=new Set();
 let _osmFilter='all';
-let _osmTier=1;
+let _osmTier=4;
 let _osmLoading=false;
 let _osmForceRefresh=false;
 
@@ -4440,7 +4440,7 @@ let _osmForceRefresh=false;
 let _abandonedData=[];
 let _abandonedSelected=new Set();
 let _abandonedLoading=false;
-let _abandonedTier=1;
+let _abandonedTier=4;
 const ABANDONED_CACHE_KEY='usa_abandoned_v1';
 const ABANDONED_CACHE_TTL=7*24*60*60*1000; // 7 days
 const ABANDONED_BBOX='24.5,-125.0,49.4,-66.9'; // continental USA
@@ -4501,180 +4501,222 @@ function processOsmElement(e){
   return{name,nameLt:t['name:en']||'',cat,lat,lng,typeKey,alreadyIn,tags:t};
 }
 
-let _osmManualMode=false;
-
-const CITY_BBOXES_GLOBAL=[
-  // Northeast
-  ['New York','40.70,-74.02,40.80,-73.93'],
-  ['Boston','42.34,-71.10,42.39,-71.04'],
-  ['Philadelphia','39.93,-75.18,39.97,-75.13'],
-  ['Pittsburgh','40.42,-80.02,40.46,-79.96'],
-  ['Baltimore','39.27,-76.65,39.32,-76.58'],
-  ['Washington DC','38.87,-77.05,38.93,-76.97'],
-  ['Providence','41.81,-71.43,41.84,-71.39'],
-  ['Newport','41.47,-71.32,41.51,-71.28'],
-  ['Hartford','41.75,-72.71,41.79,-72.66'],
-  ['Buffalo','42.86,-78.90,42.92,-78.83'],
-  // Midwest
-  ['Chicago','41.85,-87.69,41.92,-87.60'],
-  ['Detroit','42.32,-83.08,42.36,-83.02'],
-  ['Cleveland','41.47,-81.72,41.52,-81.65'],
-  ['Cincinnati','39.09,-84.55,39.13,-84.49'],
-  ['St. Louis','38.61,-90.23,38.66,-90.17'],
-  ['Minneapolis','44.96,-93.30,45.00,-93.22'],
-  ['Milwaukee','43.02,-87.95,43.06,-87.89'],
-  ['Indianapolis','39.75,-86.18,39.79,-86.12'],
-  ['Columbus','39.94,-83.02,39.99,-82.96'],
-  ['Louisville','38.23,-85.78,38.27,-85.72'],
-  // South
-  ['Charleston','32.76,-79.95,32.81,-79.91'],
-  ['Savannah','32.06,-81.11,32.10,-81.07'],
-  ['New Orleans','29.93,-90.08,29.97,-90.03'],
-  ['Atlanta','33.74,-84.41,33.78,-84.36'],
-  ['Nashville','36.14,-86.81,36.18,-86.75'],
-  ['Memphis','35.13,-90.07,35.17,-90.02'],
-  ['Richmond','37.52,-77.47,37.56,-77.42'],
-  ['Annapolis','38.96,-76.51,38.99,-76.47'],
-  ['Williamsburg','37.26,-76.72,37.29,-76.69'],
-  ['Miami','25.75,-80.21,25.80,-80.17'],
-  ['St. Augustine','29.88,-81.32,29.91,-81.30'],
-  // Texas
-  ['Houston','29.74,-95.39,29.78,-95.33'],
-  ['Dallas','32.76,-96.82,32.81,-96.77'],
-  ['San Antonio','29.41,-98.51,29.45,-98.47'],
-  ['Austin','30.25,-97.77,30.29,-97.72'],
-  // West
-  ['San Francisco','37.76,-122.45,37.81,-122.39'],
-  ['Los Angeles','34.03,-118.27,34.08,-118.22'],
-  ['San Diego','32.70,-117.18,32.74,-117.13'],
-  ['Seattle','47.59,-122.35,47.63,-122.30'],
-  ['Portland','45.50,-122.69,45.54,-122.65'],
-  ['Denver','39.72,-105.00,39.76,-104.95'],
-  ['Salt Lake City','40.74,-111.91,40.78,-111.86'],
-  ['Las Vegas','36.15,-115.18,36.19,-115.13'],
-  ['Phoenix','33.43,-112.10,33.47,-112.05'],
-  ['Santa Fe','35.67,-105.95,35.70,-105.92'],
-  ['Honolulu','21.29,-157.86,21.32,-157.82'],
+// ═══════════ USA STATE SCAN — reclassify + dedup + new spot discovery ═══════════
+const US_STATES=[
+  ['AL','Alabama','S'],['AK','Alaska','W'],['AZ','Arizona','W'],['AR','Arkansas','S'],['CA','California','W'],
+  ['CO','Colorado','W'],['CT','Connecticut','NE'],['DE','Delaware','NE'],['DC','Washington DC','NE'],['FL','Florida','S'],
+  ['GA','Georgia','S'],['HI','Hawaii','W'],['ID','Idaho','W'],['IL','Illinois','MW'],['IN','Indiana','MW'],
+  ['IA','Iowa','MW'],['KS','Kansas','MW'],['KY','Kentucky','S'],['LA','Louisiana','S'],['ME','Maine','NE'],
+  ['MD','Maryland','NE'],['MA','Massachusetts','NE'],['MI','Michigan','MW'],['MN','Minnesota','MW'],['MS','Mississippi','S'],
+  ['MO','Missouri','MW'],['MT','Montana','W'],['NE','Nebraska','MW'],['NV','Nevada','W'],['NH','New Hampshire','NE'],
+  ['NJ','New Jersey','NE'],['NM','New Mexico','W'],['NY','New York','NE'],['NC','North Carolina','S'],['ND','North Dakota','MW'],
+  ['OH','Ohio','MW'],['OK','Oklahoma','S'],['OR','Oregon','W'],['PA','Pennsylvania','NE'],['RI','Rhode Island','NE'],
+  ['SC','South Carolina','S'],['SD','South Dakota','MW'],['TN','Tennessee','S'],['TX','Texas','S'],['UT','Utah','W'],
+  ['VT','Vermont','NE'],['VA','Virginia','S'],['WA','Washington','W'],['WV','West Virginia','S'],['WI','Wisconsin','MW'],
+  ['WY','Wyoming','W'],
 ];
+const SCAN_MIRRORS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
+const RECLASS_LS_KEY='usa_reclass_v1';
+const SCAN_CANDIDATE_CAP=50000; // memory guard for new-spot candidates
+let _scanSel=new Set();          // selected state codes
+let _scanRunning=false,_scanStop=false;
+let _reclass={};                 // spotId -> {to,from,name}
+let _scanDone=new Set();         // completed state codes (persisted)
+let _scanSeenOsm=new Set();      // osm element ids seen this session
 
-const OSM_CACHE_KEY_MANUAL='usa_osm_manual_regions_v1';
-
-function osmGetManualCache(){
-  try{ return JSON.parse(localStorage.getItem(OSM_CACHE_KEY_MANUAL)||'{}'); }catch(e){ return {}; }
+function _loadReclassLS(){
+  try{
+    const j=JSON.parse(localStorage.getItem(RECLASS_LS_KEY)||'null');
+    if(j){_reclass=j.changes||{};_scanDone=new Set(j.done||[]);}
+  }catch(e){}
 }
-function osmSaveManualCache(cache){
-  try{ localStorage.setItem(OSM_CACHE_KEY_MANUAL,JSON.stringify(cache)); }catch(e){}
+function _saveReclassLS(){
+  try{localStorage.setItem(RECLASS_LS_KEY,JSON.stringify({changes:_reclass,done:[..._scanDone]}));}
+  catch(e){console.warn('reclass save failed',e);}
+}
+_loadReclassLS();
+
+// Two tag-group queries per state — split keeps responses under Overpass limits.
+function _stateQueries(code){
+  const head=`data=[out:json][timeout:180];area["ISO3166-2"="US-${code}"][admin_level=4]->.st;`;
+  return[
+`${head}
+(
+  nwr["amenity"="place_of_worship"]["name"](area.st);
+  nwr["amenity"~"^(school|college|university)$"]["name"](area.st);
+  nwr["leisure"~"^(park|garden|nature_reserve)$"]["name"](area.st);
+);
+out center;`,
+`${head}
+(
+  nwr["historic"]["name"](area.st);
+  nwr["tourism"~"^(museum|gallery|viewpoint|artwork|hotel|motel)$"]["name"](area.st);
+  nwr["amenity"~"^(theatre|grave_yard|courthouse|townhall|library|post_office)$"]["name"](area.st);
+  nwr["man_made"="water_tower"](area.st);
+  nwr["military"~"^(bunker|fort)$"]["name"](area.st);
+  nwr["landuse"="cemetery"]["name"](area.st);
+);
+out center;`,
+  ];
 }
 
-async function fetchOsmRegion(cityName, bbox, btnId){
-  const btn=document.getElementById(btnId);
-  if(btn){ btn.disabled=true; btn.textContent='⏳...'; }
-  const MIRRORS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://maps.mail.ru/osm/tools/overpass/api/interpreter'];
-  const body=makeOsmQuery(bbox);
-  let text=null;
-  for(let mi=0;mi<MIRRORS.length;mi++){
-    osmSetStatus(`⏳ ${cityName} · mirror ${mi+1}/${MIRRORS.length}...`);
-    try{
-      const r=await fetch(MIRRORS[mi],{method:'POST',body,signal:AbortSignal.timeout(22000)});
-      const t=await r.text();
-      // Throw on ANY error — status>=400 OR XML response (Overpass errors come as 200+XML)
-      if(r.status>=400) throw new Error(`HTTP ${r.status}`);
-      if(t.trim().startsWith('<')) throw new Error('XML error response');
-      // Valid JSON response
-      text=t;
-      break;
-    }catch(e){
-      console.warn(`OSM mirror ${mi+1} failed for ${cityName}:`,e.message);
-      if(mi<MIRRORS.length-1){
-        osmSetStatus(`⚠ ${cityName} · mirror ${mi+1} klaida, bandau mirror ${mi+2}...`);
-        await new Promise(r=>setTimeout(r,1500));
-      } else {
-        osmSetStatus(`❌ ${cityName}: all ${MIRRORS.length} servers unavailable`);
-        if(btn){ btn.disabled=false; btn.textContent='🔄 Retry'; }
-        return;
+// Fetch with mirror rotation + one 429 backoff per mirror. Returns elements[] or null.
+async function _overpassFetch(body,onStatus){
+  for(let mi=0;mi<SCAN_MIRRORS.length;mi++){
+    for(let attempt=0;attempt<2;attempt++){
+      try{
+        const r=await fetch(SCAN_MIRRORS[mi],{method:'POST',body,signal:AbortSignal.timeout(190000)});
+        const t=await r.text();
+        if(r.status===429||t.includes('Too Many Requests')){
+          if(attempt===0){if(onStatus)onStatus(`⏳ Rate-limited — waiting 25 s...`);await new Promise(r2=>setTimeout(r2,25000));continue;}
+          break; // next mirror
+        }
+        if(r.status>=400) throw new Error('HTTP '+r.status);
+        if(t.trim().startsWith('<')) throw new Error('server error page');
+        return JSON.parse(t).elements||[];
+      }catch(e){
+        console.warn('Overpass mirror',mi+1,'failed:',e.message);
+        break; // next mirror
       }
     }
+    if(mi<SCAN_MIRRORS.length-1){if(onStatus)onStatus(`⚠ Mirror ${mi+1} failed — trying ${mi+2}...`);await new Promise(r=>setTimeout(r,1500));}
   }
-  if(!text){
-    osmSetStatus(`❌ ${cityName}: negauta atsakymo`);
-    if(btn){ btn.disabled=false; btn.textContent='🔄 Retry'; }
-    return;
-  }
-  const elements=JSON.parse(text).elements||[];
-  const processed=elements.map(e=>processOsmElement(e)).filter(Boolean);
-  const deduped=processed.filter((x,i,arr)=>arr.findIndex(y=>Math.abs(y.lat-x.lat)<0.0002&&Math.abs(y.lng-x.lng)<0.0002&&y.cat===x.cat)===i);
-  // merge into _osmImportData (avoid coord dupes with existing)
-  let added=0;
-  for(const item of deduped){
-    const exists=_osmImportData.some(y=>Math.abs(y.lat-item.lat)<0.0002&&Math.abs(y.lng-item.lng)<0.0002&&y.cat===item.cat);
-    if(!exists){ _osmImportData.push(item); added++; }
-  }
-  // save to manual cache
-  const cache=osmGetManualCache();
-  cache[cityName]={ts:Date.now(),count:deduped.length};
-  osmSaveManualCache(cache);
-  // save merged to main cache
-  try{ localStorage.setItem('kex_osm_cache_lt_v3',JSON.stringify({ts:Date.now(),data:_osmImportData})); }catch(e){}
-  osmSetStatus(`✅ ${cityName}: +${added} new. Total: ${_osmImportData.length}`);
-  renderOsmManualUI();
-  renderOsmList();
+  return null;
 }
 
-function renderOsmManualUI(){
-  const el=document.getElementById('osmManualGrid');
-  if(!el) return;
-  const cache=osmGetManualCache();
-  el.innerHTML=`
-    <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
-      <button class="osm-ctrl-btn" onclick="osmCheckAll(true)">☑ Visi</button>
-      <button class="osm-ctrl-btn" onclick="osmCheckAll(false)">☐ Jokie</button>
-      <button class="osm-ctrl-btn pri" onclick="osmFetchChecked()" id="osmFetchCheckedBtn">🔄 Fetch selected</button>
-    </div>
-    ${CITY_BBOXES_GLOBAL.map(([city,bbox],i)=>{
-      const c=cache[city];
-      const status=c
-        ?`<span style="color:var(--gold);font-size:.6rem">✓ ${c.count} · ${new Date(c.ts).toLocaleDateString('en-US')}</span>`
-        :`<span style="color:var(--tm);font-size:.6rem">—</span>`;
-      return `<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--bdr)">
-        <input type="checkbox" id="osmChk_${i}" style="accent-color:var(--gold);width:14px;height:14px;flex-shrink:0">
-        <span style="font-size:.75rem;flex:1;font-family:'DM Mono',monospace">${city}</span>
-        ${status}
-        <button id="osmRgnBtn_${i}" class="osm-ctrl-btn" style="padding:2px 8px;font-size:.65rem" onclick="fetchOsmRegion('${city}','${bbox}','osmRgnBtn_${i}')">🔄</button>
-      </div>`;
-    }).join('')}
-  `;
-}
-
-function osmCheckAll(val){
-  CITY_BBOXES_GLOBAL.forEach((_,i)=>{
-    const chk=document.getElementById(`osmChk_${i}`);
-    if(chk) chk.checked=val;
-  });
-}
-
-async function osmFetchChecked(){
-  const selected=CITY_BBOXES_GLOBAL.filter((_,i)=>{
-    const chk=document.getElementById(`osmChk_${i}`);
-    return chk&&chk.checked;
-  });
-  if(!selected.length){toast('⚠ No cities selected','info');return;}
-  const btn=document.getElementById('osmFetchCheckedBtn');
-  if(btn){btn.disabled=true;btn.textContent=`⏳ 0/${selected.length}...`;}
-  for(let i=0;i<selected.length;i++){
-    const[city,bbox]=selected[i];
-    if(btn) btn.textContent=`⏳ ${i+1}/${selected.length}: ${city}`;
-    const tmpId=`osmTmpBtn_${i}`;
-    // inject a temp hidden button to reuse fetchOsmRegion
-    let tmpBtn=document.getElementById(tmpId);
-    if(!tmpBtn){tmpBtn=document.createElement('button');tmpBtn.id=tmpId;tmpBtn.style.display='none';document.body.appendChild(tmpBtn);}
-    await fetchOsmRegion(city,bbox,tmpId);
-    if(i<selected.length-1) await new Promise(r=>setTimeout(r,1200));
+// Find existing spot within 100 m (250 m for districts) with ≥80% name similarity.
+function _findReclassTarget(name,lat,lng){
+  if(!_dupGrid||_dupGridSize!==SPOTS.length) _buildDupGrid();
+  const cy=Math.round(lat*100),cx=Math.round(lng*100);
+  const cosLat=Math.cos(lat*Math.PI/180);
+  let best=null,bestD=Infinity;
+  for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+    const arr=_dupGrid.get((cy+dy)+':'+(cx+dx));
+    if(!arr) continue;
+    for(const s of arr){
+      const dLat=(s.lat-lat)*111320;
+      const dLng=(s.lng-lng)*111320*cosLat;
+      const d2=dLat*dLat+dLng*dLng;
+      const lim=s.cat==='district'?250:100;
+      if(d2>lim*lim) continue;
+      if(nameSimilarity(name,s.name)<0.8) continue;
+      if(d2<bestD){bestD=d2;best=s;}
+    }
   }
-  if(btn){btn.disabled=false;btn.textContent='🔄 Fetch selected';}
-  toast(`✅ Done! ${selected.length} cities imported`,'success');
+  return best;
 }
 
-// ═══════════ ABANDONED (Ruins) IMPORT ═══════════
+// Route one OSM element: matched → reclass candidate (OSM wins); unmatched → new spot candidate.
+function _scanProcessElements(els,stats){
+  for(const e of els){
+    const key=e.type+'/'+e.id;
+    if(_scanSeenOsm.has(key)) continue;
+    _scanSeenOsm.add(key);
+    const item=processOsmElement(e);
+    if(!item) continue;
+    item.osmId=key;
+    const target=_findReclassTarget(item.name,item.lat,item.lng);
+    if(target){
+      stats.matched++;
+      // OSM wins — but never invent categories: only existing CATS, and skip the generic 'history' fallback.
+      if(item.cat&&item.cat!=='history'&&CATS[item.cat]&&item.cat!==target.cat&&!_reclass[String(target.id)]){
+        _reclass[String(target.id)]={to:item.cat,from:target.cat,name:target.name};
+        stats.reclass++;
+      }
+    }else if(!item.alreadyIn){
+      if(_osmImportData.length<SCAN_CANDIDATE_CAP){_osmImportData.push(item);stats.fresh++;}
+      else stats.capped++;
+    }
+  }
+}
+
+async function osmRunScan(){
+  if(_scanRunning){toast('⏳ Scan already running','info');return;}
+  const todo=US_STATES.filter(([c])=>_scanSel.has(c)&&!_scanDone.has(c));
+  if(!todo.length){toast('Select states to scan (✓ done states are skipped — ♻ Reset to redo)','info');return;}
+  _scanRunning=true;_scanStop=false;
+  const stats={matched:0,reclass:0,fresh:0,capped:0};
+  for(let i=0;i<todo.length;i++){
+    if(_scanStop){osmSetStatus(`⏹ Stopped. Progress saved — re-run to continue.`);break;}
+    const[code,sname]=todo[i];
+    const queries=_stateQueries(code);
+    let ok=true;
+    for(let qi=0;qi<queries.length;qi++){
+      osmSetStatus(`⏳ ${i+1}/${todo.length} ${sname} — query ${qi+1}/${queries.length} (large states: 1–3 min)...`);
+      const els=await _overpassFetch(queries[qi],osmSetStatus);
+      if(els===null){ok=false;osmSetStatus(`⚠ ${sname}: Overpass unavailable — state skipped, re-run later`);break;}
+      _scanProcessElements(els,stats);
+      if(_scanStop) break;
+      await new Promise(r=>setTimeout(r,2500));
+    }
+    if(ok&&!_scanStop){
+      _scanDone.add(code);
+      _saveReclassLS();
+      osmSetStatus(`✅ ${sname} done · pending reclass: ${Object.keys(_reclass).length.toLocaleString()} · new candidates: ${_osmImportData.length.toLocaleString()}`);
+    }
+    renderScanChips();
+    const rb=document.getElementById('reclassBtn');
+    if(rb) rb.textContent=`🔁 Apply ${Object.keys(_reclass).length.toLocaleString()} reclass`;
+  }
+  _scanRunning=false;
+  _osmImportData.sort((a,b)=>a.name.localeCompare(b.name,'en'));
+  if(!_scanStop) osmSetStatus(`🏁 Scan finished · reclass: ${Object.keys(_reclass).length.toLocaleString()} · new: ${_osmImportData.length.toLocaleString()}${stats.capped?` · ${stats.capped} skipped (candidate cap)`:''}`);
+  renderOsmImport();
+}
+function osmStopScan(){_scanStop=true;}
+
+async function applyReclass(){
+  const ids=Object.keys(_reclass);
+  if(!ids.length){toast('No pending reclassifications — run a scan first','info');return;}
+  const pairs={};
+  ids.forEach(id=>{const c=_reclass[id];const k=c.from+' → '+c.to;pairs[k]=(pairs[k]||0)+1;});
+  const top=Object.entries(pairs).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([k,n])=>`${k}: ${n}`).join('\n');
+  if(!confirm(`Apply ${ids.length.toLocaleString()} category changes to KV?\n\n${top}${Object.keys(pairs).length>12?'\n…':''}`)) return;
+  const ok=await kvPublish((sk,nm)=>{
+    let n=0;
+    for(const s of sk){
+      const c=_reclass[String(s.id)];
+      if(c&&CATS[c.to]&&s.cat!==c.to){s.cat=c.to;n++;}
+    }
+    return n;
+  },'Reclassify');
+  if(ok){
+    for(const s of SPOTS){const c=_reclass[String(s.id)];if(c&&CATS[c.to])s.cat=c.to;}
+    _reclass={};
+    _saveReclassLS();
+    refreshMarkers();updateAll();
+    renderOsmImport();
+  }
+}
+
+function resetScanProgress(){
+  if(!confirm('Reset scan progress AND discard pending (unapplied) reclassifications?')) return;
+  _reclass={};_scanDone=new Set();_saveReclassLS();
+  _osmImportData=[];_osmSelected.clear();_scanSeenOsm=new Set();
+  renderOsmImport();
+}
+
+const _SCAN_REGIONS={NE:'Northeast',MW:'Midwest',S:'South',W:'West'};
+function renderScanChips(){
+  const box=document.getElementById('scanStates');
+  if(!box) return;
+  box.innerHTML=Object.keys(_SCAN_REGIONS).map(rg=>{
+    const sts=US_STATES.filter(s=>s[2]===rg);
+    return`<div style="margin-bottom:6px">
+      <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);margin-bottom:3px;cursor:pointer;-webkit-user-select:none;user-select:none" onclick="scanToggleRegion('${rg}')">${_SCAN_REGIONS[rg]} · tap to toggle all</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${sts.map(([c])=>`<div class="osm-fchip ${_scanSel.has(c)?'on':''}" style="${_scanDone.has(c)?'border-color:var(--green)':''}" onclick="scanToggleState('${c}')">${_scanDone.has(c)?'✓':''}${c}</div>`).join('')}
+      </div></div>`;
+  }).join('');
+}
+function scanToggleState(c){if(_scanSel.has(c))_scanSel.delete(c);else _scanSel.add(c);renderScanChips();}
+function scanToggleRegion(rg){
+  const sts=US_STATES.filter(s=>s[2]===rg).map(s=>s[0]);
+  const allOn=sts.every(c=>_scanSel.has(c));
+  sts.forEach(c=>{if(allOn)_scanSel.delete(c);else _scanSel.add(c);});
+  renderScanChips();
+}
+function scanSelectAll(on){_scanSel=new Set(on?US_STATES.map(s=>s[0]):[]);renderScanChips();}
 
 function abandonedSetStatus(msg){
   const el=document.getElementById('abandonedStatus');
@@ -4728,67 +4770,30 @@ async function fetchAbandonedData(forceRefresh){
     }catch(e){}
   }
 
-  abandonedSetStatus('⏳ Loading from OSM (full USA bbox)...');
-  const MIRRORS=[
-    'https://overpass-api.de/api/interpreter',
-    'https://overpass.kumi.systems/api/interpreter',
-    'https://overpass.private.coffee/api/interpreter',
-  ];
-  // Split into two lighter queries to avoid server timeout:
-  // Q1: abandoned + ruins tags
-  // Q2: historic=ruins + building=ruins + disused+building
-  const QUERIES=[
-    `data=[out:json][timeout:90];
-area["ISO3166-1"="LT"]->.lt;
-(
-  node["abandoned"="yes"](area.lt);
-  way["abandoned"="yes"](area.lt);
-  node["ruins"="yes"](area.lt);
-  way["ruins"="yes"](area.lt);
-);
-out center tags;`,
-    `data=[out:json][timeout:90];
-area["ISO3166-1"="LT"]->.lt;
-(
-  node["historic"="ruins"](area.lt);
-  way["historic"="ruins"](area.lt);
-  node["building"="ruins"]["name"](area.lt);
-  way["building"="ruins"]["name"](area.lt);
-);
-out center tags;`,
-  ];
-
-  const allElements=[];
-  for(let qi=0;qi<QUERIES.length;qi++){
-    abandonedSetStatus(`⏳ Loading... (query ${qi+1}/${QUERIES.length})`);
-    let text=null;
-    for(let mi=0;mi<MIRRORS.length;mi++){
-      try{
-        const r=await fetch(MIRRORS[mi],{method:'POST',body:QUERIES[qi],signal:AbortSignal.timeout(95000)});
-        const t=await r.text();
-        if(r.status>=400) throw new Error(`HTTP ${r.status}`);
-        if(t.trim().startsWith('<')){
-          if(t.includes('Too Many Requests')) throw new Error('429 — palaukite ~2 min. 🕐');
-          throw new Error('XML error from server');
-        }
-        text=t;
-        break;
-      }catch(e){
-        console.warn(`Abandoned Q${qi+1} mirror ${mi+1} failed:`,e.message);
-        if(mi<MIRRORS.length-1){
-          abandonedSetStatus(`⚠ Q${qi+1} server ${mi+1} unavailable, trying ${mi+2}...`);
-          await new Promise(r=>setTimeout(r,1500));
-        } else {
-          abandonedSetStatus(`❌ Q${qi+1}: all servers unreachable. Try again later.`);
-          _abandonedLoading=false;
-          return;
-        }
-      }
-    }
-    if(!text) break;
-    allElements.push(...(JSON.parse(text).elements||[]));
-    if(qi<QUERIES.length-1) await new Promise(r=>setTimeout(r,1000));
+  const todo=US_STATES.filter(([c])=>_scanSel.has(c));
+  if(!todo.length){
+    abandonedSetStatus('⚠ Select states in the 🗺 OSM tab first, then come back');
+    _abandonedLoading=false;
+    return;
   }
+  const allElements=[];
+  for(let i=0;i<todo.length;i++){
+    const[code,sname]=todo[i];
+    abandonedSetStatus(`⏳ ${i+1}/${todo.length} ${sname}...`);
+    const q=`data=[out:json][timeout:180];area["ISO3166-2"="US-${code}"][admin_level=4]->.st;
+(
+  nwr["abandoned"="yes"]["name"](area.st);
+  nwr["ruins"="yes"]["name"](area.st);
+  nwr["historic"="ruins"]["name"](area.st);
+  nwr["building"="ruins"]["name"](area.st);
+);
+out center;`;
+    const els=await _overpassFetch(q,abandonedSetStatus);
+    if(els===null){abandonedSetStatus(`⚠ ${sname}: Overpass unavailable — skipped`);continue;}
+    allElements.push(...els);
+    if(i<todo.length-1) await new Promise(r=>setTimeout(r,2500));
+  }
+
   if(!allElements.length){_abandonedLoading=false;return;}
 
   try{
@@ -4814,7 +4819,7 @@ out center tags;`,
     abandonedSetStatus(`✅ ${_abandonedData.length} spots found · ${alreadyCount} already in DB · ${newCount} new`);
     renderAbandonedList();
   }catch(e){
-    abandonedSetStatus('❌ Error apdorojant duomenis: '+e.message);
+    abandonedSetStatus('❌ Error processing data: '+e.message);
     console.error('Abandoned processing error',e);
   }
   _abandonedLoading=false;
@@ -4826,23 +4831,23 @@ function renderAbandonedPanel(){
   const newOnes=total-alreadyIn;
   return`<div>
     <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);margin-bottom:8px">
-      Abandoned spots · OpenStreetMap · abandoned/ruins/disused tags · USA-wide bbox
+      Abandoned spots · OpenStreetMap · abandoned/ruins tags · scans states selected in 🗺 OSM tab
     </div>
     ${total>0?`<div style="background:var(--surf2);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-family:'DM Mono',monospace;font-size:.68rem;display:flex;gap:12px;flex-wrap:wrap">
       <span>📦 Total: <strong style="color:var(--txt)">${total}</strong></span>
-      <span>✅ Jau DB: <strong style="color:var(--green)">${alreadyIn}</strong></span>
+      <span>✅ In DB: <strong style="color:var(--green)">${alreadyIn}</strong></span>
       <span>🆕 New: <strong style="color:var(--gold)">${newOnes}</strong></span>
     </div>`:''}
     <div id="abandonedStatus" class="osm-status"></div>
     <div class="osm-tier-row">
       <span class="osm-tier-label">Tiers:</span>
-      ${[1,2,3].map(t=>`<button class="osm-tier-btn ${_abandonedTier===t?'on':''}" data-t="${t}" onclick="abandonedSetTier(${t})">${TIER_CONFIG[t].icon} T${t}</button>`).join('')}
+      ${[1,2,3,4].map(t=>`<button class="osm-tier-btn ${_abandonedTier===t?'on':''}" data-t="${t}" onclick="abandonedSetTier(${t})">${TIER_CONFIG[t].icon} T${t}</button>`).join('')}
     </div>
     <div class="osm-controls">
       <button class="osm-ctrl-btn pri" onclick="fetchAbandonedData(${total===0?'false':'true'})">
         ${total===0?'⬇ Fetch ruins':'🔄 Refresh'}
       </button>
-      <button class="osm-ctrl-btn" onclick="abandonedSelectAll()">☑ Visi nauji</button>
+      <button class="osm-ctrl-btn" onclick="abandonedSelectAll()">☑ All new</button>
       <button class="osm-ctrl-btn" onclick="abandonedSelectNone()">☐ None</button>
       <button class="osm-ctrl-btn pri" id="abandonedImportBtn" onclick="abandonedImportSelected()">✅ Import</button>
     </div>
@@ -4916,68 +4921,6 @@ async function abandonedImportSelected(){
   }
   if(btn){btn.disabled=false;btn.textContent='✅ Import';}
 }
-async function fetchOsmData(){
-  if(_osmLoading) return;
-  _osmLoading=true;
-  _osmForceRefresh=false;
-
-  // ── OSM CACHE ──
-  const OSM_CACHE_KEY=`kex_osm_cache_lt_v3`;
-  const OSM_CACHE_TTL=24*60*60*1000;
-  const cached=JSON.parse(localStorage.getItem(OSM_CACHE_KEY)||'null');
-  if(cached&&Date.now()-cached.ts<OSM_CACHE_TTL&&!_osmForceRefresh){
-    _osmImportData=cached.data;
-    osmSetStatus(`✅ ${_osmImportData.length} spots (cached · ${new Date(cached.ts).toLocaleDateString('en-US')}). Already added: ${_osmImportData.filter(x=>x.alreadyIn).length}`);
-    _osmLoading=false;
-    renderOsmList();
-    return;
-  }
-
-  try{
-    const allElements=[];
-    for(let i=0;i<CITY_BBOXES_GLOBAL.length;i++){
-      const [cityName,bbox]=CITY_BBOXES_GLOBAL[i];
-      osmSetStatus(`⏳ ${i+1}/${CITY_BBOXES_GLOBAL.length} · ${cityName}...`);
-      const body=makeOsmQuery(bbox);
-      const MIRRORS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://maps.mail.ru/osm/tools/overpass/api/interpreter'];
-      let text=null;
-      for(let mi=0;mi<MIRRORS.length;mi++){
-        try{
-          const r=await fetch(MIRRORS[mi],{method:'POST',body,signal:AbortSignal.timeout(22000)});
-          const t=await r.text();
-          if(r.status===504||(t.trim().startsWith('<')&&(r.status>=500))) throw new Error('504');
-          text=t; break;
-        }catch(e){
-          if(mi<MIRRORS.length-1){osmSetStatus(`⏳ ${i+1}/${CITY_BBOXES_GLOBAL.length} · ${cityName} · mirror ${mi+2}...`);await new Promise(r=>setTimeout(r,1500));}
-          else throw new Error(`${cityName}: all servers unavailable`);
-        }
-      }
-      if(text.trim().startsWith('<')){
-        if(text.includes('Too Many Requests')) throw new Error('429 — palaukite ~2 min. 🕐');
-        const remark=text.match(/<remark>(.*?)<\/remark>/s)?.[1]?.trim()||'Serverio klaida';
-        throw new Error(`${cityName}: ${remark}`);
-      }
-      allElements.push(...(JSON.parse(text).elements||[]));
-      if(i<CITY_BBOXES_GLOBAL.length-1) await new Promise(res=>setTimeout(res,1000));
-    }
-
-    // All elements from all cities — process and dedupe
-    const processed=allElements.map(e=>processOsmElement(e)).filter(Boolean);
-
-    _osmImportData=processed
-      .filter((x,i,arr)=>arr.findIndex(y=>Math.abs(y.lat-x.lat)<0.0002&&Math.abs(y.lng-x.lng)<0.0002&&y.cat===x.cat)===i)
-      .sort((a,b)=>a.name.localeCompare(b.name,'en'));
-
-    osmSetStatus(`✅ Found ${_osmImportData.length} spots from ${CITY_BBOXES_GLOBAL.length} cities. Already added: ${_osmImportData.filter(x=>x.alreadyIn).length}`);
-
-    try{ localStorage.setItem(OSM_CACHE_KEY,JSON.stringify({ts:Date.now(),data:_osmImportData})); }catch(e){}
-    renderOsmList();
-  }catch(e){
-    osmSetStatus('❌ Error: '+e.message);
-  }
-  _osmLoading=false;
-}
-
 function osmSetStatus(msg){
   const el=document.getElementById('osmStatus');
   if(el) el.textContent=msg;
@@ -4991,7 +4934,8 @@ function osmToggleItem(idx){
 }
 
 function osmSelectAll(){
-  _osmImportData.forEach((item,i)=>{if(!item.alreadyIn&&(_osmFilter==='all'||item.cat===_osmFilter)) _osmSelected.add(i);});
+  const filtered=_osmImportData.map((item,i)=>({item,i})).filter(({item})=>!item.alreadyIn&&(_osmFilter==='all'||item.cat===_osmFilter)).slice(0,500);
+  filtered.forEach(({i})=>_osmSelected.add(i));
   renderOsmList();
 }
 function osmSelectNone(){_osmSelected.clear();renderOsmList();}
@@ -5015,7 +4959,9 @@ function renderOsmList(){
   const importBtn=document.getElementById('osmImportBtn');
   if(importBtn) importBtn.textContent=selCount>0?`✅ Import ${selCount} spots`:'✅ Import';
   if(!filtered.length){list.innerHTML=`<div style="text-align:center;padding:24px;color:var(--td);font-size:.82rem">No spots in this category</div>`;return;}
-  list.innerHTML=filtered.map(({item,i})=>`
+  const _capped=filtered.length>500;
+  const shown=_capped?filtered.slice(0,500):filtered;
+  list.innerHTML=(_capped?`<div style="text-align:center;padding:8px;color:var(--td);font-family:'DM Mono',monospace;font-size:.62rem">Showing 500 of ${filtered.length.toLocaleString()} — use category filters. ☑ All shown selects only visible rows.</div>`:'')+shown.map(({item,i})=>`
     <div class="osm-item ${_osmSelected.has(i)?'selected':''} ${item.alreadyIn?'already':''}" onclick="osmToggleItem(${i})">
       <div class="osm-check">${item.alreadyIn?'✓':_osmSelected.has(i)?'✓':''}</div>
       <div class="osm-emoji">${OSM_CAT_EMOJI[item.cat]||'📍'}</div>
@@ -5074,37 +5020,45 @@ function renderOsmImport(){
     return;
   }
 
-  // OSM tab
+  // OSM tab — state scan
+  const _rcCount=Object.keys(_reclass).length;
   body.innerHTML=`<div class="osm-wrap">
     ${_tabBar()}
-    <div style="margin-bottom:10px">
-      <div style="font-family:'DM Mono',monospace;font-size:.72rem;color:var(--gold);margin-bottom:4px">🇺🇸 USA · area filters</div>
-      <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm)">⚠ Faster query than usual. Check duplicates before adding.</div>
+    <div style="margin-bottom:8px">
+      <div style="font-family:'DM Mono',monospace;font-size:.72rem;color:var(--gold);margin-bottom:4px">🇺🇸 USA · state scan</div>
+      <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm)">Scans OSM state by state. Matched to an existing spot (≥80% name · ≤100 m) → category reclassified, OSM wins, no duplicate created. Unmatched → new spot candidates below. ✓ states are skipped on re-run.</div>
+    </div>
+    <div id="scanStates" style="margin-bottom:8px"></div>
+    <div class="osm-controls">
+      <button class="osm-ctrl-btn" onclick="scanSelectAll(true)">☑ All states</button>
+      <button class="osm-ctrl-btn" onclick="scanSelectAll(false)">☐ None</button>
+      <button class="osm-ctrl-btn pri" onclick="osmRunScan()">▶ Scan</button>
+      <button class="osm-ctrl-btn" onclick="osmStopScan()">⏹ Stop</button>
+      <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red)" onclick="resetScanProgress()">♻ Reset</button>
     </div>
     <div class="osm-controls">
-      <button class="osm-ctrl-btn" onclick="fetchOsmData()">🔄 Load from OSM</button>
-      <button class="osm-ctrl-btn" onclick="_osmForceRefresh=true;fetchOsmData()" title="Clear cache and reload">♻️ Refresh</button>
-      <button class="osm-ctrl-btn" onclick="osmToggleManual()" id="osmManualToggle">${_osmManualMode?'🤖 Auto':'🖐 Rankiniu'}</button>
-      <button class="osm-ctrl-btn" onclick="osmSelectAll()">☑ All</button>
+      <button class="osm-ctrl-btn pri" id="reclassBtn" onclick="applyReclass()">🔁 Apply ${_rcCount.toLocaleString()} reclass</button>
+      <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red)" onclick="findDuplicateSpots()">🔍 Duplicates</button>
+      <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red);background:rgba(140,74,74,.1)" onclick="autoDeleteAllDuplicates()">🗑 Delete dupes</button>
+    </div>
+    <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);margin-bottom:8px">New spot candidates (select &amp; import):</div>
+    <div class="osm-controls">
+      <button class="osm-ctrl-btn" onclick="osmSelectAll()">☑ All shown</button>
       <button class="osm-ctrl-btn" onclick="osmSelectNone()">☐ None</button>
       <button class="osm-ctrl-btn pri" id="osmImportBtn" onclick="osmImportSelected()">✅ Import</button>
-      <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red)" onclick="findDuplicateSpots()">🔍 Dublikatai</button>
-      <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red);background:rgba(140,74,74,.1)" onclick="autoDeleteAllDuplicates()">🗑 Delete all</button>
-      
     </div>
-    ${_osmManualMode?`<div id="osmManualGrid" style="margin:8px 0;max-height:260px;overflow-y:auto;padding:0 2px"></div>`:''}
     <div class="osm-filter-row">
       ${cats.map(c=>`<div class="osm-fchip ${_osmFilter===c?'on':''}" data-cat="${c}" onclick="osmSetFilter('${c}')">${catLabels[c]||c}</div>`).join('')}
     </div>
     <div class="osm-tier-row">
       <span class="osm-tier-label">Tier:</span>
-      ${[1,2,3].map(t=>`<button class="osm-tier-btn ${_osmTier===t?'on':''}" data-t="${t}" onclick="osmSetTier(${t})">T${t}</button>`).join('')}
+      ${[1,2,3,4].map(t=>`<button class="osm-tier-btn ${_osmTier===t?'on':''}" data-t="${t}" onclick="osmSetTier(${t})">${TIER_CONFIG[t].icon} T${t}</button>`).join('')}
     </div>
-    <div class="osm-status" id="osmStatus">${_osmImportData.length?`${_osmImportData.length} spots loaded (${_osmImportData.filter(x=>x.alreadyIn).length} already added)`:'Tap "Load from OSM" to start'}</div>
+    <div class="osm-status" id="osmStatus">${_osmImportData.length?`${_osmImportData.length.toLocaleString()} candidates loaded`:'Select states, then ▶ Scan'}</div>
     <div class="osm-list" id="osmList"></div>
   </div>`;
+  renderScanChips();
   if(_osmImportData.length) renderOsmList();
-  if(_osmManualMode) renderOsmManualUI();
 }
 
 const DEG_50M=0.00045; // ~50 metres in degrees
@@ -5421,11 +5375,6 @@ async function wikiImportSelected(){
   }else{
     setS('❌ Import failed — nothing was saved');
   }
-}
-
-function osmToggleManual(){
-  _osmManualMode=!_osmManualMode;
-  renderOsmImport();
 }
 
 // ═══════════ ADMIN HELPER ═══════════
