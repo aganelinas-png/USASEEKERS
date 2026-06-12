@@ -4517,7 +4517,7 @@ const US_STATES=[
 ];
 const SCAN_MIRRORS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
 const RECLASS_LS_KEY='usa_reclass_v1';
-const SCAN_CANDIDATE_CAP=50000; // memory guard for new-spot candidates
+const SCAN_CANDIDATE_CAP=250000; // memory guard for new-spot candidates
 let _scanSel=new Set();          // selected state codes
 let _scanRunning=false,_scanStop=false;
 let _reclass={};                 // spotId -> {to,from,name}
@@ -4990,6 +4990,25 @@ async function osmImportSelected(){
   }
   if(btn){btn.disabled=false;btn.textContent='✅ Import';}
 }
+async function osmImportAll(){
+  const pool=_osmImportData.filter(item=>item&&!item.alreadyIn&&(_osmFilter==='all'||item.cat===_osmFilter));
+  if(!pool.length){toast('⚠ No new candidates in this filter','info');return;}
+  if(!confirm(`Import ALL ${pool.length.toLocaleString()} candidates (filter: ${_osmFilter}) at tier T${_osmTier}?\nNo manual review — this goes straight to KV.`)) return;
+  const btn=document.getElementById('osmImportAllBtn');
+  if(btn){btn.disabled=true;btn.textContent='☁️ Publishing...';}
+  const ok=await kvImportSpots(pool.map(item=>({
+    id:item.osmId?('osm_'+item.osmId):undefined,
+    name:item.name,cat:item.cat,tier:_osmTier,
+    lat:item.lat,lng:item.lng,tag:item.typeKey
+  })),'OSM import ALL');
+  if(ok){
+    pool.forEach(item=>item.alreadyIn=true);
+    _osmSelected.clear();
+    renderOsmList&&renderOsmList();
+  }
+  if(btn){btn.disabled=false;btn.textContent='⬇ Import ALL';}
+}
+
 let _importTab='osm'; // 'osm' | 'wikidata' | 'abandoned'
 
 function _getImportCountry(){return 'US';}
@@ -5046,6 +5065,7 @@ function renderOsmImport(){
       <button class="osm-ctrl-btn" onclick="osmSelectAll()">☑ All shown</button>
       <button class="osm-ctrl-btn" onclick="osmSelectNone()">☐ None</button>
       <button class="osm-ctrl-btn pri" id="osmImportBtn" onclick="osmImportSelected()">✅ Import</button>
+      <button class="osm-ctrl-btn pri" id="osmImportAllBtn" style="border-color:var(--gold)" onclick="osmImportAll()">⬇ Import ALL</button>
     </div>
     <div class="osm-filter-row">
       ${cats.map(c=>`<div class="osm-fchip ${_osmFilter===c?'on':''}" data-cat="${c}" onclick="osmSetFilter('${c}')">${catLabels[c]||c}</div>`).join('')}
@@ -6705,6 +6725,12 @@ async function kvPublish(mutator,label){
     if(!Array.isArray(skeleton)||!Array.isArray(names)||skeleton.length<100) throw new Error('packs look corrupt — aborting to protect data');
     const changed=mutator(skeleton,names);
     if(!changed){toast('Nothing to publish','info');return false;}
+    // KV hard limit is 25 MB/value — abort safely before uploading anything.
+    const KV_GUARD=20*1024*1024;
+    const skStr=JSON.stringify(skeleton),nmStr=JSON.stringify(names);
+    if(skStr.length>KV_GUARD||nmStr.length>KV_GUARD){
+      throw new Error(`pack too large (skeleton ${(skStr.length/1048576).toFixed(1)} MB / names ${(nmStr.length/1048576).toFixed(1)} MB, guard 20 MB) — import in smaller category/state batches`);
+    }
     if(typeof osmSetStatus==='function') osmSetStatus(`☁️ ${label}: uploading skeleton (${skeleton.length.toLocaleString()} spots)...`);
     await _kvPush('skeleton',skeleton,secret);
     if(typeof osmSetStatus==='function') osmSetStatus(`☁️ ${label}: uploading names...`);
