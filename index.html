@@ -843,9 +843,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
         <option value="history">⚔️ History</option>
         <option value="house">🏠 House</option>
         <option value="church">⛪ Church</option>
-        <option value="school">🎓 School</option>
         <option value="civic">🏛️ Civic</option>
-        <option value="hotel">🏨 Hotel / Inn</option>
         <option value="theater">🎭 Theater</option>
         <option value="museum">🏺 Museum</option>
         <option value="commerce">🏪 Commerce</option>
@@ -1074,9 +1072,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
           <optgroup label="— Buildings & Homes —">
           <option value="house">🏠 Houses</option>
           <option value="church">⛪ Churches</option>
-          <option value="school">🎓 Schools</option>
           <option value="civic">🏛️ Civic & Gov</option>
-          <option value="hotel">🏨 Hotels & Inns</option>
           <option value="theater">🎭 Theaters</option>
           <option value="museum">🏺 Museums</option>
           <option value="commerce">🏪 Commerce</option>
@@ -1334,9 +1330,7 @@ const CATS={
   // — Buildings & Homes —
   house:{label:'Houses',emoji:'🏠',color:'#8a6a4a'},
   church:{label:'Churches',emoji:'⛪',color:'#4a6fa5'},
-  school:{label:'Schools',emoji:'🎓',color:'#6a5a9a'},
   civic:{label:'Civic & Gov',emoji:'🏛️',color:'#5a7a5a'},
-  hotel:{label:'Hotels & Inns',emoji:'🏨',color:'#a06a8a'},
   theater:{label:'Theaters',emoji:'🎭',color:'#8a3a5a'},
   museum:{label:'Museums',emoji:'🏺',color:'#7a5a3a'},
   commerce:{label:'Commerce',emoji:'🏪',color:'#7a6a3a'},
@@ -1363,7 +1357,7 @@ const CATS={
 };
 
 const FILTER_GROUPS=[
-  {id:'heritage',label:'Heritage',emoji:'🏛',cats:['house','church','school','civic','hotel','theater','museum','commerce','district','history']},
+  {id:'heritage',label:'Heritage',emoji:'🏛',cats:['house','church','civic','theater','museum','commerce','district','history']},
   {id:'engineering',label:'Engineering',emoji:'⚙️',cats:['bridge','railroad','mill','watertower','maritime','military']},
   {id:'land',label:'Land & Legacy',emoji:'🌾',cats:['farm','monument','cemetery','mound']},
   {id:'nature',label:'Nature',emoji:'🌿',cats:['nature','viewpoint']},
@@ -1385,7 +1379,7 @@ const APP_VERSION='usa-1.1';
 // Per-category sensible defaults — used when no explicit radius is set
 const CAT_DEFAULT_RADIUS={
   viewpoint:50,monument:55,mural:55,commerce:60,house:60,theater:60,
-  church:65,museum:65,hotel:65,watertower:70,school:80,civic:80,
+  church:65,museum:65,watertower:70,civic:80,
   railroad:80,history:80,bridge:90,mill:90,maritime:100,abandoned:120,
   military:130,nature:150,farm:150,mound:160,cemetery:220,district:250,
 };
@@ -1412,14 +1406,7 @@ const BADGE_GROUPS=[
     {id:'c6b',name:'Church Legend',desc:'Visit 200 churches',icon:'💎',need:200,xpReward:300},
     {id:'c7b',name:'American Pilgrimage',desc:'Visit 500 churches',icon:'👑',need:500,xpReward:800},
   ]},
-  {id:'schools',title:'Schoolhouse Scholar',icon:'🎓',cat:'school',sub:true,badges:[
-    {id:'sc1',name:'First Bell',desc:'Visit 1 historic school',icon:'🎓',need:1,xpReward:10},
-    {id:'sc2',name:'Honor Roll',desc:'Visit 5 schools',icon:'📚',need:5,xpReward:15},
-    {id:'sc3',name:'Class Valedictorian',desc:'Visit 15 schools',icon:'🏫',need:15,xpReward:30},
-    {id:'sc4',name:'Old School',desc:'Visit 50 schools',icon:'⭐',need:50,xpReward:80},
-    {id:'sc5',name:'Dean of History',desc:'Visit 150 schools',icon:'💎',need:150,xpReward:250},
-    {id:'sc6',name:'Professor Emeritus',desc:'Visit 400 schools',icon:'👑',need:400,xpReward:700},
-  ]},
+
   {id:'civics',title:'Civic Servant',icon:'🏛️',cat:'civic',sub:true,badges:[
     {id:'cv1',name:'First in Line',desc:'Visit 1 civic building',icon:'🏛️',need:1,xpReward:10},
     {id:'cv2',name:'Courthouse Regular',desc:'Visit 5 civic buildings',icon:'⚖️',need:5,xpReward:15},
@@ -1428,13 +1415,7 @@ const BADGE_GROUPS=[
     {id:'cv5',name:'Pillar of Society',desc:'Visit 150 civic buildings',icon:'💎',need:150,xpReward:250},
     {id:'cv6',name:'Founding Spirit',desc:'Visit 400 civic buildings',icon:'👑',need:400,xpReward:700},
   ]},
-  {id:'hotels',title:'Grand Tour Guest',icon:'🏨',cat:'hotel',sub:true,badges:[
-    {id:'ht1',name:'Check-In',desc:'Visit 1 historic hotel',icon:'🏨',need:1,xpReward:10},
-    {id:'ht2',name:'Frequent Guest',desc:'Visit 5 hotels & inns',icon:'🛎️',need:5,xpReward:15},
-    {id:'ht3',name:'Road Tripper',desc:'Visit 15 hotels & inns',icon:'🧳',need:15,xpReward:30},
-    {id:'ht4',name:'Tavern Tales',desc:'Visit 50 hotels & inns',icon:'⭐',need:50,xpReward:80},
-    {id:'ht5',name:'Grand Tour Legend',desc:'Visit 150 hotels & inns',icon:'💎',need:150,xpReward:250},
-  ]},
+
   {id:'theaters',title:'Showtime Seeker',icon:'🎭',cat:'theater',sub:true,badges:[
     {id:'th1',name:'Opening Night',desc:'Visit 1 historic theater',icon:'🎭',need:1,xpReward:10},
     {id:'th2',name:'Season Ticket',desc:'Visit 3 theaters',icon:'🎟️',need:3,xpReward:15},
@@ -3215,10 +3196,8 @@ const WEEKLY_CHALLENGES=[
   {id:'w_house2',cat:'house',goal:10,label:'Visit 10 historic houses this week',icon:'🏠',xp:100},
   {id:'w_church',cat:'church',goal:3,label:'Visit 3 churches this week',icon:'⛪',xp:60},
   {id:'w_church2',cat:'church',goal:5,label:'Visit 5 churches this week',icon:'⛪',xp:90},
-  {id:'w_school',cat:'school',goal:3,label:'Visit 3 historic schools this week',icon:'🎓',xp:60},
   {id:'w_civic',cat:'civic',goal:3,label:'Visit 3 civic buildings this week',icon:'🏛️',xp:60},
   {id:'w_civic2',cat:'civic',goal:5,label:'Visit 5 civic buildings this week',icon:'🏛️',xp:90},
-  {id:'w_hotel',cat:'hotel',goal:2,label:'Visit 2 historic hotels this week',icon:'🏨',xp:60},
   {id:'w_theater',cat:'theater',goal:2,label:'Visit 2 historic theaters this week',icon:'🎭',xp:70},
   {id:'w_museum',cat:'museum',goal:2,label:'Visit 2 museums this week',icon:'🏺',xp:60},
   {id:'w_commerce',cat:'commerce',goal:4,label:'Visit 4 commercial landmarks this week',icon:'🏪',xp:60},
@@ -4346,7 +4325,7 @@ function resolveOsmCat(t){
     if(h==='mill'||h==='mine'||h==='quarry') return 'mill';
     if(h==='farm') return 'farm';
     if(h==='church'||h==='chapel'||h==='wayside_cross') return 'church';
-    if(h==='hotel') return 'hotel';
+    if(h==='hotel') return null; // removed category
     if(h==='theatre') return 'theater';
     if(h==='house'||h==='manor') return 'house';
     if(h==='artwork') return 'mural';
@@ -4359,7 +4338,7 @@ function resolveOsmCat(t){
   if(t.tourism){
     if(t.tourism==='museum'||t.tourism==='gallery') return 'museum';
     if(t.tourism==='viewpoint') return 'viewpoint';
-    if(t.tourism==='hotel'||t.tourism==='motel') return 'hotel';
+    if(t.tourism==='hotel'||t.tourism==='motel') return null; // removed
     if(t.tourism==='artwork'){
       const at=(t.artwork_type||'').toLowerCase();
       if(at==='sculpture'||at==='statue'||at==='installation') return 'monument';
@@ -4374,7 +4353,7 @@ function resolveOsmCat(t){
     if(t.amenity==='grave_yard') return 'cemetery';
     if(t.amenity==='theatre') return 'theater';
     if(t.amenity==='courthouse'||t.amenity==='townhall'||t.amenity==='post_office'||t.amenity==='library'||t.amenity==='fire_station'||t.amenity==='police'||t.amenity==='hospital') return 'civic';
-    if(t.amenity==='school'||t.amenity==='college'||t.amenity==='university') return 'school';
+    if(t.amenity==='school'||t.amenity==='college'||t.amenity==='university') return null; // removed
     if(t.amenity==='marketplace'||t.amenity==='bank') return 'commerce';
     return 'history';
   }
@@ -4423,7 +4402,7 @@ function resolveOsmCat(t){
   return 'history';
 }
 const OSM_CAT_EMOJI={
-  house:'🏠',church:'⛪',school:'🎓',civic:'🏛️',hotel:'🏨',theater:'🎭',museum:'🏺',commerce:'🏪',
+  house:'🏠',church:'⛪',civic:'🏛️',theater:'🎭',museum:'🏺',commerce:'🏪',
   bridge:'🌉',railroad:'🚂',mill:'⚙️',watertower:'🗼',maritime:'⚓',military:'🏰',
   farm:'🌾',district:'🏘️',monument:'🗿',cemetery:'⚱️',mound:'⛰️',history:'⚔️',
   nature:'🌿',viewpoint:'🔭',mural:'🎨',abandoned:'🏚️',
@@ -4494,6 +4473,7 @@ function processOsmElement(e){
   if(!lat||!lng) return null;
   const t=e.tags||{};
   const cat=resolveOsmCat(t);
+  if(!cat) return null; // removed category
   const name=t['name:en']||t.name||osmGenerateName(t,cat);
   if(!name||name==='Unknown') return null;
   const typeKey=t.historic||t.tourism||t.amenity||t.leisure||t.military||t.man_made||t.natural||t.landuse||t.route||t.highway||t.bridge||'';
@@ -4543,14 +4523,13 @@ function _stateQueries(code){
 `${head}
 (
   nwr["amenity"="place_of_worship"]["name"](area.st);
-  nwr["amenity"~"^(school|college|university)$"]["name"](area.st);
   nwr["leisure"~"^(park|garden|nature_reserve)$"]["name"](area.st);
 );
 out center;`,
 `${head}
 (
   nwr["historic"]["name"](area.st);
-  nwr["tourism"~"^(museum|gallery|viewpoint|artwork|hotel|motel)$"]["name"](area.st);
+  nwr["tourism"~"^(museum|gallery|viewpoint|artwork)$"]["name"](area.st);
   nwr["amenity"~"^(theatre|grave_yard|courthouse|townhall|library|post_office)$"]["name"](area.st);
   nwr["man_made"="water_tower"](area.st);
   nwr["military"~"^(bunker|fort)$"]["name"](area.st);
@@ -4990,6 +4969,16 @@ async function osmImportSelected(){
   }
   if(btn){btn.disabled=false;btn.textContent='✅ Import';}
 }
+async function purgeCatSpots(cats){
+  const labels=cats.join('+');
+  const matches=SPOTS.filter(s=>cats.includes(s.cat));
+  if(!matches.length){toast(`No ${labels} spots found in loaded data`,'info');return;}
+  if(!confirm(`Permanently delete ${matches.length.toLocaleString()} ${labels} spots from KV?\nThis cannot be undone.`)) return;
+  const ids=matches.map(s=>s.id||s._fid);
+  const ok=await kvDeleteSpots(ids,`Purge ${labels}`);
+  if(ok) toast(`✅ Purged ${matches.length.toLocaleString()} ${labels} spots`,'success');
+}
+
 async function osmImportAll(){
   const pool=_osmImportData.filter(item=>item&&!item.alreadyIn&&(_osmFilter==='all'||item.cat===_osmFilter));
   if(!pool.length){toast('⚠ No new candidates in this filter','info');return;}
@@ -5059,6 +5048,7 @@ function renderOsmImport(){
       <button class="osm-ctrl-btn pri" id="reclassBtn" onclick="applyReclass()">🔁 Apply ${_rcCount.toLocaleString()} reclass</button>
       <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red)" onclick="findDuplicateSpots()">🔍 Duplicates</button>
       <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red);background:rgba(140,74,74,.1)" onclick="autoDeleteAllDuplicates()">🗑 Delete dupes</button>
+      <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red);background:rgba(140,74,74,.1)" onclick="purgeCatSpots(['school','hotel'])">🗑 Purge school+hotel</button>
     </div>
     <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);margin-bottom:8px">New spot candidates (select &amp; import):</div>
     <div class="osm-controls">
