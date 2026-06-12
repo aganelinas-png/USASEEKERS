@@ -1371,7 +1371,7 @@ const TIER_CONFIG={
 
 // Default collection radius per spot in metres (can be overridden per spot)
 const DEFAULT_RADIUS=80;
-const APP_VERSION='usa-1.1';
+const APP_VERSION='usa-1.2';
 
 // Per-category sensible defaults — used when no explicit radius is set
 const CAT_DEFAULT_RADIUS={
@@ -2077,7 +2077,23 @@ function renderGridOverview(zoom){
   _gridLayer.clearLayers();
   // Coarser cells when very zoomed out, finer as you approach the threshold
   const cellSize=zoom<=3?6:zoom===4?4:zoom===5?2.5:1.5;
-  const buckets=buildGridBuckets(cellSize);
+  let buckets;
+  if(!_legacySpotMode&&OVERVIEW&&OVERVIEW.states){
+    // Aggregate precomputed 0.5° cells — covers ALL spots, even unloaded states.
+    // (Category/collected filters don't apply here; counts are grand totals.)
+    buckets=new Map();
+    for(const code in OVERVIEW.states){
+      const cells=OVERVIEW.states[code].cells||[];
+      for(const[la,lo,n]of cells){
+        const k=Math.floor(la/cellSize)+':'+Math.floor(lo/cellSize);
+        let b=buckets.get(k);
+        if(!b){b={count:0,latSum:0,lngSum:0};buckets.set(k,b);}
+        b.count+=n;b.latSum+=la*n;b.lngSum+=lo*n;
+      }
+    }
+  }else{
+    buckets=buildGridBuckets(cellSize);
+  }
   const bounds=map.getBounds().pad(0.3);
   buckets.forEach(b=>{
     const lat=b.latSum/b.count, lng=b.lngSum/b.count;
@@ -2112,6 +2128,7 @@ function renderViewportMarkers(){
     return;
   }
   clearGridOverview(); // leaving low zoom — drop the badges
+  requestStatesForViewport(); // lazy-load state packs for this viewport (async, re-renders on arrival)
   // Wider padding when zoomed out so clusters fill the view; tighter when zoomed in.
   const pad=zoom>=12?0.4:zoom>=9?0.3:0.2;
   const bounds=map.getBounds().pad(pad);
@@ -2596,7 +2613,7 @@ function switchDrawerPanel(name){openSubPanel(name);}
 function renderCurrentPanel(name){if(name) openSubPanel(name);}
 
 function updateDrawerHeader(){
-  document.getElementById('drawerSub').textContent=`🇺🇸 ${found.size} / ${SPOTS.length} · ${getLevel(totalXP).icon} Lv.${getLevel(totalXP).level} · ⭐ ${totalXP} XP`;
+  document.getElementById('drawerSub').textContent=`🇺🇸 ${found.size} / ${totalSpots().toLocaleString()} · ${getLevel(totalXP).icon} Lv.${getLevel(totalXP).level} · ⭐ ${totalXP} XP`;
   const streakEl=document.getElementById('drawerStreak');
   if(streakEl) streakEl.textContent=streak>0?`🔥 ${streak} d. serija`:'Start a streak!';
 }
@@ -3688,7 +3705,7 @@ function shareProgress(){
   const t1=t1Collected(),t2=t2Collected(),t3=t3Collected(),t4=t4Collected();
   const badges=[...earnedBadges].length;
   const url=getInviteUrl();
-  const text=`🗺 SpotSeekers — ${playerName}'s progress!\n\n📍 Collected: ${found.size}/${SPOTS.length} spots\n   T1: ${t1} · T2: ${t2} · T3: ${t3} · T4: ${t4}\n⭐ XP: ${totalXP}\n🔥 Streak: ${streak} days\n🏅 Badges: ${badges}\n\n👉 ${url}`;
+  const text=`🗺 SpotSeekers — ${playerName}'s progress!\n\n📍 Collected: ${found.size}/${totalSpots().toLocaleString()} spots\n   T1: ${t1} · T2: ${t2} · T3: ${t3} · T4: ${t4}\n⭐ XP: ${totalXP}\n🔥 Streak: ${streak} days\n🏅 Badges: ${badges}\n\n👉 ${url}`;
   showProgressSheet(text, url);
 }
 
@@ -3805,7 +3822,7 @@ let _lbTab='xp'; // current leaderboard sort tab
 
 function renderSocial(){
   const body=document.getElementById('panel-social');
-  const pct=SPOTS.length?Math.round(found.size/SPOTS.length*100):0;
+  const pct=totalSpots()?Math.round(found.size/totalSpots()*100):0;
   const lv=getLevel(totalXP);
   const badgeCount=[...earnedBadges].length;
   const user=window._fbUser;
@@ -4485,7 +4502,8 @@ const US_STATES=[
 ];
 const SCAN_MIRRORS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
 const RECLASS_LS_KEY='usa_reclass_v1';
-const SCAN_CANDIDATE_CAP=250000; // memory guard for new-spot candidates
+const SCAN_CANDIDATE_CAP=250000; // memory guard — with auto-publish ON, candidates flush to KV per state and rarely accumulate
+let _scanAutoPub=true;           // publish each state's fresh candidates straight to KV after its scan
 let _scanSel=new Set();          // selected state codes
 let _scanRunning=false,_scanStop=false;
 let _reclass={};                 // spotId -> {to,from,name}
@@ -4573,7 +4591,7 @@ function _findReclassTarget(name,lat,lng){
 }
 
 // Route one OSM element: matched → reclass candidate (OSM wins); unmatched → new spot candidate.
-function _scanProcessElements(els,stats){
+function _scanProcessElements(els,stats,freshBuf){
   for(const e of els){
     const key=e.type+'/'+e.id;
     if(_scanSeenOsm.has(key)) continue;
@@ -4586,11 +4604,11 @@ function _scanProcessElements(els,stats){
       stats.matched++;
       // OSM wins — but never invent categories: only existing CATS, and skip the generic 'history' fallback.
       if(item.cat&&item.cat!=='history'&&CATS[item.cat]&&item.cat!==target.cat&&!_reclass[String(target.id)]){
-        _reclass[String(target.id)]={to:item.cat,from:target.cat,name:target.name};
+        _reclass[String(target.id)]={to:item.cat,from:target.cat,name:target.name,st:target.st||assignState(target.lat,target.lng)};
         stats.reclass++;
       }
     }else if(!item.alreadyIn){
-      if(_osmImportData.length<SCAN_CANDIDATE_CAP){_osmImportData.push(item);stats.fresh++;}
+      if(_osmImportData.length+freshBuf.length<SCAN_CANDIDATE_CAP){freshBuf.push(item);stats.fresh++;}
       else stats.capped++;
     }
   }
@@ -4601,24 +4619,43 @@ async function osmRunScan(){
   const todo=US_STATES.filter(([c])=>_scanSel.has(c)&&!_scanDone.has(c));
   if(!todo.length){toast('Select states to scan (✓ done states are skipped — ♻ Reset to redo)','info');return;}
   _scanRunning=true;_scanStop=false;
-  const stats={matched:0,reclass:0,fresh:0,capped:0};
+  const stats={matched:0,reclass:0,fresh:0,capped:0,autopub:0};
   for(let i=0;i<todo.length;i++){
     if(_scanStop){osmSetStatus(`⏹ Stopped. Progress saved — re-run to continue.`);break;}
     const[code,sname]=todo[i];
+    // Load this state's existing spots so dedup/reclass can see them
+    osmSetStatus(`⏳ ${i+1}/${todo.length} ${sname} — loading existing spots for dedup...`);
+    try{await ensureStatesLoaded([code]);}catch(e){console.warn('dedup preload',code,e);}
     const queries=_stateQueries(code);
+    const freshBuf=[]; // this state's new-spot candidates
     let ok=true;
     for(let qi=0;qi<queries.length;qi++){
       osmSetStatus(`⏳ ${i+1}/${todo.length} ${sname} — query ${qi+1}/${queries.length} (large states: 1–3 min)...`);
       const els=await _overpassFetch(queries[qi],osmSetStatus);
       if(els===null){ok=false;osmSetStatus(`⚠ ${sname}: Overpass unavailable — state skipped, re-run later`);break;}
-      _scanProcessElements(els,stats);
+      _scanProcessElements(els,stats,freshBuf);
       if(_scanStop) break;
       await new Promise(r=>setTimeout(r,2500));
     }
     if(ok&&!_scanStop){
+      // Auto-publish: this state's candidates go straight to KV, memory stays flat.
+      if(_scanAutoPub&&freshBuf.length){
+        osmSetStatus(`☁️ ${sname}: auto-publishing ${freshBuf.length.toLocaleString()} new spots at T${_osmTier}...`);
+        const pubOk=await kvImportSpots(freshBuf.map(item=>({
+          id:item.osmId?('osm_'+item.osmId):undefined,
+          name:item.name,cat:item.cat,tier:_osmTier,
+          lat:item.lat,lng:item.lng,tag:item.typeKey
+        })),`Scan auto-import ${code}`);
+        if(pubOk) stats.autopub+=freshBuf.length;
+        else _osmImportData.push(...freshBuf); // publish failed — keep for manual import
+      }else{
+        _osmImportData.push(...freshBuf);
+      }
       _scanDone.add(code);
       _saveReclassLS();
-      osmSetStatus(`✅ ${sname} done · pending reclass: ${Object.keys(_reclass).length.toLocaleString()} · new candidates: ${_osmImportData.length.toLocaleString()}`);
+      osmSetStatus(`✅ ${sname} done · reclass: ${Object.keys(_reclass).length.toLocaleString()} · auto-published: ${stats.autopub.toLocaleString()} · manual queue: ${_osmImportData.length.toLocaleString()}`);
+    }else if(freshBuf.length){
+      _osmImportData.push(...freshBuf); // interrupted — keep what we got for manual import
     }
     renderScanChips();
     const rb=document.getElementById('reclassBtn');
@@ -4626,7 +4663,7 @@ async function osmRunScan(){
   }
   _scanRunning=false;
   _osmImportData.sort((a,b)=>a.name.localeCompare(b.name,'en'));
-  if(!_scanStop) osmSetStatus(`🏁 Scan finished · reclass: ${Object.keys(_reclass).length.toLocaleString()} · new: ${_osmImportData.length.toLocaleString()}${stats.capped?` · ${stats.capped} skipped (candidate cap)`:''}`);
+  if(!_scanStop) osmSetStatus(`🏁 Scan finished · reclass: ${Object.keys(_reclass).length.toLocaleString()} · auto-published: ${stats.autopub.toLocaleString()} · manual queue: ${_osmImportData.length.toLocaleString()}${stats.capped?` · ${stats.capped} skipped (candidate cap)`:''}`);
   renderOsmImport();
 }
 function osmStopScan(){_scanStop=true;}
@@ -4638,9 +4675,13 @@ async function applyReclass(){
   ids.forEach(id=>{const c=_reclass[id];const k=c.from+' → '+c.to;pairs[k]=(pairs[k]||0)+1;});
   const top=Object.entries(pairs).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([k,n])=>`${k}: ${n}`).join('\n');
   if(!confirm(`Apply ${ids.length.toLocaleString()} category changes to KV?\n\n${top}${Object.keys(pairs).length>12?'\n…':''}`)) return;
-  const ok=await kvPublish((sk,nm)=>{
+  // Group by home state when known; entries without one (older scans) force a sweep.
+  const sts=new Set();let sweep=false;
+  ids.forEach(id=>{const c=_reclass[id];if(c.st&&STATE_BBOXES[c.st])sts.add(c.st);else sweep=true;});
+  const codes=sweep?Object.keys(STATE_BBOXES):[...sts];
+  const ok=await kvMutateStates(codes,(code,arr)=>{
     let n=0;
-    for(const s of sk){
+    for(const s of arr){
       const c=_reclass[String(s.id)];
       if(c&&CATS[c.to]&&s.cat!==c.to){s.cat=c.to;n++;}
     }
@@ -4958,26 +4999,17 @@ async function osmImportSelected(){
 }
 async function purgeCatSpots(cats){
   if(!isAdmin()){toast('⚠ Admin only','info');return;}
+  const set=new Set(cats);
   const labels=cats.join('+');
-  // Existing spots get relabeled to 'history' in memory once a cat is removed from CATS,
-  // so check the RAW KV skeleton (real cat preserved) — not the normalized SPOTS array.
-  osmSetStatus(`☁️ Purge ${labels}: checking KV...`);
-  let skeleton;
-  try{
-    const r=await fetch('/api/spots/skeleton');
-    skeleton=await r.json();
-    if(!Array.isArray(skeleton)) throw new Error('bad skeleton');
-  }catch(e){toast('❌ Could not load skeleton from KV','info');osmSetStatus('❌ Purge: KV read failed');return;}
-  const matches=skeleton.filter(s=>cats.includes(s.cat));
-  if(!matches.length){
-    toast(`No ${labels} spots in KV (already clean)`,'info');
-    osmSetStatus(`✅ No ${labels} spots in KV`);
-    return;
-  }
-  if(!confirm(`Permanently delete ${matches.length.toLocaleString()} ${labels} spots from KV?\nThis cannot be undone.`)) return;
-  const ids=matches.map(s=>String(s.id));
-  const ok=await kvDeleteSpots(ids,`Purge ${labels}`);
-  if(ok) toast(`✅ Purged ${matches.length.toLocaleString()} ${labels} spots`,'success');
+  if(!confirm(`🗑 Purge ALL ${labels} spots from every state pack in KV?\n\nSweeps all 51 packs (reads only; writes only where matches exist).`)) return;
+  // Raw cat check on KV data — normalizeSpot relabels these to 'history' in
+  // memory, so the in-memory SPOTS can't be trusted for this.
+  const ok=await kvMutateStates(Object.keys(STATE_BBOXES),(code,arr)=>{
+    const before=arr.length;
+    for(let i=arr.length-1;i>=0;i--){const c=arr[i].cat||arr[i].category;if(set.has(c))arr.splice(i,1);}
+    return before-arr.length;
+  },`Purge ${labels}`);
+  if(ok){refreshMarkers();updateAll();}
 }
 
 async function osmImportAll(){
@@ -5002,6 +5034,63 @@ async function osmImportAll(){
 let _importTab='osm'; // 'osm' | 'wikidata' | 'abandoned'
 
 function _getImportCountry(){return 'US';}
+
+
+// ── ADMIN: one-time migration — legacy skeleton+names → per-state KV keys ──
+async function migrateToStateKV(){
+  if(!isAdmin()){toast('⚠ Admin only','info');return;}
+  if(_kvBusy){toast('⏳ A KV sync is already running','info');return;}
+  const secret=_getAdminSecret();
+  if(!secret) return;
+  if(!confirm('Migrate legacy skeleton+names packs into per-state KV keys?\n\n• merges both packs, drops school/hotel/watertower spots\n• writes up to 51 state keys + overview (~52 KV writes)\n• legacy keys are left untouched as backup')) return;
+  _kvBusy=true;setSyncDot('syncing');
+  try{
+    osmSetStatus('☁️ Migration: downloading legacy packs...');
+    const[skRes,nmRes]=await Promise.all([
+      fetch('/api/spots/skeleton?t='+Date.now(),{cache:'no-store'}),
+      fetch('/api/spots/names?t='+Date.now(),{cache:'no-store'})
+    ]);
+    if(!skRes.ok||!nmRes.ok) throw new Error('legacy pack download failed');
+    const skeleton=await skRes.json(),names=await nmRes.json();
+    if(!Array.isArray(skeleton)||skeleton.length<100) throw new Error('skeleton looks corrupt — aborting');
+    const nameMap=new Map((Array.isArray(names)?names:[]).map(n=>[String(n.id),n]));
+    const DROP=new Set(['school','hotel','watertower']);
+    const byState=new Map();
+    let dropped=0;
+    for(const sk of skeleton){
+      const rawCat=sk.cat||sk.category;
+      if(DROP.has(rawCat)){dropped++;continue;}
+      if(typeof sk.lat!=='number'||typeof sk.lng!=='number'){dropped++;continue;}
+      const s={...sk,...(nameMap.get(String(sk.id))||{})};
+      delete s.pack; // all-free decision — pack split retired
+      s.st=assignState(s.lat,s.lng);
+      if(!byState.has(s.st)) byState.set(s.st,[]);
+      byState.get(s.st).push(s);
+    }
+    const codes=[...byState.keys()].sort();
+    let done=0,total=0;
+    const ov={total:0,states:{},updated:new Date().toISOString()};
+    for(const code of codes){
+      const arr=byState.get(code);
+      osmSetStatus(`☁️ Migration: ${code} — ${arr.length.toLocaleString()} spots (${++done}/${codes.length})...`);
+      await kvWriteState(code,arr,secret);
+      ov.states[code]={count:arr.length,cells:buildStateCells(arr)};
+      total+=arr.length;
+    }
+    ov.total=total;
+    osmSetStatus('☁️ Migration: publishing overview...');
+    const res=await fetch('/api/admin/overview',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Secret':secret},body:JSON.stringify(ov)});
+    if(!res.ok){const t=await res.text();throw new Error('overview push HTTP '+res.status+': '+t.slice(0,100));}
+    try{const c=await caches.open('ss-spots-v1');const ks=await c.keys();for(const k of ks) await c.delete(k);}catch(e){}
+    OVERVIEW=ov;_legacySpotMode=false;_gridCacheKey=null;
+    osmSetStatus(`✅ Migration done — ${total.toLocaleString()} spots across ${codes.length} states (${dropped.toLocaleString()} dropped). Reload the page to switch to lazy loading.`);
+    toast('✅ Migration complete — reload the page','success');
+  }catch(e){
+    console.error('migrateToStateKV',e);
+    osmSetStatus('❌ Migration failed: '+e.message);
+    toast('⚠ Migration failed: '+e.message,'info');
+  }finally{_kvBusy=false;setSyncDot('synced');}
+}
 
 function _tabBar(){
   const tabs=[['osm','🗺 OSM'],['wikidata','📚 Wikidata'],['abandoned','🏚 Ruins']];
@@ -5042,6 +5131,7 @@ function renderOsmImport(){
       <button class="osm-ctrl-btn" onclick="scanSelectAll(true)">☑ All states</button>
       <button class="osm-ctrl-btn" onclick="scanSelectAll(false)">☐ None</button>
       <button class="osm-ctrl-btn pri" onclick="osmRunScan()">▶ Scan</button>
+      <label style="display:flex;align-items:center;gap:4px;font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);cursor:pointer"><input type="checkbox" ${_scanAutoPub?'checked':''} onchange="_scanAutoPub=this.checked"> auto-publish</label>
       <button class="osm-ctrl-btn" onclick="osmStopScan()">⏹ Stop</button>
       <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red)" onclick="resetScanProgress()">♻ Reset</button>
     </div>
@@ -5050,6 +5140,7 @@ function renderOsmImport(){
       <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red)" onclick="findDuplicateSpots()">🔍 Duplicates</button>
       <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red);background:rgba(140,74,74,.1)" onclick="autoDeleteAllDuplicates()">🗑 Delete dupes</button>
       <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red);background:rgba(140,74,74,.1)" onclick="purgeCatSpots(['school','hotel','watertower'])">🗑 Purge school+hotel+watertower</button>
+      <button class="osm-ctrl-btn" style="border-color:var(--gold);color:var(--gold)" onclick="migrateToStateKV()">📦 Migrate KV → per-state</button>
     </div>
     <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);margin-bottom:8px">New spot candidates (select &amp; import):</div>
     <div class="osm-controls">
@@ -6648,7 +6739,28 @@ function normalizeSpot(s){
 
 async function fbLoadSpots(){
   setSyncDot('syncing');
+  // ── v2: per-state lazy loading via precomputed overview ──
+  try{
+    const res=await fetch('/api/spots/overview');
+    if(res.ok){
+      const ov=await res.json();
+      if(ov&&ov.states){
+        OVERVIEW=ov;_legacySpotMode=false;
+        setSyncDot('synced');
+        const sub=document.getElementById('authSub');
+        if(sub) sub.textContent=`${(ov.total||0).toLocaleString()} spots — zoom in to explore`;
+        refreshMarkers();updateAll();
+        requestStatesForViewport(); // load whatever the initial viewport needs
+        return;
+      }
+    }
+  }catch(e){console.warn('Overview load failed — falling back to legacy packs',e);}
+  // ── Legacy fallback (pre-migration KV) ──
+  _legacySpotMode=true;
+  await fbLoadSpotsLegacy();
+}
 
+async function fbLoadSpotsLegacy(){
   // ── 1. Skeleton — lightweight lat/lng/cat/tier for all spots ──
   try{
     const res=await fetch('/api/spots/skeleton');
@@ -6693,66 +6805,253 @@ async function fbLoadSpots(){
   setSyncDot('synced');
 }
 
-// ═══════════ KV PUBLISH PIPELINE (admin) ═══════════
+
+// ═══════════ PER-STATE LAZY LOADING (KV layout v2) ═══════════
+// One KV key per state (spots_state_XX) + spots_overview (precomputed grid
+// counts + totals). The client fetches only states intersecting the viewport;
+// low zoom renders the overview, so totals stay accurate with nothing loaded.
+
+// [minLat,minLng,maxLat,maxLng] — rounded slightly outward.
+const STATE_BBOXES={
+  AL:[30.1,-88.5,35.1,-84.8],AK:[51.2,-179.9,71.4,-129.9],AZ:[31.3,-114.9,37.1,-109.0],
+  AR:[33.0,-94.7,36.5,-89.6],CA:[32.5,-124.5,42.1,-114.1],CO:[36.9,-109.1,41.1,-102.0],
+  CT:[40.9,-73.8,42.1,-71.7],DE:[38.4,-75.8,39.9,-74.9],DC:[38.7,-77.2,39.0,-76.8],
+  FL:[24.4,-87.7,31.1,-79.9],GA:[30.3,-85.7,35.1,-80.7],HI:[18.8,-160.3,22.3,-154.7],
+  ID:[41.9,-117.3,49.1,-111.0],IL:[36.9,-91.6,42.6,-87.0],IN:[37.7,-88.2,41.8,-84.7],
+  IA:[40.3,-96.7,43.6,-90.1],KS:[36.9,-102.1,40.1,-94.5],KY:[36.4,-89.6,39.2,-81.9],
+  LA:[28.8,-94.1,33.1,-88.7],ME:[42.9,-71.1,47.5,-66.8],MD:[37.8,-79.5,39.8,-74.9],
+  MA:[41.2,-73.6,42.9,-69.9],MI:[41.6,-90.5,48.4,-82.1],MN:[43.4,-97.3,49.4,-89.4],
+  MS:[30.1,-91.7,35.1,-88.0],MO:[35.9,-95.8,40.7,-89.0],MT:[44.3,-116.1,49.1,-104.0],
+  NE:[39.9,-104.1,43.1,-95.3],NV:[34.9,-120.1,42.1,-114.0],NH:[42.6,-72.6,45.4,-70.5],
+  NJ:[38.8,-75.6,41.4,-73.8],NM:[31.2,-109.1,37.1,-102.9],NY:[40.4,-79.8,45.1,-71.8],
+  NC:[33.7,-84.4,36.6,-75.4],ND:[45.9,-104.1,49.1,-96.5],OH:[38.3,-84.9,42.0,-80.5],
+  OK:[33.5,-103.1,37.1,-94.4],OR:[41.9,-124.6,46.3,-116.4],PA:[39.6,-80.6,42.3,-74.6],
+  RI:[41.1,-71.9,42.1,-71.1],SC:[32.0,-83.4,35.3,-78.5],SD:[42.4,-104.1,46.0,-96.4],
+  TN:[34.9,-90.4,36.7,-81.6],TX:[25.8,-106.7,36.6,-93.4],UT:[36.9,-114.1,42.1,-109.0],
+  VT:[42.6,-73.5,45.1,-71.4],VA:[36.5,-83.7,39.5,-75.2],WA:[45.5,-124.8,49.1,-116.9],
+  WV:[37.1,-82.7,40.7,-77.7],WI:[42.4,-92.9,47.1,-86.7],WY:[40.9,-111.1,45.1,-104.0],
+};
+const STATE_LOAD_PAD=0.7;    // deg padding when matching viewport → states
+const MAX_LOADED_STATES=10;  // LRU eviction cap (≈ worst case a few hundred k spots)
+
+const STATE_DATA=new Map();  // code -> {spots:[], ts:lastTouched}
+const _stateLoading=new Set();
+let OVERVIEW=null;           // {total, states:{XX:{count, cells:[[lat,lng,n],...]}}}
+let _legacySpotMode=false;   // true when overview missing (pre-migration KV)
+
+function totalSpots(){
+  if(!_legacySpotMode&&OVERVIEW&&OVERVIEW.total) return OVERVIEW.total;
+  return SPOTS.length;
+}
+
+// Which state pack does a coordinate belong to? Containing bbox with the
+// nearest centre wins; stray points (outside every bbox) go to the nearest.
+function assignState(lat,lng){
+  let best=null,bestD=Infinity,bestAny=null,bestAnyD=Infinity;
+  for(const code in STATE_BBOXES){
+    const b=STATE_BBOXES[code];
+    const cy=(b[0]+b[2])/2,cx=(b[1]+b[3])/2;
+    const d=(lat-cy)*(lat-cy)+(lng-cx)*(lng-cx);
+    if(lat>=b[0]&&lat<=b[2]&&lng>=b[1]&&lng<=b[3]){if(d<bestD){bestD=d;best=code;}}
+    if(d<bestAnyD){bestAnyD=d;bestAny=code;}
+  }
+  return best||bestAny;
+}
+
+function statesForBounds(bounds){
+  const s=bounds.getSouth()-STATE_LOAD_PAD,n=bounds.getNorth()+STATE_LOAD_PAD;
+  const w=bounds.getWest()-STATE_LOAD_PAD,e=bounds.getEast()+STATE_LOAD_PAD;
+  const out=[];
+  for(const code in STATE_BBOXES){
+    const b=STATE_BBOXES[code];
+    if(b[2]>=s&&b[0]<=n&&b[3]>=w&&b[1]<=e) out.push(code);
+  }
+  return out;
+}
+
+function rebuildSPOTS(){
+  const merged=[];
+  STATE_DATA.forEach(d=>{for(const s of d.spots) merged.push(s);});
+  SPOTS=merged;
+  _spotById=null;_gridCacheKey=null;
+}
+
+async function fetchStatePack(code){
+  const res=await fetch('/api/spots/state/'+code);
+  if(!res.ok) throw new Error('state '+code+' HTTP '+res.status);
+  const arr=await res.json();
+  if(!Array.isArray(arr)) throw new Error('state '+code+' bad payload');
+  return arr.map(s=>{const n=normalizeSpot(s);if(!n.st)n.st=code;return n;});
+}
+
+// Load any of `codes` not yet in memory. Returns true if anything new arrived.
+async function ensureStatesLoaded(codes){
+  codes.forEach(c=>{const d=STATE_DATA.get(c);if(d)d.ts=Date.now();}); // LRU touch
+  const need=codes.filter(c=>STATE_BBOXES[c]&&!STATE_DATA.has(c)&&!_stateLoading.has(c));
+  if(!need.length) return false;
+  need.forEach(c=>_stateLoading.add(c));
+  let loaded=false;
+  try{
+    const results=await Promise.allSettled(need.map(fetchStatePack));
+    results.forEach((r,i)=>{
+      if(r.status==='fulfilled'){STATE_DATA.set(need[i],{spots:r.value,ts:Date.now()});loaded=true;}
+      else console.warn('state load failed',need[i],r.reason);
+    });
+  }finally{need.forEach(c=>_stateLoading.delete(c));}
+  if(loaded){evictFarStates();rebuildSPOTS();}
+  return loaded;
+}
+
+// Drop least-recently-used states beyond the cap — never ones in the viewport.
+function evictFarStates(){
+  if(STATE_DATA.size<=MAX_LOADED_STATES) return;
+  const visible=new Set(map?statesForBounds(map.getBounds()):[]);
+  const evictable=[...STATE_DATA.entries()].filter(([c])=>!visible.has(c)).sort((a,b)=>a[1].ts-b[1].ts);
+  let excess=STATE_DATA.size-MAX_LOADED_STATES;
+  for(const[c]of evictable){
+    if(excess<=0) break;
+    const d=STATE_DATA.get(c);
+    if(d) for(const s of d.spots) delete markers[s.id];
+    STATE_DATA.delete(c);excess--;
+  }
+}
+
+// Fire-and-forget viewport loader — coalesces rapid pan/zoom into one pass.
+let _stateReqBusy=false,_stateReqAgain=false;
+async function requestStatesForViewport(){
+  if(_legacySpotMode||!map) return;
+  if(_stateReqBusy){_stateReqAgain=true;return;}
+  _stateReqBusy=true;
+  try{
+    const loaded=await ensureStatesLoaded(statesForBounds(map.getBounds()));
+    if(loaded){refreshMarkers();updateAll();if(typeof renderList==='function')renderList();}
+  }catch(e){console.warn('viewport state load',e);}
+  finally{
+    _stateReqBusy=false;
+    if(_stateReqAgain){_stateReqAgain=false;requestStatesForViewport();}
+  }
+}
+
+// ── Overview helpers: 0.5° base cells, client aggregates per zoom ──
+const OVERVIEW_CELL=0.5;
+function buildStateCells(spots){
+  const m=new Map();
+  for(const s of spots){
+    if(s.cat==='hidden') continue;
+    if(typeof s.lat!=='number'||typeof s.lng!=='number') continue;
+    const k=Math.floor(s.lat/OVERVIEW_CELL)+':'+Math.floor(s.lng/OVERVIEW_CELL);
+    let c=m.get(k);
+    if(!c){c={n:0,la:0,lo:0};m.set(k,c);}
+    c.n++;c.la+=s.lat;c.lo+=s.lng;
+  }
+  return[...m.values()].map(c=>[+(c.la/c.n).toFixed(3),+(c.lo/c.n).toFixed(3),c.n]);
+}
+
+// Canonical compact KV spot shape — omits empty optionals to keep packs lean.
+function compactSpot(s){
+  const out={id:String(s.id),lat:s.lat,lng:s.lng,cat:s.cat,tier:s.tier,st:s.st,name:s.name||''};
+  if(s.state) out.state=s.state;
+  if(s.city) out.city=s.city;
+  if(s.year) out.year=String(s.year);
+  if(s.url) out.url=s.url;
+  if(s.tag) out.tag=s.tag;
+  if(s.history) out.history=s.history;
+  if(s.radius&&s.radius!==(CAT_DEFAULT_RADIUS[s.cat]||DEFAULT_RADIUS)) out.radius=s.radius;
+  return out;
+}
+
+// ═══════════ KV PUBLISH PIPELINE (admin, per-state) ═══════════
 // KV is the master spot store. Every admin mutation — imports, edits, deletes —
-// flows through here: pull skeleton+names → mutate → push both packs back.
-// The mutator receives (skeleton[], names[]), mutates them in place, and returns
-// the number of changes (or false to abort). Both packs are pushed atomically-ish:
-// skeleton first, then names, with the result verified by the worker's count echo.
+// flows through kvMutateStates: per touched state, pull fresh pack → mutate →
+// push back, then patch the overview (counts + grid cells) in one final write.
 let _kvBusy=false;
-async function kvPublish(mutator,label){
+
+async function kvFetchStateFresh(code){
+  // Bypass the service-worker SWR cache — admin mutations must see live KV.
+  const res=await fetch('/api/spots/state/'+code+'?t='+Date.now(),{cache:'no-store'});
+  if(!res.ok) throw new Error('state '+code+' read HTTP '+res.status);
+  const arr=await res.json();
+  if(!Array.isArray(arr)) throw new Error('state '+code+' bad payload');
+  return arr;
+}
+
+async function kvWriteState(code,arr,secret){
+  const body=JSON.stringify(arr);
+  // KV hard limit is 25 MB/value — abort safely before uploading.
+  if(body.length>20*1024*1024) throw new Error(`state ${code} pack too large (${(body.length/1048576).toFixed(1)} MB, guard 20 MB)`);
+  const res=await fetch('/api/admin/state/'+code,{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Secret':secret},body});
+  if(res.status===403){localStorage.removeItem('ss_admin_secret');throw new Error('admin secret rejected (cleared — retry to re-enter)');}
+  if(!res.ok){const t=await res.text();throw new Error(`state ${code} push HTTP ${res.status}: ${t.slice(0,100)}`);}
+  const j=await res.json();
+  if(!j.ok||j.count!==arr.length) throw new Error(`state ${code} push verification failed`);
+  try{const c=await caches.open('ss-spots-v1');await c.delete('/api/spots/state/'+code);}catch(e){}
+  return j;
+}
+
+// Patch overview sections for touched states (Map code → post-mutation array), push once.
+async function kvPushOverview(touched,secret){
+  let ov=null;
+  try{
+    const r=await fetch('/api/spots/overview?t='+Date.now(),{cache:'no-store'});
+    if(r.ok) ov=await r.json();
+  }catch(e){}
+  if(!ov||!ov.states) ov={total:0,states:{}};
+  touched.forEach((arr,code)=>{
+    if(arr.length) ov.states[code]={count:arr.length,cells:buildStateCells(arr)};
+    else delete ov.states[code];
+  });
+  ov.total=Object.values(ov.states).reduce((a,s)=>a+(s.count||0),0);
+  ov.updated=new Date().toISOString();
+  const res=await fetch('/api/admin/overview',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Secret':secret},body:JSON.stringify(ov)});
+  if(!res.ok){const t=await res.text();throw new Error('overview push HTTP '+res.status+': '+t.slice(0,100));}
+  try{const c=await caches.open('ss-spots-v1');await c.delete('/api/spots/overview');}catch(e){}
+  OVERVIEW=ov;_gridCacheKey=null;
+  return ov;
+}
+
+// Core: for each state code, mutator(code, spotsArr) mutates in place and
+// returns its change count. Only changed states are written. Sweeping all 51
+// states costs reads but writes only where matches exist.
+async function kvMutateStates(codes,mutator,label){
   if(!isAdmin()){toast('⚠ Admin only','info');return false;}
   if(_kvBusy){toast('⏳ A KV sync is already running — wait for it to finish','info');return false;}
   const secret=_getAdminSecret();
   if(!secret) return false;
-  _kvBusy=true;
-  setSyncDot('syncing');
+  _kvBusy=true;setSyncDot('syncing');
+  const touched=new Map();
+  let total=0;
   try{
-    if(typeof osmSetStatus==='function') osmSetStatus(`☁️ ${label}: downloading packs...`);
-    const [skRes,nmRes]=await Promise.all([fetch('/api/spots/skeleton'),fetch('/api/spots/names')]);
-    if(!skRes.ok||!nmRes.ok) throw new Error('pack download failed');
-    const skeleton=await skRes.json();
-    const names=await nmRes.json();
-    if(!Array.isArray(skeleton)||!Array.isArray(names)||skeleton.length<100) throw new Error('packs look corrupt — aborting to protect data');
-    const changed=mutator(skeleton,names);
-    if(!changed){toast('Nothing to publish','info');return false;}
-    // KV hard limit is 25 MB/value — abort safely before uploading anything.
-    const KV_GUARD=20*1024*1024;
-    const skStr=JSON.stringify(skeleton),nmStr=JSON.stringify(names);
-    if(skStr.length>KV_GUARD||nmStr.length>KV_GUARD){
-      throw new Error(`pack too large (skeleton ${(skStr.length/1048576).toFixed(1)} MB / names ${(nmStr.length/1048576).toFixed(1)} MB, guard 20 MB) — import in smaller category/state batches`);
+    const uniq=[...new Set(codes)].filter(c=>STATE_BBOXES[c]);
+    for(let i=0;i<uniq.length;i++){
+      const code=uniq[i];
+      if(typeof osmSetStatus==='function') osmSetStatus(`☁️ ${label}: ${code} (${i+1}/${uniq.length})...`);
+      const arr=await kvFetchStateFresh(code);
+      const changed=mutator(code,arr)||0;
+      if(!changed) continue;
+      await kvWriteState(code,arr,secret);
+      touched.set(code,arr);
+      // Keep the in-memory cache of loaded states in lockstep with KV
+      if(STATE_DATA.has(code)) STATE_DATA.set(code,{spots:arr.map(s=>{const n=normalizeSpot(s);if(!n.st)n.st=code;return n;}),ts:Date.now()});
+      total+=changed;
     }
-    if(typeof osmSetStatus==='function') osmSetStatus(`☁️ ${label}: uploading skeleton (${skeleton.length.toLocaleString()} spots)...`);
-    await _kvPush('skeleton',skeleton,secret);
-    if(typeof osmSetStatus==='function') osmSetStatus(`☁️ ${label}: uploading names...`);
-    await _kvPush('names',names,secret);
-    if(typeof osmSetStatus==='function') osmSetStatus(`✅ ${label} — ${changed} change${changed===1?'':'s'} published to KV`);
-    toast(`☁️ ${label}: ${changed} change${changed===1?'':'s'} published`,'success');
-    // Bust the service-worker spot cache so everyone gets fresh packs on next load
-    try{const c=await caches.open('ss-spots-v1');await c.delete('/api/spots/skeleton');await c.delete('/api/spots/names');}catch(e){}
+    if(!total){
+      if(typeof osmSetStatus==='function') osmSetStatus(`${label}: nothing to publish`);
+      toast('Nothing to publish','info');return false;
+    }
+    if(typeof osmSetStatus==='function') osmSetStatus(`☁️ ${label}: updating overview...`);
+    await kvPushOverview(touched,secret);
+    if(typeof osmSetStatus==='function') osmSetStatus(`✅ ${label} — ${total} change${total===1?'':'s'} across ${touched.size} state${touched.size===1?'':'s'}`);
+    toast(`☁️ ${label}: ${total} change${total===1?'':'s'} published`,'success');
     return true;
   }catch(e){
-    console.error('kvPublish',e);
-    if(typeof osmSetStatus==='function') osmSetStatus(`❌ ${label} failed: ${e.message}`);
+    console.error('kvMutateStates',e);
+    if(typeof osmSetStatus==='function') osmSetStatus(`❌ ${label} failed: ${e.message}${touched.size?` (${touched.size} state${touched.size===1?'':'s'} already written)`:''}`);
     toast('⚠ KV publish failed: '+e.message,'info');
     return false;
   }finally{
-    _kvBusy=false;
-    setSyncDot('synced');
+    if(touched.size) rebuildSPOTS();
+    _kvBusy=false;setSyncDot('synced');
   }
-}
-
-async function _kvPush(pack,arr,secret){
-  const res=await fetch(`/api/admin/rebuild?pack=${pack}`,{
-    method:'POST',
-    headers:{'Content-Type':'application/json','X-Admin-Secret':secret},
-    body:JSON.stringify(arr)
-  });
-  if(res.status===403){localStorage.removeItem('ss_admin_secret');throw new Error('admin secret rejected (cleared — retry to re-enter)');}
-  if(!res.ok){const t=await res.text();throw new Error(`${pack} push HTTP ${res.status}: ${t.slice(0,100)}`);}
-  const j=await res.json();
-  if(!j.ok||j.count!==arr.length) throw new Error(`${pack} push verification failed`);
-  return j;
 }
 
 function _getAdminSecret(){
@@ -6767,7 +7066,7 @@ function _getAdminSecret(){
   return s.trim();
 }
 
-// Shared import core — builds clean spot objects, appends to packs, publishes.
+// Shared import core — builds clean spot objects, groups by state, publishes.
 async function kvImportSpots(items,label){
   const stamp=Date.now().toString(36);
   const newSpots=items.map((it,i)=>({
@@ -6779,41 +7078,38 @@ async function kvImportSpots(items,label){
     radius:it.radius||CAT_DEFAULT_RADIUS[it.cat]||DEFAULT_RADIUS,
     tag:it.tag||'',history:it.history||'',year:String(it.year||''),
     state:it.state||'',city:it.city||'',url:it.url||'',
-    time:'',price:'',bring:[],
   }));
-  const ok=await kvPublish((sk,nm)=>{
-    const have=new Set(sk.map(s=>String(s.id)));
+  const byState=new Map();
+  for(const s of newSpots){
+    s.st=assignState(s.lat,s.lng);
+    if(!byState.has(s.st)) byState.set(s.st,[]);
+    byState.get(s.st).push(s);
+  }
+  const ok=await kvMutateStates([...byState.keys()],(code,arr)=>{
+    const have=new Set(arr.map(s=>String(s.id)));
     let n=0;
-    for(const s of newSpots){
-      if(have.has(s.id)) continue;
-      sk.push({id:s.id,lat:s.lat,lng:s.lng,cat:s.cat,tier:s.tier,pack:'free'});
-      const entry={id:s.id,name:s.name,state:s.state,city:s.city,year:s.year,url:s.url};
-      if(s.tag) entry.tag=s.tag;
-      if(s.history) entry.history=s.history;
-      if(s.radius&&s.radius!==(CAT_DEFAULT_RADIUS[s.cat]||DEFAULT_RADIUS)) entry.radius=s.radius;
-      nm.push(entry);
-      n++;
+    for(const s of byState.get(code)){
+      if(have.has(String(s.id))) continue;
+      arr.push(compactSpot(s));n++;
     }
     return n;
   },label);
-  if(ok){
-    SPOTS.push(...newSpots.map(normalizeSpot));
-    refreshMarkers();updateAll();
-  }
+  if(ok){refreshMarkers();updateAll();}
   return ok;
 }
 
-// Shared delete core — removes ids from both packs, publishes.
-async function kvDeleteSpots(ids,label){
+// Shared delete core — removes ids from their state packs, publishes.
+// statesHint (optional) skips the lookup; unknown ids fall back to a full sweep.
+async function kvDeleteSpots(ids,label,statesHint){
   const idSet=new Set(ids.map(String));
-  const ok=await kvPublish((sk,nm)=>{
-    const before=sk.length;
-    for(let i=sk.length-1;i>=0;i--) if(idSet.has(String(sk[i].id))) sk.splice(i,1);
-    for(let i=nm.length-1;i>=0;i--) if(idSet.has(String(nm[i].id))) nm.splice(i,1);
-    return before-sk.length;
+  let codes=statesHint&&statesHint.length?statesHint:[...new Set(SPOTS.filter(s=>idSet.has(String(s.id))).map(s=>s.st).filter(Boolean))];
+  if(!codes.length) codes=Object.keys(STATE_BBOXES); // unknown homes — sweep (reads only; writes only where matches)
+  const ok=await kvMutateStates(codes,(code,arr)=>{
+    const before=arr.length;
+    for(let i=arr.length-1;i>=0;i--) if(idSet.has(String(arr[i].id))) arr.splice(i,1);
+    return before-arr.length;
   },label);
   if(ok){
-    SPOTS=SPOTS.filter(s=>!idSet.has(String(s.id))&&!idSet.has(String(s._fid||'')));
     ids.forEach(id=>{found.delete(id);found.delete(String(id));const n=parseInt(id);if(!isNaN(n))found.delete(n);});
     refreshMarkers();updateAll();
   }
@@ -6920,21 +7216,27 @@ saveSpot=async function(){
   const id=document.getElementById('eId').value;
 
   if(id){
-    // Edit existing spot — update both packs in place
+    // Edit existing spot — update its state pack in place (move packs if coords crossed a border)
     const sid=String(id);
-    const ok=await kvPublish((sk,nm)=>{
+    const cur=SPOTS.find(s=>String(s.id)===sid||s._fid==id);
+    const newSt=assignState(lat,lng);
+    const oldSt=(cur&&cur.st&&STATE_BBOXES[cur.st])?cur.st:newSt;
+    const ok=await kvMutateStates(oldSt===newSt?[newSt]:[oldSt,newSt],(code,arr)=>{
       let n=0;
-      const ske=sk.find(s=>String(s.id)===sid);
-      if(ske){ske.lat=lat;ske.lng=lng;ske.cat=data.cat;ske.tier=data.tier;n++;}
-      let nme=nm.find(s=>String(s.id)===sid);
-      if(!nme&&ske){nme={id:sid};nm.push(nme);}
-      if(nme){
-        nme.name=name;nme.year=String(data.year||'');
-        if(data.tag) nme.tag=data.tag; else delete nme.tag;
-        if(data.history) nme.history=data.history; else delete nme.history;
-        if(radius&&radius!==(CAT_DEFAULT_RADIUS[data.cat]||DEFAULT_RADIUS)) nme.radius=radius; else delete nme.radius;
-        n++;
-      }
+      const idx=arr.findIndex(s=>String(s.id)===sid);
+      if(code===newSt){
+        if(idx!==-1){
+          const s=arr[idx];
+          s.lat=lat;s.lng=lng;s.cat=data.cat;s.tier=data.tier;s.st=newSt;
+          s.name=name;s.year=String(data.year||'');
+          if(data.tag)s.tag=data.tag;else delete s.tag;
+          if(data.history)s.history=data.history;else delete s.history;
+          if(radius&&radius!==(CAT_DEFAULT_RADIUS[data.cat]||DEFAULT_RADIUS))s.radius=radius;else delete s.radius;
+          n++;
+        }else{
+          arr.push(compactSpot({id:sid,...data,name,radius,st:newSt}));n++;
+        }
+      }else if(idx!==-1){arr.splice(idx,1);n++;} // remove from old home state
       return n;
     },'Edit spot');
     if(ok){
