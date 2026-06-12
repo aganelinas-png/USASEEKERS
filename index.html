@@ -6557,6 +6557,8 @@ window.onFbAuthReady=async function(user){
 
 // ═══════════ FIREBASE AUTH ═══════════
 
+let _emailRegisterMode=false; // hoisted — referenced by openEmailModal which is called from drawerAuthAction
+
 function drawerAuthAction(){
   if(window._fbUser) fbLogout();
   else openEmailModal();
@@ -6605,8 +6607,6 @@ function updateAuthUI(user){
 // Google sign-in removed — email/password only.
 
 // ── EMAIL AUTH ──
-let _emailRegisterMode=false;
-
 function openEmailModal(){
   _emailRegisterMode=false;
   document.getElementById('eauthTitle').textContent='Sign in';
