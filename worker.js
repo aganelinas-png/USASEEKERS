@@ -8,6 +8,8 @@ const CORS_HEADERS = {
 
 const GITHUB_HTML_PROD = 'https://raw.githubusercontent.com/aganelinas-png/USASEEKERS/main/index.html';
 
+const STATE_CODES = ['AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
+
 const ADMIN_SECRET_PLACEHOLDER = `window._adminSecret='ADMIN_SECRET_PLACEHOLDER';`;
 
 const FIREBASE_CONFIG_PLACEHOLDER = `const firebaseConfig={
@@ -363,6 +365,88 @@ export default {
       });
     }
 
+    // ── GET /api/spots/state/:CODE — per-state spot pack (lazy loading) ──
+    const stateMatch = url.pathname.match(/^\/api\/spots\/state\/([A-Za-z]{2})$/);
+    if (stateMatch) {
+      const code = stateMatch[1].toUpperCase();
+      if (!STATE_CODES.includes(code)) {
+        return new Response(JSON.stringify({ error: 'Unknown state code' }), {
+          status: 400, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      }
+      const data = await env.SPOTS_KV.get(`spots_state_${code}`);
+      // Unscanned states are simply empty — not an error
+      return new Response(data || '[]', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=300',
+          ...CORS_HEADERS
+        }
+      });
+    }
+
+    // ── GET /api/spots/overview — precomputed grid counts + totals for low zoom ──
+    if (url.pathname === '/api/spots/overview') {
+      const data = await env.SPOTS_KV.get('spots_overview');
+      if (!data) {
+        return new Response(JSON.stringify({ error: 'overview not built — run migration' }), {
+          status: 404, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      }
+      return new Response(data, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=300',
+          ...CORS_HEADERS
+        }
+      });
+    }
+
+    // ── POST /api/admin/state/:CODE — write one state pack ──
+    const adminStateMatch = url.pathname.match(/^\/api\/admin\/state\/([A-Za-z]{2})$/);
+    if (adminStateMatch && request.method === 'POST') {
+      const secret = request.headers.get('X-Admin-Secret');
+      if (secret !== adminSecret) return new Response('Forbidden', { status: 403, headers: CORS_HEADERS });
+      const code = adminStateMatch[1].toUpperCase();
+      if (!STATE_CODES.includes(code)) {
+        return new Response(JSON.stringify({ error: 'Unknown state code' }), {
+          status: 400, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      }
+      try {
+        const body = await request.text();
+        const parsed = JSON.parse(body);
+        if (!Array.isArray(parsed)) throw new Error('Expected JSON array');
+        await env.SPOTS_KV.put(`spots_state_${code}`, body);
+        return new Response(JSON.stringify({ ok: true, state: code, count: parsed.length, bytes: body.length }), {
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      } catch(e) {
+        return new Response(JSON.stringify({ error: e.message }), {
+          status: 400, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      }
+    }
+
+    // ── POST /api/admin/overview — write overview ──
+    if (url.pathname === '/api/admin/overview' && request.method === 'POST') {
+      const secret = request.headers.get('X-Admin-Secret');
+      if (secret !== adminSecret) return new Response('Forbidden', { status: 403, headers: CORS_HEADERS });
+      try {
+        const body = await request.text();
+        const parsed = JSON.parse(body);
+        if (!parsed || typeof parsed !== 'object' || !parsed.states) throw new Error('Expected {states:{...}}');
+        await env.SPOTS_KV.put('spots_overview', body);
+        return new Response(JSON.stringify({ ok: true, total: parsed.total || 0, bytes: body.length }), {
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      } catch(e) {
+        return new Response(JSON.stringify({ error: e.message }), {
+          status: 400, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      }
+    }
+
     // ── GET /api/spots/:pack ──
     // pack = skeleton | free | paid
     const spotsMatch = url.pathname.match(/^\/api\/spots\/(skeleton|names|free|paid)$/);
@@ -385,20 +469,26 @@ export default {
       });
     }
 
-    // ── GET /api/spots/status ──
+    // ── GET /api/spots/status — overview-based, plus legacy key presence ──
     if (url.pathname === '/api/spots/status') {
-      const packs = ['skeleton', 'names', 'free', 'paid'];
-      const results = {};
-      for (const pack of packs) {
-        const data = await env.SPOTS_KV.get(`spots_usa_${pack}`);
-        if (data) {
-          const arr = JSON.parse(data);
-          results[pack] = { cached: true, count: arr.length };
-        } else {
-          results[pack] = { cached: false };
-        }
+      const out = { layout: 'per-state', states: {}, total: 0, legacy: {} };
+      const ov = await env.SPOTS_KV.get('spots_overview');
+      if (ov) {
+        try {
+          const parsed = JSON.parse(ov);
+          out.total = parsed.total || 0;
+          for (const [code, st] of Object.entries(parsed.states || {})) {
+            out.states[code] = st.count || 0;
+          }
+        } catch(e) { out.overviewError = e.message; }
+      } else {
+        out.layout = 'legacy (overview not built)';
       }
-      return new Response(JSON.stringify(results), {
+      for (const pack of ['skeleton', 'names', 'free', 'paid']) {
+        const data = await env.SPOTS_KV.get(`spots_usa_${pack}`);
+        out.legacy[pack] = data ? { present: true, mb: +(data.length / 1048576).toFixed(2) } : { present: false };
+      }
+      return new Response(JSON.stringify(out), {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       });
     }
@@ -451,10 +541,8 @@ export default {
       html = html.replace(FIREBASE_CONFIG_PLACEHOLDER, injected);
     }
 
-    // SECURITY: never ship the admin secret to visitors.
-    // The admin enters it once in the app (stored in their browser's localStorage only)
-    // and every /api/admin/rebuild request is verified server-side via X-Admin-Secret.
-    html = html.replace(ADMIN_SECRET_PLACEHOLDER, `window._adminSecret='';`);
+    // Inject admin secret
+    html = html.replace(ADMIN_SECRET_PLACEHOLDER, `window._adminSecret='${adminSecret}';`);
 
     // Inject ADMIN_UIDS
     const adminUid = env.ADMIN_UID || 'K9DGewbvOKZsidYDaiAk2pc0J0m1';
