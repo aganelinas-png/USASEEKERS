@@ -1674,6 +1674,160 @@ const STREAK_MILES=[
 // ═══════════ STATE ═══════════
 
 let SPOTS=[...DEFAULT_SPOTS];
+// ═══════════ PER-STATE LAZY LOADING (KV layout v2) ═══════════
+// One KV key per state (spots_state_XX) + spots_overview (precomputed grid
+// counts + totals). The client fetches only states intersecting the viewport;
+// low zoom renders the overview, so totals stay accurate with nothing loaded.
+
+// [minLat,minLng,maxLat,maxLng] — rounded slightly outward.
+const STATE_BBOXES={
+  AL:[30.1,-88.5,35.1,-84.8],AK:[51.2,-179.9,71.4,-129.9],AZ:[31.3,-114.9,37.1,-109.0],
+  AR:[33.0,-94.7,36.5,-89.6],CA:[32.5,-124.5,42.1,-114.1],CO:[36.9,-109.1,41.1,-102.0],
+  CT:[40.9,-73.8,42.1,-71.7],DE:[38.4,-75.8,39.9,-74.9],DC:[38.7,-77.2,39.0,-76.8],
+  FL:[24.4,-87.7,31.1,-79.9],GA:[30.3,-85.7,35.1,-80.7],HI:[18.8,-160.3,22.3,-154.7],
+  ID:[41.9,-117.3,49.1,-111.0],IL:[36.9,-91.6,42.6,-87.0],IN:[37.7,-88.2,41.8,-84.7],
+  IA:[40.3,-96.7,43.6,-90.1],KS:[36.9,-102.1,40.1,-94.5],KY:[36.4,-89.6,39.2,-81.9],
+  LA:[28.8,-94.1,33.1,-88.7],ME:[42.9,-71.1,47.5,-66.8],MD:[37.8,-79.5,39.8,-74.9],
+  MA:[41.2,-73.6,42.9,-69.9],MI:[41.6,-90.5,48.4,-82.1],MN:[43.4,-97.3,49.4,-89.4],
+  MS:[30.1,-91.7,35.1,-88.0],MO:[35.9,-95.8,40.7,-89.0],MT:[44.3,-116.1,49.1,-104.0],
+  NE:[39.9,-104.1,43.1,-95.3],NV:[34.9,-120.1,42.1,-114.0],NH:[42.6,-72.6,45.4,-70.5],
+  NJ:[38.8,-75.6,41.4,-73.8],NM:[31.2,-109.1,37.1,-102.9],NY:[40.4,-79.8,45.1,-71.8],
+  NC:[33.7,-84.4,36.6,-75.4],ND:[45.9,-104.1,49.1,-96.5],OH:[38.3,-84.9,42.0,-80.5],
+  OK:[33.5,-103.1,37.1,-94.4],OR:[41.9,-124.6,46.3,-116.4],PA:[39.6,-80.6,42.3,-74.6],
+  RI:[41.1,-71.9,42.1,-71.1],SC:[32.0,-83.4,35.3,-78.5],SD:[42.4,-104.1,46.0,-96.4],
+  TN:[34.9,-90.4,36.7,-81.6],TX:[25.8,-106.7,36.6,-93.4],UT:[36.9,-114.1,42.1,-109.0],
+  VT:[42.6,-73.5,45.1,-71.4],VA:[36.5,-83.7,39.5,-75.2],WA:[45.5,-124.8,49.1,-116.9],
+  WV:[37.1,-82.7,40.7,-77.7],WI:[42.4,-92.9,47.1,-86.7],WY:[40.9,-111.1,45.1,-104.0],
+};
+const STATE_LOAD_PAD=0.7;    // deg padding when matching viewport → states
+const MAX_LOADED_STATES=10;  // LRU eviction cap (≈ worst case a few hundred k spots)
+
+const STATE_DATA=new Map();  // code -> {spots:[], ts:lastTouched}
+const _stateLoading=new Set();
+let OVERVIEW=null;           // {total, states:{XX:{count, cells:[[lat,lng,n],...]}}}
+let _legacySpotMode=false;   // true when overview missing (pre-migration KV)
+
+function totalSpots(){
+  if(!_legacySpotMode&&OVERVIEW&&OVERVIEW.total) return OVERVIEW.total;
+  return SPOTS.length;
+}
+
+// Which state pack does a coordinate belong to? Containing bbox with the
+// nearest centre wins; stray points (outside every bbox) go to the nearest.
+function assignState(lat,lng){
+  let best=null,bestD=Infinity,bestAny=null,bestAnyD=Infinity;
+  for(const code in STATE_BBOXES){
+    const b=STATE_BBOXES[code];
+    const cy=(b[0]+b[2])/2,cx=(b[1]+b[3])/2;
+    const d=(lat-cy)*(lat-cy)+(lng-cx)*(lng-cx);
+    if(lat>=b[0]&&lat<=b[2]&&lng>=b[1]&&lng<=b[3]){if(d<bestD){bestD=d;best=code;}}
+    if(d<bestAnyD){bestAnyD=d;bestAny=code;}
+  }
+  return best||bestAny;
+}
+
+function statesForBounds(bounds){
+  const s=bounds.getSouth()-STATE_LOAD_PAD,n=bounds.getNorth()+STATE_LOAD_PAD;
+  const w=bounds.getWest()-STATE_LOAD_PAD,e=bounds.getEast()+STATE_LOAD_PAD;
+  const out=[];
+  for(const code in STATE_BBOXES){
+    const b=STATE_BBOXES[code];
+    if(b[2]>=s&&b[0]<=n&&b[3]>=w&&b[1]<=e) out.push(code);
+  }
+  return out;
+}
+
+function rebuildSPOTS(){
+  const merged=[];
+  STATE_DATA.forEach(d=>{for(const s of d.spots) merged.push(s);});
+  SPOTS=merged;
+  _spotById=null;_gridCacheKey=null;
+}
+
+async function fetchStatePack(code){
+  const res=await fetch('/api/spots/state/'+code);
+  if(!res.ok) throw new Error('state '+code+' HTTP '+res.status);
+  const arr=await res.json();
+  if(!Array.isArray(arr)) throw new Error('state '+code+' bad payload');
+  return arr.map(s=>{const n=normalizeSpot(s);if(!n.st)n.st=code;return n;});
+}
+
+// Load any of `codes` not yet in memory. Returns true if anything new arrived.
+async function ensureStatesLoaded(codes){
+  codes.forEach(c=>{const d=STATE_DATA.get(c);if(d)d.ts=Date.now();}); // LRU touch
+  const need=codes.filter(c=>STATE_BBOXES[c]&&!STATE_DATA.has(c)&&!_stateLoading.has(c));
+  if(!need.length) return false;
+  need.forEach(c=>_stateLoading.add(c));
+  let loaded=false;
+  try{
+    const results=await Promise.allSettled(need.map(fetchStatePack));
+    results.forEach((r,i)=>{
+      if(r.status==='fulfilled'){STATE_DATA.set(need[i],{spots:r.value,ts:Date.now()});loaded=true;}
+      else console.warn('state load failed',need[i],r.reason);
+    });
+  }finally{need.forEach(c=>_stateLoading.delete(c));}
+  if(loaded){evictFarStates();rebuildSPOTS();}
+  return loaded;
+}
+
+// Drop least-recently-used states beyond the cap — never ones in the viewport.
+function evictFarStates(){
+  if(STATE_DATA.size<=MAX_LOADED_STATES) return;
+  const visible=new Set(map?statesForBounds(map.getBounds()):[]);
+  const evictable=[...STATE_DATA.entries()].filter(([c])=>!visible.has(c)).sort((a,b)=>a[1].ts-b[1].ts);
+  let excess=STATE_DATA.size-MAX_LOADED_STATES;
+  for(const[c]of evictable){
+    if(excess<=0) break;
+    const d=STATE_DATA.get(c);
+    if(d) for(const s of d.spots) delete markers[s.id];
+    STATE_DATA.delete(c);excess--;
+  }
+}
+
+// Fire-and-forget viewport loader — coalesces rapid pan/zoom into one pass.
+let _stateReqBusy=false,_stateReqAgain=false;
+async function requestStatesForViewport(){
+  if(_legacySpotMode||!map) return;
+  if(_stateReqBusy){_stateReqAgain=true;return;}
+  _stateReqBusy=true;
+  try{
+    const loaded=await ensureStatesLoaded(statesForBounds(map.getBounds()));
+    if(loaded){refreshMarkers();updateAll();if(typeof renderList==='function')renderList();}
+  }catch(e){console.warn('viewport state load',e);}
+  finally{
+    _stateReqBusy=false;
+    if(_stateReqAgain){_stateReqAgain=false;requestStatesForViewport();}
+  }
+}
+
+// ── Overview helpers: 0.5° base cells, client aggregates per zoom ──
+const OVERVIEW_CELL=0.5;
+function buildStateCells(spots){
+  const m=new Map();
+  for(const s of spots){
+    if(s.cat==='hidden') continue;
+    if(typeof s.lat!=='number'||typeof s.lng!=='number') continue;
+    const k=Math.floor(s.lat/OVERVIEW_CELL)+':'+Math.floor(s.lng/OVERVIEW_CELL);
+    let c=m.get(k);
+    if(!c){c={n:0,la:0,lo:0};m.set(k,c);}
+    c.n++;c.la+=s.lat;c.lo+=s.lng;
+  }
+  return[...m.values()].map(c=>[+(c.la/c.n).toFixed(3),+(c.lo/c.n).toFixed(3),c.n]);
+}
+
+// Canonical compact KV spot shape — omits empty optionals to keep packs lean.
+function compactSpot(s){
+  const out={id:String(s.id),lat:s.lat,lng:s.lng,cat:s.cat,tier:s.tier,st:s.st,name:s.name||''};
+  if(s.state) out.state=s.state;
+  if(s.city) out.city=s.city;
+  if(s.year) out.year=String(s.year);
+  if(s.url) out.url=s.url;
+  if(s.tag) out.tag=s.tag;
+  if(s.history) out.history=s.history;
+  if(s.radius&&s.radius!==(CAT_DEFAULT_RADIUS[s.cat]||DEFAULT_RADIUS)) out.radius=s.radius;
+  return out;
+}
+
 let found=new Set();
 let streak=0,lastDate=null,notes={},earnedBadges=new Set();
 let favorites=new Set(); // kept for legacy compat — not used in UI
@@ -6805,160 +6959,6 @@ async function fbLoadSpotsLegacy(){
   setSyncDot('synced');
 }
 
-
-// ═══════════ PER-STATE LAZY LOADING (KV layout v2) ═══════════
-// One KV key per state (spots_state_XX) + spots_overview (precomputed grid
-// counts + totals). The client fetches only states intersecting the viewport;
-// low zoom renders the overview, so totals stay accurate with nothing loaded.
-
-// [minLat,minLng,maxLat,maxLng] — rounded slightly outward.
-const STATE_BBOXES={
-  AL:[30.1,-88.5,35.1,-84.8],AK:[51.2,-179.9,71.4,-129.9],AZ:[31.3,-114.9,37.1,-109.0],
-  AR:[33.0,-94.7,36.5,-89.6],CA:[32.5,-124.5,42.1,-114.1],CO:[36.9,-109.1,41.1,-102.0],
-  CT:[40.9,-73.8,42.1,-71.7],DE:[38.4,-75.8,39.9,-74.9],DC:[38.7,-77.2,39.0,-76.8],
-  FL:[24.4,-87.7,31.1,-79.9],GA:[30.3,-85.7,35.1,-80.7],HI:[18.8,-160.3,22.3,-154.7],
-  ID:[41.9,-117.3,49.1,-111.0],IL:[36.9,-91.6,42.6,-87.0],IN:[37.7,-88.2,41.8,-84.7],
-  IA:[40.3,-96.7,43.6,-90.1],KS:[36.9,-102.1,40.1,-94.5],KY:[36.4,-89.6,39.2,-81.9],
-  LA:[28.8,-94.1,33.1,-88.7],ME:[42.9,-71.1,47.5,-66.8],MD:[37.8,-79.5,39.8,-74.9],
-  MA:[41.2,-73.6,42.9,-69.9],MI:[41.6,-90.5,48.4,-82.1],MN:[43.4,-97.3,49.4,-89.4],
-  MS:[30.1,-91.7,35.1,-88.0],MO:[35.9,-95.8,40.7,-89.0],MT:[44.3,-116.1,49.1,-104.0],
-  NE:[39.9,-104.1,43.1,-95.3],NV:[34.9,-120.1,42.1,-114.0],NH:[42.6,-72.6,45.4,-70.5],
-  NJ:[38.8,-75.6,41.4,-73.8],NM:[31.2,-109.1,37.1,-102.9],NY:[40.4,-79.8,45.1,-71.8],
-  NC:[33.7,-84.4,36.6,-75.4],ND:[45.9,-104.1,49.1,-96.5],OH:[38.3,-84.9,42.0,-80.5],
-  OK:[33.5,-103.1,37.1,-94.4],OR:[41.9,-124.6,46.3,-116.4],PA:[39.6,-80.6,42.3,-74.6],
-  RI:[41.1,-71.9,42.1,-71.1],SC:[32.0,-83.4,35.3,-78.5],SD:[42.4,-104.1,46.0,-96.4],
-  TN:[34.9,-90.4,36.7,-81.6],TX:[25.8,-106.7,36.6,-93.4],UT:[36.9,-114.1,42.1,-109.0],
-  VT:[42.6,-73.5,45.1,-71.4],VA:[36.5,-83.7,39.5,-75.2],WA:[45.5,-124.8,49.1,-116.9],
-  WV:[37.1,-82.7,40.7,-77.7],WI:[42.4,-92.9,47.1,-86.7],WY:[40.9,-111.1,45.1,-104.0],
-};
-const STATE_LOAD_PAD=0.7;    // deg padding when matching viewport → states
-const MAX_LOADED_STATES=10;  // LRU eviction cap (≈ worst case a few hundred k spots)
-
-const STATE_DATA=new Map();  // code -> {spots:[], ts:lastTouched}
-const _stateLoading=new Set();
-let OVERVIEW=null;           // {total, states:{XX:{count, cells:[[lat,lng,n],...]}}}
-let _legacySpotMode=false;   // true when overview missing (pre-migration KV)
-
-function totalSpots(){
-  if(!_legacySpotMode&&OVERVIEW&&OVERVIEW.total) return OVERVIEW.total;
-  return SPOTS.length;
-}
-
-// Which state pack does a coordinate belong to? Containing bbox with the
-// nearest centre wins; stray points (outside every bbox) go to the nearest.
-function assignState(lat,lng){
-  let best=null,bestD=Infinity,bestAny=null,bestAnyD=Infinity;
-  for(const code in STATE_BBOXES){
-    const b=STATE_BBOXES[code];
-    const cy=(b[0]+b[2])/2,cx=(b[1]+b[3])/2;
-    const d=(lat-cy)*(lat-cy)+(lng-cx)*(lng-cx);
-    if(lat>=b[0]&&lat<=b[2]&&lng>=b[1]&&lng<=b[3]){if(d<bestD){bestD=d;best=code;}}
-    if(d<bestAnyD){bestAnyD=d;bestAny=code;}
-  }
-  return best||bestAny;
-}
-
-function statesForBounds(bounds){
-  const s=bounds.getSouth()-STATE_LOAD_PAD,n=bounds.getNorth()+STATE_LOAD_PAD;
-  const w=bounds.getWest()-STATE_LOAD_PAD,e=bounds.getEast()+STATE_LOAD_PAD;
-  const out=[];
-  for(const code in STATE_BBOXES){
-    const b=STATE_BBOXES[code];
-    if(b[2]>=s&&b[0]<=n&&b[3]>=w&&b[1]<=e) out.push(code);
-  }
-  return out;
-}
-
-function rebuildSPOTS(){
-  const merged=[];
-  STATE_DATA.forEach(d=>{for(const s of d.spots) merged.push(s);});
-  SPOTS=merged;
-  _spotById=null;_gridCacheKey=null;
-}
-
-async function fetchStatePack(code){
-  const res=await fetch('/api/spots/state/'+code);
-  if(!res.ok) throw new Error('state '+code+' HTTP '+res.status);
-  const arr=await res.json();
-  if(!Array.isArray(arr)) throw new Error('state '+code+' bad payload');
-  return arr.map(s=>{const n=normalizeSpot(s);if(!n.st)n.st=code;return n;});
-}
-
-// Load any of `codes` not yet in memory. Returns true if anything new arrived.
-async function ensureStatesLoaded(codes){
-  codes.forEach(c=>{const d=STATE_DATA.get(c);if(d)d.ts=Date.now();}); // LRU touch
-  const need=codes.filter(c=>STATE_BBOXES[c]&&!STATE_DATA.has(c)&&!_stateLoading.has(c));
-  if(!need.length) return false;
-  need.forEach(c=>_stateLoading.add(c));
-  let loaded=false;
-  try{
-    const results=await Promise.allSettled(need.map(fetchStatePack));
-    results.forEach((r,i)=>{
-      if(r.status==='fulfilled'){STATE_DATA.set(need[i],{spots:r.value,ts:Date.now()});loaded=true;}
-      else console.warn('state load failed',need[i],r.reason);
-    });
-  }finally{need.forEach(c=>_stateLoading.delete(c));}
-  if(loaded){evictFarStates();rebuildSPOTS();}
-  return loaded;
-}
-
-// Drop least-recently-used states beyond the cap — never ones in the viewport.
-function evictFarStates(){
-  if(STATE_DATA.size<=MAX_LOADED_STATES) return;
-  const visible=new Set(map?statesForBounds(map.getBounds()):[]);
-  const evictable=[...STATE_DATA.entries()].filter(([c])=>!visible.has(c)).sort((a,b)=>a[1].ts-b[1].ts);
-  let excess=STATE_DATA.size-MAX_LOADED_STATES;
-  for(const[c]of evictable){
-    if(excess<=0) break;
-    const d=STATE_DATA.get(c);
-    if(d) for(const s of d.spots) delete markers[s.id];
-    STATE_DATA.delete(c);excess--;
-  }
-}
-
-// Fire-and-forget viewport loader — coalesces rapid pan/zoom into one pass.
-let _stateReqBusy=false,_stateReqAgain=false;
-async function requestStatesForViewport(){
-  if(_legacySpotMode||!map) return;
-  if(_stateReqBusy){_stateReqAgain=true;return;}
-  _stateReqBusy=true;
-  try{
-    const loaded=await ensureStatesLoaded(statesForBounds(map.getBounds()));
-    if(loaded){refreshMarkers();updateAll();if(typeof renderList==='function')renderList();}
-  }catch(e){console.warn('viewport state load',e);}
-  finally{
-    _stateReqBusy=false;
-    if(_stateReqAgain){_stateReqAgain=false;requestStatesForViewport();}
-  }
-}
-
-// ── Overview helpers: 0.5° base cells, client aggregates per zoom ──
-const OVERVIEW_CELL=0.5;
-function buildStateCells(spots){
-  const m=new Map();
-  for(const s of spots){
-    if(s.cat==='hidden') continue;
-    if(typeof s.lat!=='number'||typeof s.lng!=='number') continue;
-    const k=Math.floor(s.lat/OVERVIEW_CELL)+':'+Math.floor(s.lng/OVERVIEW_CELL);
-    let c=m.get(k);
-    if(!c){c={n:0,la:0,lo:0};m.set(k,c);}
-    c.n++;c.la+=s.lat;c.lo+=s.lng;
-  }
-  return[...m.values()].map(c=>[+(c.la/c.n).toFixed(3),+(c.lo/c.n).toFixed(3),c.n]);
-}
-
-// Canonical compact KV spot shape — omits empty optionals to keep packs lean.
-function compactSpot(s){
-  const out={id:String(s.id),lat:s.lat,lng:s.lng,cat:s.cat,tier:s.tier,st:s.st,name:s.name||''};
-  if(s.state) out.state=s.state;
-  if(s.city) out.city=s.city;
-  if(s.year) out.year=String(s.year);
-  if(s.url) out.url=s.url;
-  if(s.tag) out.tag=s.tag;
-  if(s.history) out.history=s.history;
-  if(s.radius&&s.radius!==(CAT_DEFAULT_RADIUS[s.cat]||DEFAULT_RADIUS)) out.radius=s.radius;
-  return out;
-}
 
 // ═══════════ KV PUBLISH PIPELINE (admin, per-state) ═══════════
 // KV is the master spot store. Every admin mutation — imports, edits, deletes —
