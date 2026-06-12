@@ -850,7 +850,6 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
         <option value="bridge">🌉 Bridge</option>
         <option value="railroad">🚂 Railroad</option>
         <option value="mill">⚙️ Mill / Industry</option>
-        <option value="watertower">🗼 Water Tower</option>
         <option value="maritime">⚓ Maritime</option>
         <option value="military">🏰 Military</option>
         <option value="farm">🌾 Farm / Barn</option>
@@ -1081,7 +1080,6 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
           <option value="bridge">🌉 Bridges</option>
           <option value="railroad">🚂 Railroads</option>
           <option value="mill">⚙️ Mills & Industry</option>
-          <option value="watertower">🗼 Water Towers</option>
           <option value="maritime">⚓ Maritime</option>
           <option value="military">🏰 Military</option>
           </optgroup>
@@ -1338,7 +1336,6 @@ const CATS={
   bridge:{label:'Bridges',emoji:'🌉',color:'#4a6a8a'},
   railroad:{label:'Railroads',emoji:'🚂',color:'#6a4a3a'},
   mill:{label:'Mills & Industry',emoji:'⚙️',color:'#6a6a6a'},
-  watertower:{label:'Water Towers',emoji:'🗼',color:'#4a5a8a'},
   maritime:{label:'Maritime',emoji:'⚓',color:'#2a5a7a'},
   military:{label:'Military',emoji:'🏰',color:'#8B4513'},
   // — Land & Memory —
@@ -1358,7 +1355,7 @@ const CATS={
 
 const FILTER_GROUPS=[
   {id:'heritage',label:'Heritage',emoji:'🏛',cats:['house','church','civic','theater','museum','commerce','district','history']},
-  {id:'engineering',label:'Engineering',emoji:'⚙️',cats:['bridge','railroad','mill','watertower','maritime','military']},
+  {id:'engineering',label:'Engineering',emoji:'⚙️',cats:['bridge','railroad','mill','maritime','military']},
   {id:'land',label:'Land & Legacy',emoji:'🌾',cats:['farm','monument','cemetery','mound']},
   {id:'nature',label:'Nature',emoji:'🌿',cats:['nature','viewpoint']},
   {id:'urban',label:'Urban',emoji:'🎨',cats:['mural','abandoned']},
@@ -1379,7 +1376,7 @@ const APP_VERSION='usa-1.1';
 // Per-category sensible defaults — used when no explicit radius is set
 const CAT_DEFAULT_RADIUS={
   viewpoint:50,monument:55,mural:55,commerce:60,house:60,theater:60,
-  church:65,museum:65,watertower:70,civic:80,
+  church:65,museum:65,civic:80,
   railroad:80,history:80,bridge:90,mill:90,maritime:100,abandoned:120,
   military:130,nature:150,farm:150,mound:160,cemetery:220,district:250,
 };
@@ -1461,12 +1458,6 @@ const BADGE_GROUPS=[
     {id:'mi3',name:'Foreman',desc:'Visit 15 industrial landmarks',icon:'🔧',need:15,xpReward:30},
     {id:'mi4',name:'Steam Power',desc:'Visit 50 industrial landmarks',icon:'⭐',need:50,xpReward:80},
     {id:'mi5',name:'Industrial Titan',desc:'Visit 150 industrial landmarks',icon:'💎',need:150,xpReward:250},
-  ]},
-  {id:'watertowers',title:'Water Tower Hunter',icon:'🗼',cat:'watertower',sub:true,badges:[
-    {id:'wt1',name:'First Tower',desc:'Visit 1 water tower',icon:'🗼',need:1,xpReward:10},
-    {id:'wt2',name:'Tower Collector',desc:'Visit 5 water towers',icon:'🏗️',need:5,xpReward:20},
-    {id:'wt3',name:'Hydro Enthusiast',desc:'Visit 12 water towers',icon:'💎',need:12,xpReward:50},
-    {id:'wt4',name:'Standpipe Legend',desc:'Visit 30 water towers',icon:'👑',need:30,xpReward:150},
   ]},
   {id:'maritimes',title:'Coastal Keeper',icon:'⚓',cat:'maritime',sub:true,badges:[
     {id:'ma1',name:'First Light',desc:'Visit 1 maritime landmark',icon:'⚓',need:1,xpReward:10},
@@ -3205,7 +3196,6 @@ const WEEKLY_CHALLENGES=[
   {id:'w_bridge2',cat:'bridge',goal:4,label:'Visit 4 bridges this week',icon:'🌉',xp:100},
   {id:'w_railroad',cat:'railroad',goal:2,label:'Visit 2 railroad landmarks this week',icon:'🚂',xp:70},
   {id:'w_mill',cat:'mill',goal:2,label:'Visit 2 mills or factories this week',icon:'⚙️',xp:70},
-  {id:'w_watertower',cat:'watertower',goal:2,label:'Visit 2 water towers this week',icon:'🗼',xp:80},
   {id:'w_maritime',cat:'maritime',goal:2,label:'Visit 2 maritime landmarks this week',icon:'⚓',xp:80},
   {id:'w_military',cat:'military',goal:2,label:'Visit 2 military landmarks this week',icon:'🏰',xp:80},
   {id:'w_military2',cat:'military',goal:3,label:'Visit 3 military landmarks this week',icon:'🏰',xp:110},
@@ -4366,7 +4356,7 @@ function resolveOsmCat(t){
 
   // ── MAN_MADE namespace ──
   if(t.man_made){
-    if(t.man_made==='water_tower') return 'watertower';
+    if(t.man_made==='water_tower') return null; // removed category
     if(t.man_made==='lighthouse') return 'maritime';
     if(t.man_made==='windmill'||t.man_made==='watermill'||t.man_made==='works'||t.man_made==='mineshaft'||t.man_made==='adit') return 'mill';
     if(t.man_made==='tower'&&(t['tower:type']==='observation')) return 'viewpoint';
@@ -4403,7 +4393,7 @@ function resolveOsmCat(t){
 }
 const OSM_CAT_EMOJI={
   house:'🏠',church:'⛪',civic:'🏛️',theater:'🎭',museum:'🏺',commerce:'🏪',
-  bridge:'🌉',railroad:'🚂',mill:'⚙️',watertower:'🗼',maritime:'⚓',military:'🏰',
+  bridge:'🌉',railroad:'🚂',mill:'⚙️',maritime:'⚓',military:'🏰',
   farm:'🌾',district:'🏘️',monument:'🗿',cemetery:'⚱️',mound:'⛰️',history:'⚔️',
   nature:'🌿',viewpoint:'🔭',mural:'🎨',abandoned:'🏚️',
 };
@@ -4431,7 +4421,6 @@ function osmGenerateName(t, cat){
   const district=t['addr:suburb']||t['addr:district']||'';
   const suffix=street||district||(ref?'ref '+ref:'');
   switch(cat){
-    case 'watertower': return 'Water Tower'+(suffix?' · '+suffix:'');
     case 'industrial':  return (t.man_made==='chimney'?'Smokestack':'Industrial Site')+(suffix?' · '+suffix:'');
     case 'bridge':      return t.name||(ref?'Bridge '+ref:'Bridge')+(suffix?' · '+suffix:'');
     case 'cliff':       return t.name||t['name:en']||(suffix?'Cliff · '+suffix:'Cliff');
@@ -4454,7 +4443,6 @@ function makeOsmQuery(bbox){
   node["military"~"bunker|fort"]["name"](${bbox});
   node["amenity"="grave_yard"]["name"](${bbox});
   node["highway"="trailhead"]["name"](${bbox});
-  node["man_made"="water_tower"](${bbox});
   node["man_made"="chimney"](${bbox});
   node["natural"="cliff"](${bbox});
   way["amenity"="place_of_worship"]["name"](${bbox});
@@ -4531,7 +4519,6 @@ out center;`,
   nwr["historic"]["name"](area.st);
   nwr["tourism"~"^(museum|gallery|viewpoint|artwork)$"]["name"](area.st);
   nwr["amenity"~"^(theatre|grave_yard|courthouse|townhall|library|post_office)$"]["name"](area.st);
-  nwr["man_made"="water_tower"](area.st);
   nwr["military"~"^(bunker|fort)$"]["name"](area.st);
   nwr["landuse"="cemetery"]["name"](area.st);
 );
@@ -4970,11 +4957,25 @@ async function osmImportSelected(){
   if(btn){btn.disabled=false;btn.textContent='✅ Import';}
 }
 async function purgeCatSpots(cats){
+  if(!isAdmin()){toast('⚠ Admin only','info');return;}
   const labels=cats.join('+');
-  const matches=SPOTS.filter(s=>cats.includes(s.cat));
-  if(!matches.length){toast(`No ${labels} spots found in loaded data`,'info');return;}
+  // Existing spots get relabeled to 'history' in memory once a cat is removed from CATS,
+  // so check the RAW KV skeleton (real cat preserved) — not the normalized SPOTS array.
+  osmSetStatus(`☁️ Purge ${labels}: checking KV...`);
+  let skeleton;
+  try{
+    const r=await fetch('/api/spots/skeleton');
+    skeleton=await r.json();
+    if(!Array.isArray(skeleton)) throw new Error('bad skeleton');
+  }catch(e){toast('❌ Could not load skeleton from KV','info');osmSetStatus('❌ Purge: KV read failed');return;}
+  const matches=skeleton.filter(s=>cats.includes(s.cat));
+  if(!matches.length){
+    toast(`No ${labels} spots in KV (already clean)`,'info');
+    osmSetStatus(`✅ No ${labels} spots in KV`);
+    return;
+  }
   if(!confirm(`Permanently delete ${matches.length.toLocaleString()} ${labels} spots from KV?\nThis cannot be undone.`)) return;
-  const ids=matches.map(s=>s.id||s._fid);
+  const ids=matches.map(s=>String(s.id));
   const ok=await kvDeleteSpots(ids,`Purge ${labels}`);
   if(ok) toast(`✅ Purged ${matches.length.toLocaleString()} ${labels} spots`,'success');
 }
@@ -5012,8 +5013,8 @@ function _tabBar(){
 function renderOsmImport(){
   const body=document.getElementById('panel-osm');
   if(!body) return;
-  const cats=['all','church','museum','fort','nature','history','monument','mound','viewpoint','watertower','mural','cemetery'];
-  const catLabels={all:'All',church:'⛪ Churches',museum:'🏛 Museums',fort:'🏰 Forts',nature:'🌿 Nature',history:'⚔ History',monument:'🗿 Monuments',mound:'⛰ Hillforts',viewpoint:'🔭 Viewpoints',watertower:'🗼 Water Towers',mural:'🎨 Street Art',cemetery:'⚱️ Cemeteries'};
+  const cats=['all','church','museum','fort','nature','history','monument','mound','viewpoint','mural','cemetery'];
+  const catLabels={all:'All',church:'⛪ Churches',museum:'🏛 Museums',fort:'🏰 Forts',nature:'🌿 Nature',history:'⚔ History',monument:'🗿 Monuments',mound:'⛰ Hillforts',viewpoint:'🔭 Viewpoints',mural:'🎨 Street Art',cemetery:'⚱️ Cemeteries'};
 
   if(_importTab==='wikidata'){
     body.innerHTML=`<div class="osm-wrap">${_tabBar()}${renderWikidataPanel()}</div>`;
@@ -5048,7 +5049,7 @@ function renderOsmImport(){
       <button class="osm-ctrl-btn pri" id="reclassBtn" onclick="applyReclass()">🔁 Apply ${_rcCount.toLocaleString()} reclass</button>
       <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red)" onclick="findDuplicateSpots()">🔍 Duplicates</button>
       <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red);background:rgba(140,74,74,.1)" onclick="autoDeleteAllDuplicates()">🗑 Delete dupes</button>
-      <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red);background:rgba(140,74,74,.1)" onclick="purgeCatSpots(['school','hotel'])">🗑 Purge school+hotel</button>
+      <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red);background:rgba(140,74,74,.1)" onclick="purgeCatSpots(['school','hotel','watertower'])">🗑 Purge school+hotel+watertower</button>
     </div>
     <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);margin-bottom:8px">New spot candidates (select &amp; import):</div>
     <div class="osm-controls">
