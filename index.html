@@ -252,7 +252,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 .sheet-header-name{font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
 .sheet-close{background:var(--surf2);border:1px solid var(--bdr);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;color:var(--td);flex-shrink:0;line-height:1;-webkit-user-select:none;user-select:none}
 .sheet-close:active{background:var(--surf3)}
-.sscroll{overflow-y:auto;flex:1;padding:14px 18px 100px;-webkit-overflow-scrolling:touch}
+.sscroll{overflow-y:auto;flex:1;padding:14px 18px 16px;-webkit-overflow-scrolling:touch}
 
 /* TIER BADGE IN SHEET */
 .tier-badge{display:inline-flex;align-items:center;gap:5px;border-radius:20px;padding:4px 10px;font-family:'DM Mono',monospace;font-size:.68rem;font-weight:500;margin-bottom:10px;border:1px solid}
@@ -302,7 +302,19 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 .note-area{width:100%;background:var(--surf3);border:1px solid var(--bdr);border-radius:6px;padding:8px 10px;color:var(--txt);font-family:'DM Sans',sans-serif;font-size:.82rem;resize:none;min-height:60px;line-height:1.5;outline:none;transition:border-color .2s}
 .note-area:focus{border-color:var(--gd)}
 .note-save{margin-top:6px;background:none;border:1px solid var(--bdr);color:var(--td);border-radius:6px;padding:5px 12px;font-family:'DM Sans',sans-serif;font-size:.75rem;cursor:pointer}
-.crow{display:flex;gap:9px;align-items:center;margin-bottom:8px}
+.crow{display:flex;gap:9px;align-items:center;margin-bottom:0}
+.sheet-footer{flex-shrink:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--bdr);background:var(--surf)}
+.sheet-footer:empty{display:none}
+.route-show-btn{width:100%;background:var(--surf2);border:1px solid var(--gold);color:var(--gold);border-radius:10px;padding:11px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.85rem;cursor:pointer;margin-bottom:8px;-webkit-user-select:none;user-select:none}
+.route-show-btn:active{transform:scale(.98)}
+.route-show-btn:disabled{opacity:.6}
+.nav-banner{position:fixed;top:64px;left:12px;right:12px;z-index:520;background:var(--surf);border:1.5px solid var(--gold);border-radius:14px;padding:10px 12px;box-shadow:0 6px 24px rgba(0,0,0,.4);display:none;align-items:center;gap:12px}
+.nav-banner.show{display:flex}
+.nav-icon{font-size:26px;flex-shrink:0}
+.nav-mid{flex:1;min-width:0}
+.nav-text{font-family:'DM Sans',sans-serif;font-weight:600;font-size:.92rem;color:var(--txt,#e8e2d5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-dist{font-family:'DM Mono',monospace;font-size:.72rem;color:var(--gold);margin-top:1px}
+.nav-close{background:none;border:none;color:var(--td);font-size:18px;cursor:pointer;flex-shrink:0;line-height:1}
 .dbadge{background:var(--surf2);border:1px solid var(--bdr);border-radius:var(--r);padding:10px 11px;font-family:'DM Mono',monospace;font-size:.7rem;color:var(--td);text-align:center;white-space:nowrap;flex-shrink:0;min-width:72px;line-height:1.4}
 .dbadge.near{border-color:var(--green);color:var(--green)}
 .cbtn{flex:1;background:var(--gold);color:#0e0c09;border:none;border-radius:12px;padding:14px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.93rem;cursor:pointer;transition:all .2s;-webkit-user-select:none;user-select:none}
@@ -931,6 +943,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
     <button class="sheet-close" onclick="closeSheet()">✕</button>
   </div>
   <div class="sscroll" id="sheetContent"></div>
+  <div class="sheet-footer" id="sheetFooter"></div>
 </div>
 
 
@@ -1251,7 +1264,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
   <div class="review-sheet">
     <div class="review-handle"></div>
     <div class="review-title">How's the exploring going? 🗺</div>
-    <div class="review-sub" id="reviewSub">Surinkti <strong id="reviewCount">3</strong> spots — care to share thoughts?</div>
+    <div class="review-sub" id="reviewSub">Collected <strong id="reviewCount">3</strong> spots — care to share thoughts?</div>
     <div class="review-stars" id="reviewStars">
       <span class="review-star" data-v="1" onclick="setReviewStar(1)">⭐</span>
       <span class="review-star" data-v="2" onclick="setReviewStar(2)">⭐</span>
@@ -1283,11 +1296,18 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
   <button class="prox-btn" id="proxBtn" onclick="collectFromProx()">⭐ Collect spot!</button>
 </div>
 
+<!-- NAV BANNER (per-spot route) -->
+<div class="nav-banner" id="navBanner">
+  <span class="nav-icon" id="navIcon">🧭</span>
+  <div class="nav-mid"><div class="nav-text" id="navText">—</div><div class="nav-dist" id="navDist"></div></div>
+  <button class="nav-close" onclick="clearSpotRoute()" title="Close route">✕</button>
+</div>
+
 <!-- FAB (add spot) — admin only -->
 <div class="fab" id="adminFab" onclick="openEditor(null)" style="bottom:140px;display:none">+</div>
 
 <!-- SURPRISE FAB -->
-<div class="surprise-fab" onclick="surpriseMe()" title="Staigmena!">🎲</div>
+<div class="surprise-fab" onclick="surpriseMe()" title="Surprise!">🎲</div>
 
 <!-- AUTH BAR -->
 <div class="auth-bar hidden" id="authBar">
@@ -1836,6 +1856,7 @@ let routes=[]; // [{id,name,spots:[spotId,...],created,distKm,durationMin}]
 let activeRouteId=null;
 let routeFilterActive=false;
 let _routePolyline=null;
+let _spotRouteLayer=null,_spotRouteSteps=null,_spotRouteSpot=null;
 let _routeEditMode=false;
 let _routeEditRouteId=null;
 let selectedSpot=null,userLat=null,userLng=null;
@@ -2021,7 +2042,7 @@ function updateSettingsUI(){
   // hideCollected=true means spots ARE hidden → toggle should be OFF (not showing)
   // toggle ON = showing collected, toggle OFF = hidden
   if(collToggle){collToggle.classList.toggle('on',!hideCollected);}
-  if(collSub){collSub.textContent=hideCollected?'Hidden':'Rodomos';}
+  if(collSub){collSub.textContent=hideCollected?'Hidden':'Shown';}
 }
 function toggleHideCollected(){
   hideCollected=!hideCollected;
@@ -2517,7 +2538,7 @@ function showGpsDeniedBanner(){
   const b=document.createElement('div');
   b.id='gpsDeniedBanner';
   b.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:800;background:var(--surf);border:1px solid var(--gold);border-radius:16px;padding:10px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,.4);font-family:\'DM Sans\',sans-serif;font-size:.82rem;color:var(--txt);white-space:nowrap';
-  b.innerHTML=`<span>📍 GPS disabled</span><button onclick="retryGPS()" style="background:var(--gold);color:#0e0c09;border:none;border-radius:10px;padding:6px 12px;font-family:\'DM Sans\',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer">Leisti GPS</button><button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--tm);font-size:1rem;cursor:pointer;padding:0 2px">✕</button>`;
+  b.innerHTML=`<span>📍 GPS disabled</span><button onclick="retryGPS()" style="background:var(--gold);color:#0e0c09;border:none;border-radius:10px;padding:6px 12px;font-family:\'DM Sans\',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer">Allow GPS</button><button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--tm);font-size:1rem;cursor:pointer;padding:0 2px">✕</button>`;
   document.body.appendChild(b);
 }
 function retryGPS(){
@@ -2538,8 +2559,8 @@ function refreshGPS(){
     else userMarker=L.circleMarker([userLat,userLng],{radius:9,fillColor:'#c9a84c',color:'#e8c878',weight:2,fillOpacity:.95}).addTo(map);
     wxLoaded=false;fetchWeather(userLat,userLng);
     checkProximity();
-    toast('📍 GPS updateds','success');
-  },()=>{toast('📍 GPS klaida','info');},{enableHighAccuracy:true,timeout:10000});
+    toast('📍 GPS updated','success');
+  },()=>{toast('📍 GPS error','info');},{enableHighAccuracy:true,timeout:10000});
 }
 
 const PROX_DISPLAY_RADIUS=300; // metres — when prox popup shows
@@ -2547,6 +2568,8 @@ const GPS_VIEW_RADIUS=50000; // 50km — only show spots within this range when 
 
 function checkProximity(){
   if(userLat===null) return;
+  updateSpotRoute(); // Feature 6: refresh nav banner each GPS tick
+  if(document.getElementById('sheet').classList.contains('open')) return; // B1: sheet open — suppress popup
   // Lock: if a collect prompt is already active, don't switch to another spot
   if(_collectPromptActive) return;
   // Global 5s cooldown after any popup was shown
@@ -2577,10 +2600,10 @@ function checkProximity(){
       const inForce=bestDist<=(best.cat==='hidden'?200:r*2);
       const distEl=document.getElementById('proxDist');
       const proxBtn=document.getElementById('proxBtn');
-      if(distEl) distEl.textContent=inZone?`📍 Tu zonoje! Gali surinkti`:`📍 ${Math.round(bestDist)}m (zona: ${r}m)`;
+      if(distEl) distEl.textContent=inZone?`📍 You're in the zone!`:`📍 ${Math.round(bestDist)}m`;
       if(proxBtn){
         if(inZone){proxBtn.textContent='⭐ Collect spot!';proxBtn.style.opacity='1';}
-        else if(inForce){proxBtn.textContent=`📍 Surinkti (GPS netikslus?)`;proxBtn.style.opacity='1';}
+        else if(inForce){proxBtn.textContent='⭐ Collect spot!';proxBtn.style.opacity='1';}
         else{proxBtn.textContent='⭐ Collect spot!';proxBtn.style.opacity='0.4';}
       }
       return;
@@ -2592,11 +2615,11 @@ function checkProximity(){
     document.getElementById('proxName').textContent=best.cat==='hidden'?'??? Hidden spot':best.name;
     const inZone=bestDist<=r;
     const inForce=bestDist<=(best.cat==='hidden'?200:r*2);
-    document.getElementById('proxDist').textContent=inZone?`📍 Tu zonoje! Gali surinkti`:`📍 ${Math.round(bestDist)}m (zona: ${r}m)`;
+    document.getElementById('proxDist').textContent=inZone?`📍 You're in the zone!`:`📍 ${Math.round(bestDist)}m`;
     const proxBtn=document.getElementById('proxBtn');
     if(proxBtn){
       if(inZone){proxBtn.textContent='⭐ Collect spot!';proxBtn.style.opacity='1';}
-      else if(inForce){proxBtn.textContent=`📍 Surinkti (GPS netikslus?)`;proxBtn.style.opacity='1';}
+      else if(inForce){proxBtn.textContent='⭐ Collect spot!';proxBtn.style.opacity='1';}
       else{proxBtn.textContent='⭐ Collect spot!';proxBtn.style.opacity='0.4';}
     }
     document.getElementById('proxPopup').classList.add('show');
@@ -2627,18 +2650,7 @@ function collectFromProx(){
     const d=dist(userLat,userLng,s.lat,s.lng);
     const r=spotRadius(s);
     const forceR=s.cat==='hidden'?200:r*2;
-    if(d>forceR){toast(`📍 Per toli (${Math.round(d)}m)`,'info');return;}
-    if(d>r){
-      const btn=document.getElementById('proxBtn');
-      if(btn&&!btn.dataset.forceConfirm){
-        btn.dataset.forceConfirm='1';
-        btn.textContent='⚠️ Confirm collection?';
-        setTimeout(()=>{if(btn.dataset.forceConfirm){delete btn.dataset.forceConfirm;checkProximity();}},4000);
-        toast('📍 GPS imprecise? Tap again to confirm.','info');
-        return;
-      }
-      if(btn) delete btn.dataset.forceConfirm;
-    }
+    if(d>forceR){toast(`📍 Too far (${Math.round(d)}m)`,'info');return;}
   }
   hideProxPopup();
   selectedSpot=s;
@@ -2659,12 +2671,78 @@ function updateDist(spot){
   if(userLat===null){el.textContent='No GPS';el.className='dbadge';return;}
   const d=dist(userLat,userLng,spot.lat,spot.lng);
   const r=spotRadius(spot);
-  if(d<=r){el.innerHTML='📍 Tu zonoje!';el.className='dbadge near';}
+  if(d<=r){el.innerHTML='📍 In zone!';el.className='dbadge near';}
   else{
     const lbl=d<1000?`${Math.round(d)}m`:`${(d/1000).toFixed(1)}km`;
     el.innerHTML=`${lbl}<br><span style="font-size:.6rem;color:var(--tm)">~${walkMin(d)} min.</span>`;
     el.className='dbadge';
   }
+}
+
+// ═══════════ PER-SPOT ROUTE / NAV (OSRM, in-app) ═══════════
+function fmtRouteDist(d){ return d<1000?`${Math.round(d)} m`:`${(d/1000).toFixed(1)} km`; }
+function spotManeuver(step){
+  const m=step.maneuver||{}; const mod=m.modifier||'';
+  const icons={'left':'⬅️','right':'➡️','slight left':'↖️','slight right':'↗️','sharp left':'⬅️','sharp right':'➡️','straight':'⬆️','uturn':'↩️'};
+  const txt={'left':'Turn left','right':'Turn right','slight left':'Bear left','slight right':'Bear right','sharp left':'Sharp left','sharp right':'Sharp right','straight':'Continue straight','uturn':'Make a U-turn'};
+  if(m.type==='depart') return {icon:'🧭',text:'Start heading out'};
+  if(m.type==='arrive') return {icon:'🏁',text:'Arrive at spot'};
+  if(m.type==='roundabout'||m.type==='rotary') return {icon:'🔄',text:'At the roundabout'};
+  return {icon:icons[mod]||'⬆️', text:txt[mod]||'Continue'};
+}
+function clearSpotRoute(){
+  if(_spotRouteLayer){ try{map.removeLayer(_spotRouteLayer);}catch(e){} _spotRouteLayer=null; }
+  _spotRouteSteps=null; _spotRouteSpot=null;
+  const b=document.getElementById('navBanner'); if(b) b.classList.remove('show');
+}
+async function showRouteToSpot(spot){
+  if(!spot) return;
+  if(userLat===null){ toast('📍 Enable GPS to show the route','info'); return; }
+  clearSpotRoute(); _spotRouteSpot=spot;
+  const btn=document.getElementById('routeShowBtn');
+  if(btn){ btn.textContent='⏳ Finding route…'; btn.disabled=true; }
+  try{
+    const url=`https://router.project-osrm.org/route/v1/driving/${userLng},${userLat};${spot.lng},${spot.lat}?overview=full&geometries=geojson&steps=true`;
+    const res=await fetch(url,{signal:AbortSignal.timeout(12000)});
+    if(!res.ok) throw new Error('osrm '+res.status);
+    const data=await res.json();
+    const route=data.routes&&data.routes[0];
+    if(!route) throw new Error('no route');
+    const coords=route.geometry.coordinates.map(c=>[c[1],c[0]]);
+    _spotRouteLayer=L.polyline(coords,{color:'#c9a84c',weight:5,opacity:.85,lineCap:'round',lineJoin:'round'}).addTo(map);
+    _spotRouteSteps=(route.legs&&route.legs[0]&&route.legs[0].steps)||[];
+    const km=(route.distance/1000).toFixed(1), min=Math.round(route.duration/60);
+    setTimeout(()=>toast(`🧭 ${km} km · ~${min} min by car`,'success'),300);
+  }catch(e){
+    _spotRouteLayer=L.polyline([[userLat,userLng],[spot.lat,spot.lng]],{color:'#c9a84c',weight:4,opacity:.7,dashArray:'8,8'}).addTo(map);
+    _spotRouteSteps=null;
+    setTimeout(()=>toast('📍 Straight line (route server unavailable)','info'),300);
+  }
+  try{ _spotRouteLayer.bringToFront(); map.fitBounds(_spotRouteLayer.getBounds(),{padding:[60,80],maxZoom:16}); }catch(e){}
+  document.getElementById('sheet').classList.remove('open');
+  document.getElementById('sback').classList.remove('open');
+  document.getElementById('navBanner').classList.add('show');
+  if(btn){ btn.textContent='🧭 Show route'; btn.disabled=false; }
+  updateSpotRoute();
+}
+function updateSpotRoute(){
+  if(!_spotRouteLayer||!_spotRouteSpot||userLat===null) return;
+  const banner=document.getElementById('navBanner'); if(!banner) return;
+  const ic=banner.querySelector('#navIcon'), tx=banner.querySelector('#navText'), ds=banner.querySelector('#navDist');
+  const dDest=dist(userLat,userLng,_spotRouteSpot.lat,_spotRouteSpot.lng);
+  if(dDest<=spotRadius(_spotRouteSpot)){ ic.textContent='🏁'; tx.textContent="You've arrived!"; ds.textContent=''; return; }
+  if(_spotRouteSteps&&_spotRouteSteps.length){
+    let best=null,bestD=Infinity;
+    for(const st of _spotRouteSteps){
+      const mt=st.maneuver&&st.maneuver.type;
+      if(mt==='depart'||mt==='arrive') continue;
+      const loc=st.maneuver&&st.maneuver.location; if(!loc) continue;
+      const d=dist(userLat,userLng,loc[1],loc[0]);
+      if(d<bestD){ bestD=d; best=st; }
+    }
+    if(best){ const lab=spotManeuver(best); ic.textContent=lab.icon; tx.textContent=lab.text; ds.textContent=`in ${fmtRouteDist(bestD)}`; return; }
+  }
+  ic.textContent='🧭'; tx.textContent=_spotRouteSpot.name||'Spot'; ds.textContent=`${fmtRouteDist(dDest)} away`;
 }
 
 // ═══════════ WEATHER ═══════════
@@ -2863,7 +2941,7 @@ function renderQuestCard(){
         <div class="quest-title">Visit ${target} spot${target===1?'':'s'} today</div>
       </div>
     </div>
-    <div class="quest-reward">🌟 Atlygis: +10 XP</div>
+    <div class="quest-reward">🌟 Reward: +10 XP</div>
     <div class="quest-pbar"><div class="quest-pfill" style="width:${done?100:pct}%"></div></div>
     <div class="quest-status">${done?'Awesome! Come back tomorrow.':`${prog} / ${target} collected today`}</div>
   </div>`;
@@ -3016,16 +3094,15 @@ function openSheet(spot){
       ${(!histFull&&!locked)?`<div id="wikiDescBox"></div>`:''}
       ${isF?`<div class="note-box"><div class="note-t">📝 My note</div><textarea class="note-area" id="noteArea" placeholder="Add your thoughts...">${notes[spot.id]||''}</textarea><button class="note-save" onclick="saveNote()">Save</button></div>`:''}
       
-      <div class="area-hint">📡 Collection zone: ${r}m from spot</div>
-      <div class="crow">
-        <div class="dbadge" id="distBadge">—</div>
-        <button class="${isF?'cbtn done':'cbtn gps-wait'}" id="collectBtn" onclick="collectCurrent()">${isF?'✓ Collected':'⌛ Get closer'}</button>
-        <button class="editbtn" id="favBtn" onclick="toggleSpotInActiveRoute()" title="Add to route" style="font-size:18px;padding:10px 12px">＋</button>
-        ${(window._fbUser&&ADMIN_UIDS.includes(window._fbUser.uid))?'<button class="editbtn" onclick="openEditor(selectedSpot)">✏️</button>':''}
-      </div>
     `;
   }
 
+  const _footer=document.getElementById('sheetFooter');
+  if(_footer){
+    _footer.innerHTML = locked ? '' : `<button class="route-show-btn" id="routeShowBtn" onclick="showRouteToSpot(selectedSpot)">🧭 Show route</button><div class="crow"><div class="dbadge" id="distBadge">—</div><button class="${isF?'cbtn done':'cbtn gps-wait'}" id="collectBtn" onclick="collectCurrent()">${isF?'✓ Collected':'⌛ Get closer'}</button><button class="editbtn" id="favBtn" onclick="toggleSpotInActiveRoute()" title="Add to route" style="font-size:18px;padding:10px 12px">＋</button>${(window._fbUser&&ADMIN_UIDS.includes(window._fbUser.uid))?'<button class="editbtn" onclick="openEditor(selectedSpot)">✏️</button>':''}</div>`;
+  }
+  hideProxPopup();   // B1: don't let the proximity popup cover the footer
+  clearSpotRoute();  // clear any prior per-spot route when opening a new spot
   updateDist(spot);
   updateCollectBtn(spot);
   updateFavBtn();
@@ -3060,13 +3137,13 @@ function updateCollectBtn(spot){
   const r=spotRadius(spot);
   const FORCE_RADIUS=spot.cat==='hidden'?200:r*2;
   if(d<=r){
-    btn.textContent='⭐ Surinkti!';btn.className='cbtn gps-close';
+    btn.textContent='⭐ Collect!';btn.className='cbtn gps-close';
   } else if(d<=FORCE_RADIUS){
     const lbl=Math.round(d)+'m';
-    btn.textContent=`📍 Surinkti (GPS netikslus? ${lbl})`;btn.className='cbtn gps-force';
+    btn.textContent=`📍 Collect (GPS off? ${lbl})`;btn.className='cbtn gps-force';
   } else {
     const lbl=d<1000?`${Math.round(d)}m`:`${(d/1000).toFixed(1)}km`;
-    btn.textContent=`📍 Get closer (zone: ${r}m)`;btn.className='cbtn gps-wait';
+    btn.textContent='📍 Get closer';btn.className='cbtn gps-wait';
   }
 }
 
@@ -3103,21 +3180,9 @@ function collectCurrent(){
   const d=dist(userLat,userLng,selectedSpot.lat,selectedSpot.lng);
     const r=spotRadius(selectedSpot);
     const FORCE_RADIUS=selectedSpot.cat==='hidden'?200:r*2;
-    if(d>r&&d<=FORCE_RADIUS){
-      // Show force-collect confirmation
-      const btn=document.getElementById('collectBtn');
-      if(btn&&!btn.dataset.forceConfirm){
-        btn.dataset.forceConfirm='1';
-        btn.textContent=`⚠️ Confirm (${Math.round(d)}m from spot)`;
-        btn.className='cbtn gps-force';
-        setTimeout(()=>{if(btn.dataset.forceConfirm){delete btn.dataset.forceConfirm;updateCollectBtn(selectedSpot);}},4000);
-        toast('📍 GPS may be imprecise. Tap again to confirm.','info');
-        return;
-      }
-      if(btn) delete btn.dataset.forceConfirm;
-    } else if(d>r){
+    if(d>FORCE_RADIUS){
       const lbl=d<1000?`${Math.round(d)}m`:`${(d/1000).toFixed(1)}km`;
-      toast(`📍 Per toli! Zona: ${r}m (tu: ${lbl})`,'info');
+      toast(`📍 Too far (${lbl})`,'info');
       return;
     }
   const prevPlayerLevel=getPlayerLevel(totalXP);
@@ -3264,7 +3329,7 @@ function renderAboutMe(){
         <div style="font-size:32px">${lv.icon}</div>
         <div style="flex:1;min-width:0">
           <div style="font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--gold)">Lv.${lv.level} — ${lv.name}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:.68rem;color:var(--td);margin-top:3px">${nxt?`Kitas: Lv.${nxt.level} ${nxt.name} (${xpLeft} XP)`:'Maksimalus lygis! 👑'}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.68rem;color:var(--td);margin-top:3px">${nxt?`Next: Lv.${nxt.level} ${nxt.name} (${xpLeft} XP)`:'Max level! 👑'}</div>
         </div>
       </div>
       <div style="height:7px;background:var(--bdr);border-radius:4px;overflow:hidden">
@@ -3488,7 +3553,7 @@ function renderWeeklyChallenge(){
         <div class="quest-title">${ch.label}</div>
       </div>
     </div>
-    <div class="quest-reward">🌟 Atlygis: +${ch.xp} XP</div>
+    <div class="quest-reward">🌟 Reward: +${ch.xp} XP</div>
     <div class="quest-pbar"><div class="quest-pfill" style="width:${done?100:pct}%"></div></div>
     <div class="quest-status">${done?'Awesome! New quest next Monday.':`${prog} / ${ch.goal} collected`}</div>
   </div>`;
@@ -3710,7 +3775,7 @@ function renderNearbySuggestions(){
     </div>`;
   }).join('');
   return`<div class="streak-card" style="margin-bottom:8px">
-    <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--gold);margin-bottom:8px">📍 Netoliese (iki ${MAX_DIST}m)</div>
+    <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--gold);margin-bottom:8px">📍 Nearby (within ${MAX_DIST}m)</div>
     ${items}
   </div>`;
 }
@@ -4269,7 +4334,7 @@ function renderLevelCard(){
       <div class="lc-icon">${lv.icon}</div>
       <div class="lc-info">
         <div class="lc-title">Lv.${lv.level} — ${lv.name}</div>
-        <div class="lc-sub">${nxt?`Kitas: Lv.${nxt.level} ${nxt.name} (${xpLeft} XP)`:'Maksimalus lygis! 👑'}</div>
+        <div class="lc-sub">${nxt?`Next: Lv.${nxt.level} ${nxt.name} (${xpLeft} XP)`:'Max level! 👑'}</div>
       </div>
     </div>
     <div class="lc-bar"><div class="lc-fill" style="width:${pct}%"></div></div>
@@ -6290,7 +6355,7 @@ function renderRoutesInto(body){
 
 function _buildAutoGenSection(){
   return`<div style="margin:14px 14px 0;padding-top:14px;border-top:1px solid var(--bdr)">
-    <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">⚡ Auto routetas</div>
+    <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">⚡ Auto-routed</div>
     <div style="display:flex;gap:8px;margin-bottom:8px">
       <select id="autoGenCat" style="flex:1;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;padding:8px 10px;font-family:'DM Sans',sans-serif;font-size:.8rem;color:var(--txt);outline:none">
         ${Object.entries(CATS).filter(([k])=>k!=='hidden').map(([k,v])=>`<option value="${k}">${v.emoji} ${v.label}</option>`).join('')}
@@ -6357,7 +6422,7 @@ function renderRouteDetailInto(r,body,routeId){
     </div>
     <div style="padding:8px 14px;display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--bdr)">
       <button onclick="setActiveRoute('${routeId}')" style="flex:1;background:${isActive?'rgba(201,168,76,.15)':'var(--surf2)'};border:1px solid ${isActive?'var(--gold)':'var(--bdr)'};border-radius:8px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:.78rem;color:${isActive?'var(--gold)':'var(--td)'};cursor:pointer">${isActive?'▶ Aktyvus':'▷ Aktyvuoti'}</button>
-      <button onclick="optimizeRoute('${routeId}')" style="flex:1;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:.78rem;color:var(--td);cursor:pointer">⚡ Optimizuoti</button>
+      <button onclick="optimizeRoute('${routeId}')" style="flex:1;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:.78rem;color:var(--td);cursor:pointer">⚡ Optimize</button>
       <button onclick="navigateToNext()" style="flex:1;background:var(--gold);color:#0e0c09;border:none;border-radius:8px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer" ${!isActive?'disabled style="flex:1;opacity:.4;background:var(--gold);color:#0e0c09;border:none;border-radius:8px;padding:7px 10px;font-family:DM Sans,sans-serif;font-size:.78rem;font-weight:600;cursor:default"':''}>→ Navigacija</button>
     </div>
     <div style="padding:6px 14px 8px;border-bottom:1px solid var(--bdr)">
@@ -6602,7 +6667,7 @@ maybeShowAuthOnFirstVisit();
   // Register service worker for offline caching
   if('serviceWorker' in navigator){
     const swCode=`
-const CACHE='spotseekers-usa-v2';
+const CACHE='spotseekers-usa-v3';
 const SPOTS_CACHE='ss-spots-v1';
 const PRECACHE=['/'];
 self.addEventListener('install',e=>{
