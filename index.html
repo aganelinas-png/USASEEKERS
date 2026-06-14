@@ -1391,7 +1391,7 @@ const TIER_CONFIG={
 
 // Default collection radius per spot in metres (can be overridden per spot)
 const DEFAULT_RADIUS=80;
-const APP_VERSION='usa-1.2';
+const APP_VERSION='usa-1.3';
 
 // Per-category sensible defaults — used when no explicit radius is set
 const CAT_DEFAULT_RADIUS={
@@ -1812,7 +1812,7 @@ async function requestStatesForViewport(){
   _stateReqBusy=true;
   try{
     const loaded=await ensureStatesLoaded(statesForBounds(map.getBounds()));
-    if(loaded){refreshMarkers();updateAll();if(typeof renderList==='function')renderList();}
+    if(loaded){refreshMarkers();updateAll();} // map markers follow viewport; Spots list does NOT (state-picker driven)
   }catch(e){console.warn('viewport state load',e);}
   finally{
     _stateReqBusy=false;
@@ -1849,6 +1849,9 @@ function compactSpot(s){
 }
 
 let found=new Set();
+let foundState={};          // id(string) → 2-letter state code; the per-state breakdown source
+let _spotsPanelState=null;  // currently selected state in the Spots panel (no viewport auto-follow)
+let _fsBackfillDone=false;  // one-time-per-session guard for the foundState backfill
 let streak=0,lastDate=null,notes={},earnedBadges=new Set();
 let favorites=new Set(); // kept for legacy compat — not used in UI
 // ── Routes state ──
@@ -1979,6 +1982,8 @@ function load(){
       else if(_fp.US){found=new Set(_fp.US);}else if(_fp.LT){found=new Set(_fp.LT);}// US format, LT legacy fallback
     }catch(e){}
   }
+  const _fsraw=localStorage.getItem('ke7_foundstate');
+  if(_fsraw){try{foundState=JSON.parse(_fsraw)||{};}catch(e){foundState={};}}
   streak=parseInt(localStorage.getItem('ke7_streak')||'0');
   lastDate=localStorage.getItem('ke7_lastDate')||null;
   const n=localStorage.getItem('ke7_notes');notes=n?JSON.parse(n):{};
@@ -3187,6 +3192,7 @@ function collectCurrent(){
     }
   const prevPlayerLevel=getPlayerLevel(totalXP);
   found.add(selectedSpot.id);
+  foundState[String(selectedSpot.id)]=selectedSpot.st||assignState(selectedSpot.lat,selectedSpot.lng);
   updateStreak();
   // XP for collecting — bonus for higher-tier spots
   const spotTier=selectedSpot.tier||1;
@@ -3200,7 +3206,7 @@ function collectCurrent(){
   if(window._fbUser&&window._fb){
     const{db,doc,setDoc}=window._fb;
     setDoc(doc(db,'users',window._fbUser.uid),{
-      found:{US:[...found]},totalXP,streak,badges:[...earnedBadges],name:playerName
+      found:{US:[...found]},foundState,totalXP,streak,badges:[...earnedBadges],name:playerName
     },{merge:true}).catch(()=>{});
   }
 
@@ -3310,8 +3316,6 @@ function renderAboutMe(){
   const pct=getLevelProgress(totalXP);
   const xpLeft=nxt?nxt.xp-totalXP:0;
 
-  const t1c=t1Collected(),t2c=t2Collected(),t3c=t3Collected();
-
   function statCard(label,value,sub,color){
     return`<div style="background:var(--surf2);border:1px solid var(--bdr);border-radius:10px;padding:12px 14px;flex:1;min-width:0">
       <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--tm);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">${label}</div>
@@ -3340,7 +3344,7 @@ function renderAboutMe(){
 
     <!-- Quick stats row -->
     <div style="display:flex;gap:8px">
-      ${statCard('Collected',found.size,`of ${SPOTS.filter(s=>s.cat!=='hidden').length}`,'var(--gold)')}
+      ${statCard('Collected',found.size,`of ${totalSpots().toLocaleString()}`,'var(--gold)')}
       ${statCard('Streak',streak>0?streak+'d':'—',streak>0?'days in a row':'start today',streak>=2?'var(--gold)':'var(--txt)')}
     </div>
 
@@ -3349,10 +3353,10 @@ function renderAboutMe(){
     <div style="background:var(--surf2);border:1px solid var(--bdr);border-radius:10px;padding:11px 14px">
       <div style="display:flex;justify-content:space-between;margin-bottom:6px">
         <span style="font-size:.82rem;font-weight:700;color:var(--txt)">Spots collected</span>
-        <span style="font-family:'DM Mono',monospace;font-size:.75rem;color:var(--gold);font-weight:600">${found.size} / ${SPOTS.filter(s=>s.cat!=='hidden').length.toLocaleString()}</span>
+        <span style="font-family:'DM Mono',monospace;font-size:.75rem;color:var(--gold);font-weight:600">${found.size} / ${totalSpots().toLocaleString()}</span>
       </div>
       <div style="height:6px;background:var(--bdr);border-radius:3px;overflow:hidden">
-        <div style="height:100%;width:${Math.round(found.size/Math.max(1,SPOTS.filter(s=>s.cat!=='hidden').length)*100)}%;background:linear-gradient(90deg,var(--gd),var(--gold));border-radius:3px;transition:width .5s"></div>
+        <div style="height:100%;width:${Math.round(found.size/Math.max(1,totalSpots())*100)}%;background:linear-gradient(90deg,var(--gd),var(--gold));border-radius:3px;transition:width .5s"></div>
       </div>
       <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--td);margin-top:5px">${(()=>{const n=getNextLevel(totalXP);return n?`${(n.xp-totalXP).toLocaleString()} XP to Level ${getPlayerLevel(totalXP)+1}`:'Max level reached 💎';})()}</div>
     </div>
@@ -3361,12 +3365,13 @@ function renderAboutMe(){
         <span style="font-size:.82rem;font-weight:700;color:var(--txt)">Collected</span>
         <span style="font-family:'DM Mono',monospace;font-size:.75rem;color:var(--txt)">${found.size} spot${found.size===1?'':'s'}</span>
       </div>
-      <div style="display:flex;gap:8px;font-family:'DM Mono',monospace;font-size:.62rem;color:var(--td);flex-wrap:wrap">
-        <span>🔴 T1: ${t1c}</span>
-        <span>🟡 T2: ${t2c}</span>
-        <span>🔵 T3: ${t3c}</span>
-        <span>⚪ T4: ${t4Collected()}</span>
+      <div style="display:flex;gap:10px;font-family:'DM Mono',monospace;font-size:.62rem;color:var(--td);flex-wrap:wrap">
+        <span>🔴 Landmark</span>
+        <span>🟡 National</span>
+        <span>🔵 State</span>
+        <span>⚪ Local</span>
       </div>
+      <div style="font-family:'DM Mono',monospace;font-size:.56rem;color:var(--tm);margin-top:5px">Tier counts per state are in the Spots tab.</div>
     </div>
 
     <!-- Daily quest -->
@@ -3381,8 +3386,8 @@ function renderAboutMe(){
     <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.08em;margin-bottom:-4px">Weekly challenge</div>
     <div id="aboutMeWeekly">${renderWeeklyChallenge()}</div>
 
-    <!-- City completion -->
-    <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.08em;margin-bottom:-4px">City completion</div>
+    <!-- Progress by state -->
+    <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.08em;margin-bottom:-4px">Progress by state</div>
     <div id="aboutMeStates">${renderStateConquest()}</div>
     <div id="aboutMeCity">${renderCityCompletion()}</div>
 
@@ -3675,12 +3680,25 @@ function getCityStats(){
 }
 
 // ═══════════ STATE CONQUEST ═══════════
+// Per-state collected counts come from foundState (id→code, global, viewport-independent).
+// Per-state totals come from the precomputed OVERVIEW. Only states with ≥1 collected appear.
 function getStateStats(){
+  if(OVERVIEW&&OVERVIEW.states&&!_legacySpotMode){
+    const done={};
+    for(const id in foundState){const st=foundState[id];if(st)done[st]=(done[st]||0)+1;}
+    return Object.keys(done).map(code=>{
+      const total=(OVERVIEW.states[code]&&OVERVIEW.states[code].count)||0;
+      const d=done[code];
+      return{state:code,done:d,total,pct:total?Math.round(d/total*1000)/10:0};
+    });
+  }
+  // Legacy fallback (pre-migration KV, no overview): derive from whatever is loaded.
   const m=new Map();
   for(const s of SPOTS){
-    if(!s.state||s.cat==='hidden') continue;
-    let e=m.get(s.state);
-    if(!e){e={state:s.state,total:0,done:0};m.set(s.state,e);}
+    const code=s.st||s.state;
+    if(!code||s.cat==='hidden') continue;
+    let e=m.get(code);
+    if(!e){e={state:code,total:0,done:0};m.set(code,e);}
     e.total++;
     if(found.has(s.id)) e.done++;
   }
@@ -3690,7 +3708,7 @@ function getStateStats(){
 function renderStateConquest(){
   const stats=getStateStats();
   if(!stats.length) return'';
-  const visited=stats.filter(s=>s.done>0).sort((a,b)=>b.pct-a.pct||b.done-a.done);
+  const visited=stats.filter(s=>s.done>0).sort((a,b)=>b.done-a.done||b.pct-a.pct);
   const totalStates=stats.length;
   const conquered=stats.filter(s=>s.pct>=100).length;
 
@@ -3802,43 +3820,92 @@ function toggleCatList(catId){
   renderList();
 }
 
+// Which state the Spots panel is showing. Defaults to the user's GPS state,
+// then the state with the most collected spots, then the first available state.
+function spotsPanelState(){
+  if(_spotsPanelState&&(_legacySpotMode||!OVERVIEW||!OVERVIEW.states||OVERVIEW.states[_spotsPanelState])) return _spotsPanelState;
+  let code=null;
+  if(userLat!==null&&userLng!==null) code=assignState(userLat,userLng);
+  if(!code||(OVERVIEW&&OVERVIEW.states&&!OVERVIEW.states[code])){
+    const done={};for(const id in foundState){const st=foundState[id];if(st)done[st]=(done[st]||0)+1;}
+    const collected=Object.keys(done).sort((a,b)=>done[b]-done[a]);
+    if(collected.length) code=collected[0];
+  }
+  if(!code&&OVERVIEW&&OVERVIEW.states){const ks=Object.keys(OVERVIEW.states).sort();if(ks.length)code=ks[0];}
+  if(!code){const ks=[...new Set(SPOTS.map(s=>s.st||s.state).filter(Boolean))].sort();if(ks.length)code=ks[0];}
+  _spotsPanelState=code;
+  return code;
+}
+
+function onSpotsStateChange(code){_spotsPanelState=code;renderList();}
+
+const TIER_WORD={1:'Landmark',2:'National',3:'State',4:'Local'};
+
 function renderList(){
   const body=document.getElementById('panel-vietos');
-  const visibleSpots=SPOTS.filter(s=>s.cat!=='hidden');
-  const pct=visibleSpots.length?Math.round(found.size/visibleSpots.length*100):0;
+  if(!body) return;
 
-  // Search bar + overall progress
+  const stateCodes=(OVERVIEW&&OVERVIEW.states&&!_legacySpotMode)
+    ? Object.keys(OVERVIEW.states).sort()
+    : [...new Set(SPOTS.map(s=>s.st||s.state).filter(Boolean))].sort();
+
+  const code=spotsPanelState();
+
+  // State picker + one-line explainer (no viewport auto-follow)
   let h=`<div style="padding:8px 0 4px">
-    <input id="spotSearchInput" placeholder="🔍 Search a spot..." oninput="renderList()"
-      style="width:100%;box-sizing:border-box;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:.78rem;color:var(--txt);outline:none">
+    <select id="spotsStateSelect" onchange="onSpotsStateChange(this.value)"
+      style="width:100%;box-sizing:border-box;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;padding:8px 10px;font-family:'DM Sans',sans-serif;font-size:.82rem;color:var(--txt);outline:none">
+      ${stateCodes.map(c=>`<option value="${c}"${c===code?' selected':''}>${c}${OVERVIEW&&OVERVIEW.states&&OVERVIEW.states[c]?` — ${OVERVIEW.states[c].count.toLocaleString()} spots`:''}</option>`).join('')}
+    </select>
   </div>
-  <div class="prog-h" style="margin-bottom:6px">
-    <div class="prog-row"><div class="prog-cnt">${found.size} / ${visibleSpots.length} collected</div><div class="streak-t">⭐ ${totalXP} XP</div></div>
-    <div class="pbar"><div class="pbf" style="width:${pct}%"></div></div>
+  <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--tm);padding:0 2px 6px">Showing your progress in ${code||'—'}. Pick another state to explore it.</div>`;
+
+  if(!code){body.innerHTML=h+`<div style="text-align:center;padding:24px;color:var(--tm);font-size:.8rem">Loading spots…</div>`;return;}
+
+  // Make sure the chosen state's pack is in memory (one KV fetch); re-render when ready.
+  if(!STATE_DATA.has(code)&&!_legacySpotMode){
+    body.innerHTML=h+`<div style="text-align:center;padding:24px;color:var(--tm);font-size:.8rem">Loading ${code}…</div>`;
+    ensureStatesLoaded([code]).then(()=>{if(_spotsPanelState===code)renderList();});
+    return;
+  }
+
+  const stSpots=(STATE_DATA.has(code)?STATE_DATA.get(code).spots:SPOTS.filter(s=>(s.st||s.state)===code))
+    .filter(s=>s.cat!=='hidden');
+
+  // Search within this state
+  h+=`<div style="padding:0 0 6px">
+    <input id="spotSearchInput" placeholder="🔍 Search in ${code}..." oninput="renderList()"
+      style="width:100%;box-sizing:border-box;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:.78rem;color:var(--txt);outline:none">
+  </div>`;
+
+  // Per-tier summary for the chosen state (explained, with counts)
+  const tierTot=[0,0,0,0,0],tierDone=[0,0,0,0,0];
+  for(const s of stSpots){const t=(s.tier>=1&&s.tier<=4)?s.tier:4;tierTot[t]++;if(found.has(s.id))tierDone[t]++;}
+  const doneHere=stSpots.filter(s=>found.has(s.id)).length;
+  h+=`<div style="background:var(--surf2);border:1px solid var(--bdr);border-radius:10px;padding:11px 14px;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+      <span style="font-size:.82rem;font-weight:700;color:var(--txt)">${code} — collected</span>
+      <span style="font-family:'DM Mono',monospace;font-size:.75rem;color:var(--gold);font-weight:600">${doneHere} / ${stSpots.length.toLocaleString()}</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:5px">
+      ${[1,2,3,4].map(t=>`<div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:.72rem;color:var(--txt);min-width:96px">${TIER_CONFIG[t].icon} ${TIER_WORD[t]}</span>
+        <div style="flex:1;height:4px;background:var(--bdr);border-radius:2px;overflow:hidden"><div style="height:100%;width:${tierTot[t]?Math.round(tierDone[t]/tierTot[t]*100):0}%;background:${TIER_CONFIG[t].color};border-radius:2px"></div></div>
+        <span style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);min-width:62px;text-align:right">${tierDone[t]}/${tierTot[t].toLocaleString()}</span>
+      </div>`).join('')}
+    </div>
   </div>`;
 
   const searchVal=(document.getElementById('spotSearchInput')?.value||'').toLowerCase().trim();
 
-  const unlockedSpots=SPOTS.filter(s=>{
-    if(!isSpotVisible(s)||s.cat==='hidden') return false;
-    return true;
-  });
-  const lockedSpots=SPOTS.filter(s=>!isSpotVisible(s)&&s.cat!=='hidden');
-
-  const allCats=FILTER_GROUPS.flatMap(g=>g.cats);
-  const extraCats=[...new Set(unlockedSpots.map(s=>s.cat))].filter(c=>!allCats.includes(c));
-  const orderedCats=[...new Set([...allCats,...extraCats])];
-
   if(searchVal){
-    // Flat search results
-    const results=unlockedSpots
-      .filter(s=>(s.name||'').toLowerCase().includes(searchVal))
+    const results=stSpots.filter(s=>(s.name||'').toLowerCase().includes(searchVal))
       .sort((a,b)=>(a.name||'').localeCompare(b.name||'','en'));
-    if(results.length===0){
-      h+=`<div style="text-align:center;padding:24px;color:var(--tm);font-size:.8rem">Nothing found</div>`;
-    } else {
+    if(!results.length){
+      h+=`<div style="text-align:center;padding:24px;color:var(--tm);font-size:.8rem">Nothing found in ${code}</div>`;
+    }else{
       h+=`<div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);padding:4px 2px;margin-bottom:2px">${results.length} result${results.length===1?'':'s'}</div>`;
-      results.forEach(s=>{
+      results.slice(0,300).forEach(s=>{
         const isF=found.has(s.id);
         const cat=CATS[s.cat]||CATS.history;
         let ds='';
@@ -3850,13 +3917,18 @@ function renderList(){
         </div>`;
       });
     }
-  } else {
-    // Static category rows — no expand, just count + progress
+  }else{
+    // Collected by category, scoped to this state
+    h+=`<div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.08em;padding:2px 2px 4px">By category</div>`;
+    const allCats=FILTER_GROUPS.flatMap(g=>g.cats);
+    const extraCats=[...new Set(stSpots.map(s=>s.cat))].filter(c=>!allCats.includes(c));
+    const orderedCats=[...new Set([...allCats,...extraCats])];
+    let any=false;
     orderedCats.forEach(catId=>{
-      const catSpots=unlockedSpots.filter(s=>s.cat===catId).sort((a,b)=>(a.name||'').localeCompare(b.name||'','en'));
+      const catSpots=stSpots.filter(s=>s.cat===catId);
       if(!catSpots.length) return;
-      const cat=CATS[catId];
-      if(!cat) return;
+      const cat=CATS[catId];if(!cat) return;
+      any=true;
       const collectedInCat=catSpots.filter(s=>found.has(s.id)).length;
       const pct2=catSpots.length?Math.round(collectedInCat/catSpots.length*100):0;
       h+=`<div style="display:flex;align-items:center;gap:8px;padding:10px 4px;border-bottom:1px solid var(--bdr)">
@@ -3868,21 +3940,12 @@ function renderList(){
         <span style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);white-space:nowrap">${collectedInCat}/${catSpots.length}</span>
       </div>`;
     });
-
-    // Locked — static count only, no expand
-    if(lockedSpots.length){
-      h+=`<div style="display:flex;align-items:center;gap:8px;padding:10px 4px;border-bottom:1px solid var(--bdr);opacity:.6">
-        <span style="font-size:1.1rem">🔒</span>
-        <div style="flex:1"><div style="font-size:.78rem;color:var(--tm);font-weight:600">Locked</div></div>
-        <span style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm)">${lockedSpots.length}</span>
-      </div>`;
-    }
+    if(!any) h+=`<div style="text-align:center;padding:20px;color:var(--tm);font-size:.78rem">No spots loaded for ${code} yet.</div>`;
   }
 
   body.innerHTML=h;
-  // Restore search value after re-render
   const si=document.getElementById('spotSearchInput');
-  if(si&&searchVal){si.value=searchVal;si.focus();}
+  if(si&&searchVal){si.value=searchVal;si.focus();si.setSelectionRange(searchVal.length,searchVal.length);}
 }
 
 function goToSpot(id){
@@ -6667,7 +6730,7 @@ maybeShowAuthOnFirstVisit();
   // Register service worker for offline caching
   if('serviceWorker' in navigator){
     const swCode=`
-const CACHE='spotseekers-usa-v3';
+const CACHE='spotseekers-usa-v4';
 const SPOTS_CACHE='ss-spots-v1';
 const PRECACHE=['/'];
 self.addEventListener('install',e=>{
@@ -6734,6 +6797,8 @@ window.onFbAuthReady=async function(user){
           if(Array.isArray(d.found)){found=new Set(d.found);}// migrate old flat format
           else if(d.found.US){found=new Set(d.found.US);}else if(d.found.LT){found=new Set(d.found.LT);}// US format, LT legacy fallback
         }
+        if(d.foundState) foundState=d.foundState;
+        scheduleBackfill();
         if(d.name) playerName=d.name;
         if(d.totalXP) totalXP=d.totalXP;
         if(d.streak) streak=d.streak;
@@ -6970,6 +7035,7 @@ async function fbLoadSpots(){
         if(sub) sub.textContent=`${(ov.total||0).toLocaleString()} spots — zoom in to explore`;
         refreshMarkers();updateAll();
         requestStatesForViewport(); // load whatever the initial viewport needs
+        scheduleBackfill();         // resolve states for any already-collected spots
         return;
       }
     }
@@ -7211,6 +7277,8 @@ async function fbLoadUserProgress(uid){
         if(Array.isArray(d.found)){found=new Set(d.found);}// migrate old flat format
         else if(d.found.US){found=new Set(d.found.US);}else if(d.found.LT){found=new Set(d.found.LT);}// US format, LT legacy fallback
       }
+      if(d.foundState) foundState=d.foundState;
+      scheduleBackfill();
       if(d.streak!==undefined) streak=d.streak;
       if(d.lastDate) lastDate=d.lastDate;
       if(d.totalXP!==undefined) totalXP=d.totalXP;
@@ -7234,6 +7302,7 @@ async function fbSaveUserProgress(){
   try{
     await setDoc(doc(db,'users',user.uid),{
       found:{US:[...found]},
+      foundState,
       foundCount:found.size,
       streak,lastDate,totalXP,notes,
       earnedBadges:[...earnedBadges],
@@ -7247,6 +7316,48 @@ async function fbSaveUserProgress(){
 }
 
 // ═══════════ OVERRIDE save() TO ALSO SYNC ═══════════
+
+// ── One-time backfill: figure out which state each already-collected spot is in. ──
+// found is just IDs; this resolves id→state by streaming KV state packs, early-stopping
+// as soon as every collected id is accounted for. Packs are scanned then discarded
+// (memory stays flat). Runs once per session; new collections self-tag at collect time.
+async function backfillFoundStates(){
+  if(_fsBackfillDone) return;
+  if(_legacySpotMode){_fsBackfillDone=true;return;}      // legacy mode has no per-state packs
+  if(!OVERVIEW||!OVERVIEW.states) return;                // not ready yet — scheduler will retry
+  const unresolved=new Set();
+  found.forEach(id=>{const k=String(id);if(!foundState[k])unresolved.add(k);});
+  if(!unresolved.size){_fsBackfillDone=true;return;}
+  _fsBackfillDone=true;                                  // claim the slot so we never double-run
+  const codes=Object.keys(OVERVIEW.states)
+    .sort((a,b)=>(STATE_DATA.has(b)?1:0)-(STATE_DATA.has(a)?1:0)); // already-loaded packs first (free)
+  let changed=false;
+  for(const code of codes){
+    if(!unresolved.size) break;                          // early-stop: everything resolved
+    let spots;
+    if(STATE_DATA.has(code)) spots=STATE_DATA.get(code).spots;
+    else{ try{spots=await fetchStatePack(code);}catch(e){continue;} }
+    for(const s of spots){
+      const k=String(s.id);
+      if(unresolved.has(k)){foundState[k]=code;unresolved.delete(k);changed=true;}
+    }
+  }
+  if(changed){
+    try{localStorage.setItem('ke7_foundstate',JSON.stringify(foundState));}catch(e){}
+    fbSaveUserProgress();
+    const p=document.getElementById('panel-aboutme');
+    if(p&&p.innerHTML&&typeof renderAboutMe==='function') renderAboutMe();
+    console.log('[foundState] backfill complete —',Object.keys(foundState).length,'spots tagged');
+  }
+}
+let _fsBackfillTries=0;
+function scheduleBackfill(){
+  if(_fsBackfillDone) return;
+  if(OVERVIEW&&OVERVIEW.states){backfillFoundStates();return;}
+  if(_fsBackfillTries++>40) return;                      // ~20s ceiling, then give up quietly
+  setTimeout(scheduleBackfill,500);
+}
+
 
 const _localSave=save;
 save=function(){
@@ -7262,6 +7373,7 @@ save=function(){
   localStorage.setItem('ke7_dqdate',dailyQuestDate||'');
   localStorage.setItem('ke7_dqdone',dailyQuestDone?'1':'0');
   localStorage.setItem('ke7_sm',JSON.stringify([...claimedStreakMiles]));
+  localStorage.setItem('ke7_foundstate',JSON.stringify(foundState));
   fbSaveUserProgress(); // sync progress to Firestore if logged in
 };
 
