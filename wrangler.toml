@@ -7,3 +7,11 @@ account_id = "5cd158109e5a429a2f52ca217ff9d01e"
 [[kv_namespaces]]
 binding = "SPOTS_KV"
 id = "b99131c51ac94fb394c2907155f51efe"
+
+[[d1_databases]]
+binding = "VISITS_DB"
+database_name = "spotseekers-usa-visits"
+database_id = "1c53176b-3fd4-4027-a61e-382c3828f7bf"
+
+[triggers]
+crons = ["0 4 * * *"]
