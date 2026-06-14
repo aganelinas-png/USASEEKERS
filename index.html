@@ -1391,7 +1391,7 @@ const TIER_CONFIG={
 
 // Default collection radius per spot in metres (can be overridden per spot)
 const DEFAULT_RADIUS=80;
-const APP_VERSION='usa-1.4';
+const APP_VERSION='usa-1.5';
 
 // Per-category sensible defaults — used when no explicit radius is set
 const CAT_DEFAULT_RADIUS={
@@ -1725,6 +1725,7 @@ const MAX_LOADED_STATES=10;  // LRU eviction cap (≈ worst case a few hundred k
 const STATE_DATA=new Map();  // code -> {spots:[], ts:lastTouched}
 const _stateLoading=new Set();
 let OVERVIEW=null;           // {total, states:{XX:{count, cells:[[lat,lng,n],...]}}}
+let TIER_OVERRIDES={};       // {spotId: tier} — visit-based promotions (2=National,3=State), applied to Local spots only
 let _legacySpotMode=false;   // true when overview missing (pre-migration KV)
 
 function totalSpots(){
@@ -1970,6 +1971,31 @@ function save(){
   localStorage.setItem('ke7_dqdone',dailyQuestDone?'1':'0');
   localStorage.setItem('ke7_sm',JSON.stringify([...claimedStreakMiles]));
   // routes saved separately via saveRoutes()
+}
+
+// Report a collected spot to the visit-counter (Option A raw count). Fire-and-forget;
+// per-device dedup so one client can't inflate a spot by re-collecting after a cache wipe.
+let _reportedVisits=null;
+function _loadReported(){
+  if(_reportedVisits)return _reportedVisits;
+  try{_reportedVisits=new Set(JSON.parse(localStorage.getItem('ke7_reported')||'[]'));}
+  catch(e){_reportedVisits=new Set();}
+  return _reportedVisits;
+}
+function reportVisit(spot){
+  if(!spot||spot.id==null||typeof spot.lat!=='number'||typeof spot.lng!=='number')return;
+  const rep=_loadReported();
+  const idStr=String(spot.id);
+  if(rep.has(idStr))return;
+  const cell=Math.floor(spot.lat/OVERVIEW_CELL)+':'+Math.floor(spot.lng/OVERVIEW_CELL);
+  fetch('/api/visit',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({visits:[{id:idStr,cell}]})
+  }).then(()=>{
+    rep.add(idStr);
+    try{localStorage.setItem('ke7_reported',JSON.stringify([...rep]));}catch(e){}
+  }).catch(()=>{});
 }
 
 function load(){
@@ -3192,6 +3218,7 @@ function collectCurrent(){
     }
   const prevPlayerLevel=getPlayerLevel(totalXP);
   found.add(selectedSpot.id);
+  reportVisit(selectedSpot);
   foundState[String(selectedSpot.id)]=selectedSpot.st||assignState(selectedSpot.lat,selectedSpot.lng);
   updateStreak();
   // XP for collecting — bonus for higher-tier spots
@@ -3860,13 +3887,6 @@ function renderList(){
     <div style="display:flex;justify-content:space-between;margin-bottom:8px">
       <span style="font-size:.82rem;font-weight:700;color:var(--txt)">${code} — collected</span>
       <span style="font-family:'DM Mono',monospace;font-size:.75rem;color:var(--gold);font-weight:600">${doneHere} / ${stSpots.length.toLocaleString()}</span>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:5px">
-      ${[1,2,3,4].map(t=>`<div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:.72rem;color:var(--txt);min-width:96px">${TIER_CONFIG[t].icon} ${TIER_WORD[t]}</span>
-        <div style="flex:1;height:4px;background:var(--bdr);border-radius:2px;overflow:hidden"><div style="height:100%;width:${tierTot[t]?Math.round(tierDone[t]/tierTot[t]*100):0}%;background:${TIER_CONFIG[t].color};border-radius:2px"></div></div>
-        <span style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);min-width:62px;text-align:right">${tierDone[t]}/${tierTot[t].toLocaleString()}</span>
-      </div>`).join('')}
     </div>
   </div>`;
 
@@ -7007,12 +7027,20 @@ function normalizeSpot(s){
   }
   s.tier=parseInt(s.tier,10);
   if(!(s.tier>=1&&s.tier<=4)) s.tier=4;
+  // Visit-based promotion overlay: ONLY upgrades Local (4) spots to National(2)/State(3).
+  // Real NRHP Landmark/National/State (tier 1/2/3) are never touched.
+  if(s.tier===4){const o=TIER_OVERRIDES[s.id];if(o===2||o===3)s.tier=o;}
   if(!s.name) s.name='';
   return s;
 }
 
 async function fbLoadSpots(){
   setSyncDot('syncing');
+  // Load visit-based tier promotions first, so packs get the overlay on normalize.
+  try{
+    const tres=await fetch('/api/spots/tier_overrides');
+    if(tres.ok){const t=await tres.json();if(t&&typeof t==='object')TIER_OVERRIDES=t;}
+  }catch(e){/* non-fatal: map works without promotions */}
   // ── v2: per-state lazy loading via precomputed overview ──
   try{
     const res=await fetch('/api/spots/overview');

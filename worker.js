@@ -314,6 +314,83 @@ function toggleCard(id) {
 </body>
 </html>`;
 
+// ── Tier promotion recompute (shared by cron + manual admin trigger) ──
+// Reads visit counts from D1, applies per-grid-cell quotas with an outlier cap,
+// and writes a compact {spot_id: tier} overlay to KV. Never emits tier 1 or 4 —
+// only promotes (2=National, 3=State). The client applies it ONLY to Local spots,
+// so real NRHP National/State/Landmark are never affected.
+const PROMO = {
+  MIN_VISITS: 3,            // a spot needs at least this many visits to be eligible
+  MIN_CELL_SPOTS: 25,       // a cell needs at least this many eligible spots to promote anything
+  OUTLIER_MULT: 5,          // discard counts above this multiple of the cell median (anti-pump)
+  NATIONAL_PCT: 0.005,      // top 0.5% of a cell -> National (tier 2)
+  STATE_PCT: 0.02,          // next 2% of a cell -> State (tier 3)
+};
+
+function median(nums) {
+  if (!nums.length) return 0;
+  const s = [...nums].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
+async function recomputeTiers(env) {
+  if (!env.VISITS_DB) throw new Error('VISITS_DB (D1) binding not configured');
+
+  const res = await env.VISITS_DB.prepare(
+    `SELECT spot_id, grid_cell, count FROM visits WHERE count >= ?1`
+  ).bind(PROMO.MIN_VISITS).all();
+  const rows = (res && res.results) || [];
+
+  // Group eligible spots by cell
+  const cells = new Map(); // cell -> [{id, count}]
+  for (const r of rows) {
+    const cell = r.grid_cell || '?';
+    let arr = cells.get(cell);
+    if (!arr) { arr = []; cells.set(cell, arr); }
+    arr.push({ id: String(r.spot_id), count: r.count });
+  }
+
+  const overrides = {};
+  let national = 0, state = 0, cellsUsed = 0, capped = 0;
+
+  for (const [, arr] of cells) {
+    if (arr.length < PROMO.MIN_CELL_SPOTS) continue; // cold-start guard
+
+    const med = median(arr.map(s => s.count));
+    const ceiling = med * PROMO.OUTLIER_MULT;
+    // Discard anomalies (likely pumped) before ranking
+    const clean = arr.filter(s => {
+      if (med > 0 && s.count > ceiling) { capped++; return false; }
+      return true;
+    });
+    if (clean.length < PROMO.MIN_CELL_SPOTS) continue;
+
+    clean.sort((a, b) => b.count - a.count);
+    const nNat = Math.floor(clean.length * PROMO.NATIONAL_PCT);
+    const nState = Math.floor(clean.length * PROMO.STATE_PCT);
+    if (nNat === 0 && nState === 0) continue;
+
+    cellsUsed++;
+    for (let i = 0; i < clean.length; i++) {
+      if (i < nNat) { overrides[clean[i].id] = 2; national++; }
+      else if (i < nNat + nState) { overrides[clean[i].id] = 3; state++; }
+      else break;
+    }
+  }
+
+  await env.SPOTS_KV.put('spots_usa_tier_overrides', JSON.stringify(overrides));
+  return {
+    spots_considered: rows.length,
+    cells_total: cells.size,
+    cells_promoted: cellsUsed,
+    promoted_national: national,
+    promoted_state: state,
+    outliers_capped: capped,
+    overlay_size: Object.keys(overrides).length,
+  };
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -521,6 +598,74 @@ export default {
       }
     }
 
+    // ── POST /api/visit — record visit deltas into D1 (Option A: raw count) ──
+    // Body: { visits:[{id, cell}], token? }  token currently ignored (B-upgrade ready)
+    // Graceful no-op if D1 binding (VISITS_DB) is not yet configured.
+    if (url.pathname === '/api/visit' && request.method === 'POST') {
+      if (!env.VISITS_DB) {
+        // Binding not set up yet — accept silently so the live client never errors.
+        return new Response(JSON.stringify({ ok: false, skipped: 'no-d1' }), {
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      }
+      try {
+        const body = await request.json();
+        let visits = Array.isArray(body && body.visits) ? body.visits : [];
+        // Sanity caps: ignore oversized payloads, coerce + validate entries
+        if (visits.length > 200) visits = visits.slice(0, 200);
+        const now = Date.now();
+        const stmts = [];
+        for (const v of visits) {
+          if (!v || v.id == null || typeof v.cell !== 'string') continue;
+          const id = String(v.id);
+          if (id.length > 64 || v.cell.length > 24) continue;
+          stmts.push(
+            env.VISITS_DB.prepare(
+              `INSERT INTO visits (spot_id, grid_cell, count, updated_at)
+               VALUES (?1, ?2, 1, ?3)
+               ON CONFLICT(spot_id) DO UPDATE SET count = count + 1, updated_at = ?3`
+            ).bind(id, v.cell, now)
+          );
+        }
+        if (stmts.length) await env.VISITS_DB.batch(stmts);
+        return new Response(JSON.stringify({ ok: true, recorded: stmts.length }), {
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({ ok: false, error: e.message }), {
+          status: 400, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      }
+    }
+
+    // ── GET /api/spots/tier_overrides — serve the promotion overlay ──
+    if (url.pathname === '/api/spots/tier_overrides') {
+      const data = await env.SPOTS_KV.get('spots_usa_tier_overrides');
+      return new Response(data || '{}', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=300',
+          ...CORS_HEADERS
+        }
+      });
+    }
+
+    // ── POST /api/admin/recompute-tiers — manual trigger (same logic as cron) ──
+    if (url.pathname === '/api/admin/recompute-tiers' && request.method === 'POST') {
+      const secret = request.headers.get('X-Admin-Secret');
+      if (secret !== adminSecret) return new Response('Forbidden', { status: 403, headers: CORS_HEADERS });
+      try {
+        const result = await recomputeTiers(env);
+        return new Response(JSON.stringify({ ok: true, ...result }), {
+          headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({ ok: false, error: e.message }), {
+          status: 500, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS }
+        });
+      }
+    }
+
     // ── Default — serve index.html from GitHub ──
     const htmlRes = await fetch(GITHUB_HTML_PROD, {
       cf: { cacheTtl: 60, cacheEverything: true }
@@ -551,5 +696,14 @@ export default {
     return new Response(html, {
       headers: { 'Content-Type': 'text/html;charset=utf-8' }
     });
+  },
+
+  // ── Cron: recompute tier promotions on a schedule (see wrangler.toml triggers) ──
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(
+      recomputeTiers(env)
+        .then(r => console.log('tier recompute ok', JSON.stringify(r)))
+        .catch(e => console.error('tier recompute failed', e.message))
+    );
   }
 };
