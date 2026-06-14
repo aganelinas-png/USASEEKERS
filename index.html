@@ -1391,7 +1391,7 @@ const TIER_CONFIG={
 
 // Default collection radius per spot in metres (can be overridden per spot)
 const DEFAULT_RADIUS=80;
-const APP_VERSION='usa-1.5';
+const APP_VERSION='usa-1.6';
 
 // Per-category sensible defaults — used when no explicit radius is set
 const CAT_DEFAULT_RADIUS={
@@ -7034,14 +7034,29 @@ function normalizeSpot(s){
   return s;
 }
 
+// Fetch visit-based tier promotions in the background (NOT on the critical load path).
+// Packs that load after this lands get promotions via normalizeSpot; packs that
+// loaded earlier are re-tiered here. Map renders immediately either way.
+function loadTierOverrides(){
+  fetch('/api/spots/tier_overrides')
+    .then(r=>r.ok?r.json():null)
+    .then(t=>{
+      if(!t||typeof t!=='object')return;
+      TIER_OVERRIDES=t;
+      let changed=false;
+      STATE_DATA.forEach(d=>{
+        for(const s of d.spots){
+          if(s.tier===4){const o=TIER_OVERRIDES[s.id];if(o===2||o===3){s.tier=o;changed=true;}}
+        }
+      });
+      if(changed){try{refreshMarkers();updateAll();}catch(e){}}
+    })
+    .catch(()=>{});
+}
+
 async function fbLoadSpots(){
   setSyncDot('syncing');
-  // Load visit-based tier promotions first, so packs get the overlay on normalize.
-  try{
-    const tres=await fetch('/api/spots/tier_overrides');
-    if(tres.ok){const t=await tres.json();if(t&&typeof t==='object')TIER_OVERRIDES=t;}
-  }catch(e){/* non-fatal: map works without promotions */}
-  // ── v2: per-state lazy loading via precomputed overview ──
+  loadTierOverrides(); // background, non-blocking — promotions apply when they arrive  // ── v2: per-state lazy loading via precomputed overview ──
   try{
     const res=await fetch('/api/spots/overview');
     if(res.ok){
