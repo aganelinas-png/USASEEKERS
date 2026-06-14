@@ -4782,17 +4782,29 @@ _loadReclassLS();
 function _stateQueries(code){
   const head=`data=[out:json][timeout:180];area["ISO3166-2"="US-${code}"][admin_level=4]->.st;`;
   return[
+// Q1 — worship + parks (light, always finishes)
 `${head}
 (
   nwr["amenity"="place_of_worship"]["name"](area.st);
   nwr["leisure"~"^(park|garden|nature_reserve)$"]["name"](area.st);
 );
 out center;`,
+// Q2a — historic[*] alone (heaviest single tag — isolated so big states don't time out)
 `${head}
 (
   nwr["historic"]["name"](area.st);
+);
+out center;`,
+// Q2b — tourism + civic/cultural amenities
+`${head}
+(
   nwr["tourism"~"^(museum|gallery|viewpoint|artwork)$"]["name"](area.st);
   nwr["amenity"~"^(theatre|grave_yard|courthouse|townhall|library|post_office)$"]["name"](area.st);
+);
+out center;`,
+// Q2c — military + cemeteries by landuse
+`${head}
+(
   nwr["military"~"^(bunker|fort)$"]["name"](area.st);
   nwr["landuse"="cemetery"]["name"](area.st);
 );
@@ -5358,8 +5370,12 @@ function _tabBar(){
 function renderOsmImport(){
   const body=document.getElementById('panel-osm');
   if(!body) return;
-  const cats=['all','church','museum','fort','nature','history','monument','mound','viewpoint','mural','cemetery'];
-  const catLabels={all:'All',church:'⛪ Churches',museum:'🏛 Museums',fort:'🏰 Forts',nature:'🌿 Nature',history:'⚔ History',monument:'🗿 Monuments',mound:'⛰ Hillforts',viewpoint:'🔭 Viewpoints',mural:'🎨 Street Art',cemetery:'⚱️ Cemeteries'};
+  // Chips derived from CATS so they can never drift from the real category set.
+  // (Old hardcoded list had a phantom 'fort', mislabeled 'mound' as Hillforts, and was missing 11 categories.)
+  const _catKeys=Object.keys(CATS).filter(k=>k!=='hidden');
+  const cats=['all',..._catKeys];
+  const catLabels={all:'All'};
+  for(const k of _catKeys) catLabels[k]=`${CATS[k].emoji} ${CATS[k].label}`;
 
   if(_importTab==='wikidata'){
     body.innerHTML=`<div class="osm-wrap">${_tabBar()}${renderWikidataPanel()}</div>`;
