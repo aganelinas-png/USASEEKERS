@@ -834,6 +834,39 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 .sug-reject{flex:1;background:var(--surf3);border:1px solid var(--bdr);color:var(--td);border-radius:8px;padding:8px;font-family:'DM Sans',sans-serif;font-size:.8rem;cursor:pointer}
 
 /* ── ONBOARDING ── */
+.ach-window{position:fixed;inset:0;z-index:1150;display:none;flex-direction:column;background:var(--bg)}
+.ach-window.open{display:flex;animation:fadeIn .22s ease}
+.ach-header{display:flex;align-items:center;gap:10px;padding:calc(14px + env(safe-area-inset-top)) 16px 12px;background:var(--surf2);border-bottom:1px solid var(--bdr);flex-shrink:0}
+.ach-close,.ach-back{background:none;border:none;color:var(--gold);font-size:1.3rem;cursor:pointer;padding:4px 6px;line-height:1;-webkit-user-select:none;user-select:none}
+.ach-back{font-size:.95rem;font-family:'DM Mono',monospace}
+.ach-title{font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--txt);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ach-summary{padding:12px 16px 10px;background:var(--surf2);border-bottom:1px solid var(--bdr);flex-shrink:0}
+.ach-bar{height:7px;background:var(--bdr);border-radius:4px;overflow:hidden}
+.ach-bar.sm{height:5px;margin-top:6px}
+.ach-bar-fill{height:100%;background:linear-gradient(90deg,var(--gd),var(--gold));border-radius:4px;transition:width .5s}
+.ach-sum-row{display:flex;justify-content:space-between;margin-top:6px;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--gold);font-weight:600}
+.ach-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px calc(28px + env(safe-area-inset-bottom));min-height:0;overscroll-behavior:contain}
+.ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.ach-card{background:var(--surf2);border:1px solid var(--bdr);border-radius:12px;padding:12px;cursor:pointer;transition:.18s;display:flex;flex-direction:column;gap:4px}
+.ach-card:hover{border-color:var(--gold);transform:translateY(-1px)}
+.ach-card.done{border-color:rgba(201,168,76,.55);box-shadow:inset 0 0 18px rgba(201,168,76,.07)}
+.ach-card-icon{font-size:1.7rem;line-height:1}
+.ach-card-title{font-size:.82rem;font-weight:700;color:var(--txt);line-height:1.2}
+.ach-card-count{font-family:'DM Mono',monospace;font-size:.7rem;color:var(--gold);font-weight:600}
+.ach-card-spots{font-family:'DM Mono',monospace;font-size:.64rem;color:var(--td)}
+.ach-list{display:flex;flex-direction:column;gap:8px}
+.ach-row{display:flex;gap:11px;align-items:flex-start;background:var(--surf2);border:1px solid var(--bdr);border-radius:11px;padding:11px 12px;opacity:.72}
+.ach-row.earned{opacity:1;border-color:rgba(201,168,76,.5);box-shadow:inset 0 0 16px rgba(201,168,76,.06)}
+.ach-row-icon{font-size:1.5rem;line-height:1;flex-shrink:0;filter:grayscale(.85)}
+.ach-row.earned .ach-row-icon{filter:none}
+.ach-row-main{flex:1;min-width:0}
+.ach-row-name{font-size:.86rem;font-weight:700;color:var(--txt);display:flex;align-items:center;gap:6px}
+.ach-check{color:var(--gold);font-size:.8rem}
+.ach-row-desc{font-size:.74rem;color:var(--td);margin-top:2px;line-height:1.3}
+.ach-row-prog{display:flex;align-items:center;gap:8px;margin-top:6px}
+.ach-row-prog .ach-bar{flex:1;margin-top:0}
+.ach-row-pct{font-family:'DM Mono',monospace;font-size:.62rem;color:var(--td);white-space:nowrap}
+@media(max-width:600px){.ach-grid{grid-template-columns:repeat(2,1fr);gap:9px}.ach-title{font-size:1rem}}
 </style>
 </head>
 <body>
@@ -1251,6 +1284,15 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 </div>
 
 <!-- MOBILE PANEL OVERLAY — full screen, bypasses drawer on mobile -->
+<div class="ach-window" id="achWindow">
+  <div class="ach-header">
+    <button class="ach-back" id="achBackBtn" style="display:none" onclick="achBack()">← Back</button>
+    <div class="ach-title" id="achTitle">🏆 Achievements</div>
+    <button class="ach-close" onclick="closeAchievements()">✕</button>
+  </div>
+  <div class="ach-summary" id="achSummary"></div>
+  <div class="ach-body" id="achBody"></div>
+</div>
 <div class="mob-panel-overlay" id="mobPanelOverlay">
   <div class="mob-panel-header">
     <button class="mob-panel-close" onclick="closeMobPanel()">✕</button>
@@ -1609,7 +1651,85 @@ const BADGE_GROUPS=[
     {id:'con3',name:'Spot Expert',desc:'10 suggested spots approved',icon:'🏅',contribNeed:10,xpReward:200},
     {id:'con4',name:'Master Cartographer',desc:'25 suggested spots approved',icon:'💎',contribNeed:25,xpReward:500},
   ]},
+  {id:'activity',title:'Activity',icon:'\u26A1',cat:null,badges:[
+    {id:'am1',name:'Marathon Walker',desc:'Collect 10 spots in one day',icon:'\U0001F3C3',dayMax:10,xpReward:50},
+    {id:'am2',name:'Day Tripper',desc:'Collect 25 spots in one day',icon:'\U0001F525',dayMax:25,xpReward:120},
+    {id:'am3',name:'Tireless',desc:'Collect 50 spots in one day',icon:'\u26A1',dayMax:50,xpReward:300},
+    {id:'ad1',name:'Daily Devotee',desc:'5+ collects a day for 7 days straight',icon:'\U0001F4C5',dayStreak:7,dayMin:5,xpReward:200},
+    {id:'adt1',name:'Regular',desc:'Active on 30 different days',icon:'\U0001F5D3',activeDays:30,xpReward:150},
+    {id:'adt2',name:'Centurion',desc:'Active on 100 different days',icon:'\U0001F3C5',activeDays:100,xpReward:500},
+  ]},
+  {id:'levels',title:'Ranks',icon:'\U0001F396',cat:null,badges:[
+    {id:'lv5',name:'Rising Star',desc:'Reach level 5',icon:'\u2B50',levelNeed:5,xpReward:40},
+    {id:'lv10',name:'Seasoned',desc:'Reach level 10',icon:'\U0001F31F',levelNeed:10,xpReward:100},
+    {id:'lv20',name:'Veteran',desc:'Reach level 20',icon:'\U0001F4AB',levelNeed:20,xpReward:250},
+    {id:'lv35',name:'Elite',desc:'Reach level 35',icon:'\U0001F320',levelNeed:35,xpReward:500},
+    {id:'lv50',name:'Legend',desc:'Reach level 50',icon:'\U0001F451',levelNeed:50,xpReward:1000},
+  ]},
+  {id:'completion',title:'Completionist',icon:'\U0001F9E9',cat:null,badges:[
+    {id:'cc1',name:'Finisher',desc:'Complete 1 category 100%',icon:'\u2705',catComplete:1,xpReward:100},
+    {id:'cc3',name:'Triple Threat',desc:'Complete 3 categories 100%',icon:'\U0001F947',catComplete:3,xpReward:300},
+    {id:'cc5',name:'Devoted',desc:'Complete 5 categories 100%',icon:'\U0001F48E',catComplete:5,xpReward:600},
+    {id:'ccall',name:'Total Completion',desc:'Complete every category 100%',icon:'\U0001F3C6',catCompleteAll:true,xpReward:2500},
+    {id:'gen',name:'Generalist',desc:'Collect at least one of every category',icon:'\U0001F308',generalist:true,xpReward:300},
+  ]},
+  {id:'spread',title:'Coast to Coast',icon:'\U0001F5FA',cat:null,badges:[
+    {id:'sp1',name:'Regional',desc:'Collected spots span 100 km',icon:'\U0001F4CD',spanKm:100,xpReward:40},
+    {id:'sp2',name:'Cross-State',desc:'Span 500 km',icon:'\U0001F6E3',spanKm:500,xpReward:120},
+    {id:'sp3',name:'Nationwide',desc:'Span 2,000 km',icon:'\U0001F985',spanKm:2000,xpReward:300},
+    {id:'sp4',name:'Sea to Shining Sea',desc:'Span 4,000 km coast to coast',icon:'\U0001F31F',spanKm:4000,xpReward:800},
+  ]},
+  {id:'states50',title:'50 States',icon:'\U0001F30E',cat:null,badges:[
+    {id:'ss5',name:'Road Trip',desc:'Collect in 5 states',icon:'\U0001F697',statesCount:5,xpReward:80},
+    {id:'ss10',name:'Frequent Flyer',desc:'Collect in 10 states',icon:'\u2708',statesCount:10,xpReward:200},
+    {id:'ss20',name:'Continental',desc:'Collect in 20 states',icon:'\U0001F30E',statesCount:20,xpReward:450},
+    {id:'ss35',name:'Almost There',desc:'Collect in 35 states',icon:'\U0001F5FA',statesCount:35,xpReward:800},
+    {id:'ss50',name:'All Fifty',desc:'Collect in every one of the 50 states',icon:'\U0001F3C6',statesCount:50,xpReward:2500},
+  ]},
 ];
+// \u2550\u2550\u2550 DYNAMIC BADGES (per-state ladders + auto-scaling caps) \u2550\u2550\u2550
+let _dynSig=null;
+const STATE_RUNGS=[10,20,50,100,250,500,1000,2500,5000];
+function buildDynamicBadgeGroups(){
+  const haveStates=!!(OVERVIEW&&OVERVIEW.states);
+  const sig=(OVERVIEW?(OVERVIEW.total||0):0)+'|'+((OVERVIEW&&OVERVIEW.cats)?'c':'')+'|'+(haveStates?Object.keys(OVERVIEW.states).length:0);
+  if(_dynSig===sig) return;
+  _dynSig=sig;
+  // 1) Hidden ladder \u2014 open-ended; only earned badges ever render.
+  const hg=BADGE_GROUPS.find(g=>g.id==='hidden');
+  if(hg&&!hg._extended){
+    [30,50,75,100,150,250,400,600,1000].forEach(function(n,k){ if(!hg.badges.some(b=>b.need===n)) hg.badges.push({id:'hid_x'+n,name:'Hidden +'+n,desc:'Find '+n+' hidden spots',icon:'\U0001F311',need:n,xpReward:60+k*15}); });
+    hg._extended=true;
+  }
+  // 2) Category caps + prune unearnable rungs (needs authoritative OVERVIEW.cats).
+  if(OVERVIEW&&OVERVIEW.cats){
+    BADGE_GROUPS.forEach(function(g){
+      if(!g.cat||g.cat==='hidden') return;
+      const tot=OVERVIEW.cats[g.cat];
+      if(typeof tot!=='number'||tot<=0) return;
+      g.badges=g.badges.filter(b=>{ if(b.complete) return true; if(typeof b.need==='number'&&b.need>=tot&&!earnedBadges.has(b.id)) return false; return true; });
+      if(!g.badges.some(b=>b.complete)){
+        const lbl=(typeof CATS!=='undefined'&&CATS[g.cat])?CATS[g.cat].label:g.cat;
+        g.badges.push({id:g.cat+'_all',name:'Complete '+lbl,desc:'Collect every '+lbl+' spot',icon:'\U0001F451',complete:true,xpReward:Math.min(1500,300+Math.round(tot*0.15))});
+      }
+    });
+  }
+  // 3) Per-state groups \u2014 scaled to each state's own size.
+  for(let i=BADGE_GROUPS.length-1;i>=0;i--){ if(BADGE_GROUPS[i]._dyn) BADGE_GROUPS.splice(i,1); }
+  if(haveStates&&typeof US_STATES!=='undefined'){
+    US_STATES.forEach(function(row){
+      const code=row[0],name=row[1];
+      const o=OVERVIEW.states[code];
+      const tot=o?((typeof o.countNoHidden==='number')?o.countNoHidden:(o.count||0)):0;
+      if(!tot||tot<5) return;
+      const badges=[];
+      STATE_RUNGS.forEach(function(n,idx){ if(n<tot) badges.push({id:'st_'+code+'_'+n,name:name+' \u00D7'+n,desc:'Collect '+n+' spots in '+name,icon:'\U0001F4CD',state:code,stateNeed:n,xpReward:15+idx*20}); });
+      badges.push({id:'st_'+code+'_all',name:'Conquer '+name,desc:'Collect every spot in '+name,icon:'\U0001F451',state:code,stateComplete:true,xpReward:Math.min(2000,200+Math.round(tot*0.3))});
+      BADGE_GROUPS.push({id:'state_'+code,title:name,icon:'\U0001F4CD',cat:null,stateCode:code,_dyn:true,badges:badges});
+    });
+  }
+}
+
 // ═══════════ LEVEL SYSTEM ═══════════
 const LEVELS=[
   {level:1,name:'Newcomer',icon:'🐣',xp:0},
@@ -1854,6 +1974,10 @@ let foundState={};          // id(string) → 2-letter state code; the per-state
 let _spotsPanelState=null;  // currently selected state in the Spots panel (no viewport auto-follow)
 let _fsBackfillDone=false;  // one-time-per-session guard for the foundState backfill
 let streak=0,lastDate=null,notes={},earnedBadges=new Set();
+// ── per-day activity log (powers Activity badges) ──
+let dailyLog={},activeDaysTotal=0,bestDay=0;const DAILY_LOG_KEEP=21;
+// id(string) → {c:cat,t:tier}: global per-spot meta so category/tier badge counts stay correct under lazy-load
+let foundMeta={};
 let favorites=new Set(); // kept for legacy compat — not used in UI
 // ── Routes state ──
 let routes=[]; // [{id,name,spots:[spotId,...],created,distKm,durationMin}]
@@ -1970,6 +2094,8 @@ function save(){
   localStorage.setItem('ke7_dqdate',dailyQuestDate||'');
   localStorage.setItem('ke7_dqdone',dailyQuestDone?'1':'0');
   localStorage.setItem('ke7_sm',JSON.stringify([...claimedStreakMiles]));
+  localStorage.setItem('ke7_dailylog',JSON.stringify({log:dailyLog,active:activeDaysTotal,best:bestDay}));
+  localStorage.setItem('ke7_foundmeta',JSON.stringify(foundMeta));
   // routes saved separately via saveRoutes()
 }
 
@@ -2010,6 +2136,8 @@ function load(){
   }
   const _fsraw=localStorage.getItem('ke7_foundstate');
   if(_fsraw){try{foundState=JSON.parse(_fsraw)||{};}catch(e){foundState={};}}
+  try{const _dl=JSON.parse(localStorage.getItem('ke7_dailylog')||'null');if(_dl){dailyLog=_dl.log||{};activeDaysTotal=_dl.active||0;bestDay=_dl.best||0;pruneDailyLog();}}catch(e){}
+  try{const _fm=JSON.parse(localStorage.getItem('ke7_foundmeta')||'null');if(_fm)foundMeta=_fm;}catch(e){}
   streak=parseInt(localStorage.getItem('ke7_streak')||'0');
   lastDate=localStorage.getItem('ke7_lastDate')||null;
   const n=localStorage.getItem('ke7_notes');notes=n?JSON.parse(n):{};
@@ -2843,6 +2971,7 @@ const PANEL_TITLES={
 };
 
 function openSubPanel(name){
+  if(name==='zenklai'){openAchievements();return;}
   ['aboutme','vietos','routes','favs','zenklai','social','osm','reviews','suggestions','mysuggestions'].forEach(p=>{
     document.getElementById('panel-'+p)?.classList.toggle('active',p===name);
   });
@@ -2931,6 +3060,11 @@ function getDailyQuestProgress(){
   return parseInt(localStorage.getItem('ke7_collected_today')||'0');
 }
 
+// Local date key YYYY-MM-DD (local time, not UTC, to avoid day-shift)
+function ymd(d){d=d||new Date();const m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${d.getFullYear()}-${m}-${day}`;}
+function pruneDailyLog(){const keys=Object.keys(dailyLog).sort();while(keys.length>DAILY_LOG_KEEP){const k=keys.shift();delete dailyLog[k];}}
+function consecutiveDaysWith(minPerDay){let n=0;const base=new Date();for(let i=0;i<DAILY_LOG_KEEP;i++){const d=new Date(base.getTime()-i*86400000);if((dailyLog[ymd(d)]||0)>=minPerDay) n++; else break;}return n;}
+
 function incrementDailyCollect(){
   const today=new Date().toDateString();
   const key='ke7_collect_date';
@@ -2941,6 +3075,12 @@ function incrementDailyCollect(){
   }
   const cur=parseInt(localStorage.getItem(countKey)||'0');
   localStorage.setItem(countKey,cur+1);
+  // ── rolling per-day activity log ──
+  const _dk=ymd();const _was=(dailyLog[_dk]||0)>0;
+  dailyLog[_dk]=(dailyLog[_dk]||0)+1;
+  if(!_was) activeDaysTotal++;
+  if(dailyLog[_dk]>bestDay) bestDay=dailyLog[_dk];
+  pruneDailyLog();
 
   // Check if quest completed
   if(!dailyQuestDone&&cur+1>=getDailyQuestTarget()){
@@ -3220,6 +3360,7 @@ function collectCurrent(){
   found.add(selectedSpot.id);
   reportVisit(selectedSpot);
   foundState[String(selectedSpot.id)]=selectedSpot.st||assignState(selectedSpot.lat,selectedSpot.lng);
+  foundMeta[String(selectedSpot.id)]={c:selectedSpot.cat,t:selectedSpot.tier||1};
   updateStreak();
   // XP for collecting — bonus for higher-tier spots
   const spotTier=selectedSpot.tier||1;
@@ -3233,7 +3374,7 @@ function collectCurrent(){
   if(window._fbUser&&window._fb){
     const{db,doc,setDoc}=window._fb;
     setDoc(doc(db,'users',window._fbUser.uid),{
-      found:{US:[...found]},foundState,totalXP,streak,badges:[...earnedBadges],name:playerName
+      found:{US:[...found]},foundState,foundMeta,dailyLog,activeDaysTotal,bestDay,totalXP,streak,badges:[...earnedBadges],name:playerName
     },{merge:true}).catch(()=>{});
   }
 
@@ -3314,23 +3455,86 @@ function gprog(g){if(!g.cat) return found.size;return SPOTS.filter(s=>s.cat===g.
 function gtot(g){if(!g.cat) return SPOTS.length;return SPOTS.filter(s=>s.cat===g.cat).length;}
 function tierAllDone(tier){return SPOTS.filter(s=>s.tier===tier).every(s=>found.has(s.id));}
 
+// \u2550\u2550\u2550 UNIFIED BADGE EVALUATION \u2550\u2550\u2550
+// Live totals: OVERVIEW is authoritative (lazy-load-proof); SPOTS is only a partial fallback.
+function catTotal(cat){if(OVERVIEW&&OVERVIEW.cats&&typeof OVERVIEW.cats[cat]==='number')return OVERVIEW.cats[cat];return SPOTS.filter(s=>s.cat===cat).length;}
+function tierTotal(t){if(OVERVIEW&&OVERVIEW.tiers&&typeof OVERVIEW.tiers[t]==='number')return OVERVIEW.tiers[t];return SPOTS.filter(s=>s.tier===t).length;}
+function stateTotal(code){if(OVERVIEW&&OVERVIEW.states&&OVERVIEW.states[code]){const o=OVERVIEW.states[code];return (typeof o.countNoHidden==='number')?o.countNoHidden:(o.count||0);}return SPOTS.filter(s=>(s.st||s.state)===code&&s.cat!=='hidden').length;}
+
+// One pass builds every aggregate evalBadge() needs. Collected counts come from
+// foundMeta (cat/tier) and foundState (state) \u2014 both global & persisted \u2014 so they
+// stay correct even though SPOTS only holds the lazily-loaded states.
+function badgeCtx(){
+  const catC={},tierC={};const statesSet=new Set();
+  for(const id in foundMeta){const m=foundMeta[id];if(!m)continue;if(m.c)catC[m.c]=(catC[m.c]||0)+1;if(m.t)tierC[m.t]=(tierC[m.t]||0)+1;}
+  const stC={};
+  for(const id in foundState){const st=foundState[id];if(st){stC[st]=(stC[st]||0)+1;statesSet.add(st);}}
+  const cc={};
+  const cats=(typeof CATS!=='undefined')?Object.keys(CATS).filter(k=>k!=='hidden'):Object.keys(catC);
+  cats.forEach(cat=>{cc[cat]={c:catC[cat]||0,t:catTotal(cat)};});
+  cc.hidden={c:catC.hidden||0,t:catTotal('hidden')};
+  let completeCats=0,totalCats=0,catsWithOne=0;const _ovc=!!(OVERVIEW&&OVERVIEW.cats);
+  if(_ovc){cats.forEach(cat=>{const o=cc[cat];if(o.t>0){totalCats++;if(o.c>=o.t)completeCats++;if(o.c>0)catsWithOne++;}});}
+  // geographic spread from the bbox of all collected states' centroids (lazy-load-proof)
+  let minLa=Infinity,maxLa=-Infinity,minLo=Infinity,maxLo=-Infinity,have=false;
+  statesSet.forEach(code=>{const b=STATE_BBOXES[code];if(!b)return;const cy=(b[0]+b[2])/2,cx=(b[1]+b[3])/2;have=true;if(cy<minLa)minLa=cy;if(cy>maxLa)maxLa=cy;if(cx<minLo)minLo=cx;if(cx>maxLo)maxLo=cx;});
+  const spanKm=have?dist(minLa,minLo,maxLa,maxLo)/1000:0;
+  return {cc,tierC,stC,completeCats,totalCats,catsWithOne,spanKm,statesVisited:statesSet.size};
+}
+
+// Single source of truth: BOTH awarding and the achievements window use this.
+function evalBadge(b,g,ctx){
+  let cur=0,need=0;
+  if(b.complete){const ok=!!(OVERVIEW&&OVERVIEW.cats);const o=ctx.cc[g.cat];need=(ok&&o)?o.t:0;cur=o?o.c:0;}
+  else if(b.tierComplete){const ok=!!(OVERVIEW&&OVERVIEW.tiers);need=ok?tierTotal(b.tierComplete):0;cur=ctx.tierC[b.tierComplete]||0;}
+  else if(b.catCompleteAll){need=ctx.totalCats;cur=ctx.completeCats;}
+  else if(b.catComplete){need=b.catComplete;cur=ctx.completeCats;}
+  else if(b.generalist){need=ctx.totalCats;cur=ctx.catsWithOne;}
+  else if(b.statesCount){need=b.statesCount;cur=ctx.statesVisited;}
+  else if(b.stateComplete){need=stateTotal(b.state);cur=ctx.stC[b.state]||0;}
+  else if(b.stateNeed){need=b.stateNeed;cur=ctx.stC[b.state]||0;}
+  else if(b.levelNeed){need=b.levelNeed;cur=getLevel(totalXP).level;}
+  else if(b.dayMax){need=b.dayMax;cur=bestDay;}
+  else if(b.dayStreak){need=b.dayStreak;cur=consecutiveDaysWith(b.dayMin||1);}
+  else if(b.activeDays){need=b.activeDays;cur=activeDaysTotal;}
+  else if(b.spanKm){need=b.spanKm;cur=Math.round(ctx.spanKm);}
+  else if(b.streak){need=b.streak;cur=streak;}
+  else if(b.xpNeed){need=b.xpNeed;cur=totalXP;}
+  else if(b.all){need=b.need;cur=found.size;}
+  else if(b.contribNeed){need=b.contribNeed;cur=approvedSuggestions;}
+  else {need=b.need||0;cur=g.cat?(ctx.cc[g.cat]?ctx.cc[g.cat].c:0):found.size;}
+  const met=need>0?cur>=need:false;
+  const pct=need>0?Math.min(100,Math.round(cur/need*100)):0;
+  return {cur,need,pct,met};
+}
+
+function _achReconciled(){try{return localStorage.getItem('ke7_ach_reconciled')==='1';}catch(e){return true;}}
 function checkBadges(){
+  if(typeof buildDynamicBadgeGroups==='function') buildDynamicBadgeGroups();
+  const ctx=badgeCtx();
+  // \u2500\u2500 one-time SILENT reconcile for existing players \u2500\u2500
+  // First run awards everything already qualified, adds the XP silently (no bursts/
+  // toasts/level overlays), then normal juicy awarding resumes forever after.
+  if(!_achReconciled()){
+    let xpSum=0;
+    BADGE_GROUPS.forEach(g=>g.badges.forEach(b=>{
+      if(earnedBadges.has(b.id))return;
+      if(evalBadge(b,g,ctx).met){earnedBadges.add(b.id);xpSum+=(b.xpReward||10);}
+    }));
+    if(xpSum>0){totalXP+=xpSum;}
+    try{prevLevel=getLevel(totalXP).level;}catch(e){}
+    if((OVERVIEW&&OVERVIEW.states)||(typeof _legacySpotMode!=='undefined'&&_legacySpotMode)){try{localStorage.setItem('ke7_ach_reconciled','1');}catch(e){}}
+    save();try{updateAll();}catch(e){}refreshAchIfOpen();
+    return;
+  }
   let newOnes=[];
   BADGE_GROUPS.forEach(g=>{
-    const prog=gprog(g);
     g.badges.forEach(b=>{
-      if(earnedBadges.has(b.id)) return;
-      let e=false;
-      if(b.tierComplete) e=tierAllDone(b.tierComplete);
-      else if(b.streak) e=streak>=b.streak;
-      else if(b.xpNeed) e=totalXP>=b.xpNeed;
-      else if(b.all) e=found.size>=b.need;
-      else if(b.contribNeed) e=approvedSuggestions>=b.contribNeed;
-      else e=prog>=b.need;
-      if(e){earnedBadges.add(b.id);newOnes.push(b);const bxp=b.xpReward||10;addXP(bxp);setTimeout(()=>showXPBurst(bxp),600);}
+      if(earnedBadges.has(b.id))return;
+      if(evalBadge(b,g,ctx).met){earnedBadges.add(b.id);newOnes.push(b);const bxp=b.xpReward||10;addXP(bxp);setTimeout(()=>showXPBurst(bxp),600);}
     });
   });
-  if(newOnes.length){save();setTimeout(()=>toast(`🎖 New badge: ${newOnes[0].icon} ${newOnes[0].name}`,'gold'),500);}
+  if(newOnes.length){save();setTimeout(()=>toast(`\U0001F396 New badge: ${newOnes[0].icon} ${newOnes[0].name}${newOnes.length>1?` (+${newOnes.length-1})`:''}`,'gold'),500);refreshAchIfOpen();}
 }
 
 // ═══════════ ABOUT ME PANEL ═══════════
@@ -3395,30 +3599,116 @@ function renderAboutMe(){
   </div>`;
 }
 
-function renderBadges(){
-  const body=document.getElementById('panel-zenklai');
-  body.innerHTML='';
-  BADGE_GROUPS.forEach(g=>{
-    const prog=gprog(g);const tot=gtot(g);
-    const div=document.createElement('div');div.className='bgr';
-    div.innerHTML=`<div class="bgt">${g.icon} ${g.title}</div>
-    ${g.sub?`<div class="bgs">${prog} / ${g.cat==='hidden'?'???':tot}</div>`:''}
-    <div class="bgcards">${g.badges.map(b=>{
-      let e=earnedBadges.has(b.id);
-      if(!e){
-        if(b.tierComplete)e=tierAllDone(b.tierComplete);
-        else if(b.streak)e=streak>=b.streak;
-        else if(b.xpNeed)e=totalXP>=b.xpNeed;
-        else if(b.all)e=found.size>=b.need;
-        else if(b.contribNeed)e=approvedSuggestions>=b.contribNeed;
-        else e=prog>=b.need;
-      }
-      const pct=b.tierComplete?0:b.streak?Math.min(100,streak/b.streak*100):b.xpNeed?Math.min(100,totalXP/b.xpNeed*100):b.all?Math.min(100,found.size/b.need*100):b.contribNeed?Math.min(100,approvedSuggestions/b.contribNeed*100):Math.min(100,prog/(b.need||1)*100);
-      return`<div class="bc ${e?'e':''}"><div class="bi">${b.icon}</div><div class="bn">${b.name}</div><div class="bd">${!e&&g.cat==='hidden'?'???':b.desc}</div>${!e?`<div class="bprog"><div class="bpf" style="width:${!e&&g.cat==='hidden'?0:pct}%"></div></div>`:''}</div>`;
-    }).join('')}</div>`;
-    body.appendChild(div);
-  });
+// \u2550\u2550\u2550 ACHIEVEMENTS WINDOW \u2550\u2550\u2550
+const achState={open:false,view:'overview',group:null};
+function badgeEarned(b,g,ctx){return earnedBadges.has(b.id)||evalBadge(b,g,ctx).met;}
+function groupRollup(g,ctx){
+  let earned=0;const total=g.badges.length;
+  g.badges.forEach(b=>{if(badgeEarned(b,g,ctx))earned++;});
+  let cur=null,tot=null;
+  if(g.cat&&g.cat!=='hidden'&&ctx.cc[g.cat]){cur=ctx.cc[g.cat].c;tot=ctx.cc[g.cat].t;}
+  else if(g.cat==='hidden'){cur=ctx.cc.hidden?ctx.cc.hidden.c:0;tot=null;}
+  else if(g.stateCode){cur=ctx.stC[g.stateCode]||0;tot=stateTotal(g.stateCode);}
+  return {earned,total,cur,tot};
 }
+function openAchievements(){
+  if(typeof closeDrawer==='function'){try{closeDrawer();}catch(e){}}
+  if(typeof closeSubPanel==='function'){try{closeSubPanel();}catch(e){}}
+  if(typeof closeMobPanel==='function'){try{closeMobPanel();}catch(e){}}
+  if(typeof buildDynamicBadgeGroups==='function') buildDynamicBadgeGroups();
+  achState.open=true;achState.view='overview';achState.group=null;
+  const w=document.getElementById('achWindow');if(w)w.classList.add('open');
+  try{history.pushState({ss:'app'},'');}catch(e){}
+  checkBadges();
+  renderAch();
+}
+function closeAchievements(){achState.open=false;const w=document.getElementById('achWindow');if(w)w.classList.remove('open');setTimeout(()=>map&&map.invalidateSize(),60);}
+function achBack(){achState.view='overview';achState.group=null;renderAch();}
+function achOpenGroup(id){achState.view='detail';achState.group=id;renderAch();}
+function refreshAchIfOpen(){if(achState.open)renderAch();}
+
+function renderAch(){
+  if(!achState.open)return;
+  const ctx=badgeCtx();
+  const titleEl=document.getElementById('achTitle');
+  const sumEl=document.getElementById('achSummary');
+  const body=document.getElementById('achBody');
+  const backBtn=document.getElementById('achBackBtn');
+  if(!body)return;
+
+  if(achState.view==='overview'){
+    // Global totals EXCLUDE hidden so its badge count can't leak.
+    let gEarned=0,gTotal=0;
+    BADGE_GROUPS.forEach(g=>{if(g.cat==='hidden')return;gTotal+=g.badges.length;g.badges.forEach(b=>{if(badgeEarned(b,g,ctx))gEarned++;});});
+    const gpct=gTotal?Math.round(gEarned/gTotal*100):0;
+    backBtn.style.display='none';
+    titleEl.textContent='\U0001F3C6 Achievements';
+    sumEl.innerHTML=`<div class="ach-bar"><div class="ach-bar-fill" style="width:${gpct}%"></div></div>
+      <div class="ach-sum-row"><span>${gEarned} / ${gTotal} badges</span><span>${gpct}%</span></div>`;
+    const cards=BADGE_GROUPS.map(g=>{
+      const r=groupRollup(g,ctx);
+      if(g.cat==='hidden'){
+        return `<div class="ach-card" onclick="achOpenGroup('${g.id}')">
+          <div class="ach-card-icon">${g.icon}</div>
+          <div class="ach-card-title">${g.title}</div>
+          <div class="ach-card-count">${r.earned} found</div>
+          <div class="ach-card-spots">\U0001F5FA ${r.cur} / ???</div>
+        </div>`;
+      }
+      const pct=r.total?Math.round(r.earned/r.total*100):0;
+      const done=r.earned>=r.total&&r.total>0;
+      const spotLine=(r.cur!==null&&r.tot!==null&&r.tot>0)?`<div class="ach-card-spots">\U0001F5FA ${r.cur} / ${r.tot}</div>`:'';
+      return `<div class="ach-card ${done?'done':''}" onclick="achOpenGroup('${g.id}')">
+        <div class="ach-card-icon">${g.icon}</div>
+        <div class="ach-card-title">${g.title}</div>
+        <div class="ach-card-count">${r.earned}/${r.total}${done?' \u2713':''}</div>
+        ${spotLine}
+        <div class="ach-bar sm"><div class="ach-bar-fill" style="width:${pct}%"></div></div>
+      </div>`;
+    }).join('');
+    body.innerHTML=`<div class="ach-grid">${cards}</div>`;
+    body.scrollTop=0;return;
+  }
+
+  const g=BADGE_GROUPS.find(x=>x.id===achState.group);
+  if(!g){achBack();return;}
+  const r=groupRollup(g,ctx);
+  backBtn.style.display='';
+  titleEl.textContent=`${g.icon} ${g.title}`;
+
+  if(g.cat==='hidden'){
+    const earnedRows=g.badges.filter(b=>earnedBadges.has(b.id)||evalBadge(b,g,ctx).met);
+    sumEl.innerHTML=`<div class="ach-sum-row"><span>${earnedRows.length} found \u00B7 \U0001F5FA ${r.cur} / ???</span><span></span></div>`;
+    const rows=earnedRows.map(b=>`<div class="ach-row earned"><div class="ach-row-icon">${b.icon}</div><div class="ach-row-main"><div class="ach-row-name">${b.name} <span class="ach-check">\u2713</span></div><div class="ach-row-desc">${b.desc}</div></div></div>`).join('');
+    body.innerHTML=`<div class="ach-list">${rows||'<div style="color:var(--td);font-size:.78rem;padding:10px">No hidden spots discovered yet\u2026</div>'}</div>`;
+    body.scrollTop=0;return;
+  }
+
+  const dpct=r.total?Math.round(r.earned/r.total*100):0;
+  const spotLine=(r.cur!==null&&r.tot!==null&&r.tot>0)?` \u00B7 \U0001F5FA ${r.cur} / ${r.tot}`:'';
+  sumEl.innerHTML=`<div class="ach-bar"><div class="ach-bar-fill" style="width:${dpct}%"></div></div>
+    <div class="ach-sum-row"><span>${r.earned} / ${r.total} badges${spotLine}</span><span>${dpct}%</span></div>`;
+  const rows=g.badges.map(b=>{
+    const st=evalBadge(b,g,ctx);
+    const earned=earnedBadges.has(b.id)||st.met;
+    const showProg=!earned&&st.need>0;
+    return `<div class="ach-row ${earned?'earned':''}">
+      <div class="ach-row-icon">${b.icon}</div>
+      <div class="ach-row-main">
+        <div class="ach-row-name">${b.name}${earned?' <span class="ach-check">\u2713</span>':''}</div>
+        <div class="ach-row-desc">${b.desc}</div>
+        ${showProg?`<div class="ach-row-prog"><div class="ach-bar sm"><div class="ach-bar-fill" style="width:${st.pct}%"></div></div><span class="ach-row-pct">${st.cur}/${st.need}</span></div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  body.innerHTML=`<div class="ach-list">${rows}</div>`;
+  body.scrollTop=0;
+}
+
+// Back-compat shims: every legacy entry point now opens the window.
+function renderBadges(){if(!achState.open)openAchievements();else renderAch();}
+function renderBadgesInto(target){openAchievements();}
+
 
 // ═══════════ LIST ═══════════
 
@@ -5325,6 +5615,37 @@ function _getImportCountry(){return 'US';}
 
 
 // ── ADMIN: one-time migration — legacy skeleton+names → per-state KV keys ──
+async function rebuildOverviewCounts(){
+  if(typeof isAdmin==='function'&&!isAdmin()){alert('Admin only');return;}
+  if(!OVERVIEW||!OVERVIEW.states){alert('Overview not loaded yet \u2014 open the map first.');return;}
+  const codes=Object.keys(OVERVIEW.states);
+  if(!confirm('Rebuild overview with per-category + per-tier counts?\n\n\u2022 reads '+codes.length+' state packs\n\u2022 recomputes cats{}, tiers{}, per-state non-hidden counts\n\u2022 republishes overview (1 write); state packs untouched')) return;
+  const secret=_getAdminSecret(); if(!secret) return;
+  const statusEl=document.getElementById('rebuildOvStatus');
+  const setS=function(t){ if(statusEl) statusEl.textContent=t; };
+  const cats={},tiers={};
+  const newStates=JSON.parse(JSON.stringify(OVERVIEW.states));
+  let done=0;
+  for(const code of codes){
+    let spots;
+    try{ spots=STATE_DATA.has(code)?STATE_DATA.get(code).spots:await fetchStatePack(code); }
+    catch(e){ console.warn('rebuild skip',code,e); done++; continue; }
+    let nonHidden=0;
+    for(const sp of spots){ if(sp.cat==='hidden') continue; nonHidden++; cats[sp.cat]=(cats[sp.cat]||0)+1; const t=sp.tier||1; tiers[t]=(tiers[t]||0)+1; }
+    if(newStates[code]) newStates[code].countNoHidden=nonHidden;
+    done++; setS('Rebuilding\u2026 '+done+'/'+codes.length+' ('+code+')');
+  }
+  const ov=Object.assign({},OVERVIEW,{states:newStates,cats:cats,tiers:tiers,countsUpdated:Date.now()});
+  try{
+    const res=await fetch('/api/admin/overview',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Secret':secret},body:JSON.stringify(ov)});
+    if(!res.ok){const tx=await res.text();throw new Error('HTTP '+res.status+': '+tx.slice(0,120));}
+    OVERVIEW=ov; _dynSig=null;
+    if(typeof buildDynamicBadgeGroups==='function') buildDynamicBadgeGroups();
+    setS('\u2713 Rebuilt: '+Object.keys(cats).length+' cats, '+Object.keys(tiers).length+' tiers');
+    alert('Overview rebuilt \u2014 category & tier badges now auto-scale to real totals.');
+  }catch(e){ setS('\u2717 '+e.message); alert('Rebuild failed: '+e.message); console.error(e); }
+}
+
 async function migrateToStateKV(){
   if(!isAdmin()){toast('⚠ Admin only','info');return;}
   if(_kvBusy){toast('⏳ A KV sync is already running','info');return;}
@@ -5433,6 +5754,8 @@ function renderOsmImport(){
       <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red);background:rgba(140,74,74,.1)" onclick="autoDeleteAllDuplicates()">🗑 Delete dupes</button>
       <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red);background:rgba(140,74,74,.1)" onclick="purgeCatSpots(['school','hotel','watertower'])">🗑 Purge school+hotel+watertower</button>
       <button class="osm-ctrl-btn" style="border-color:var(--gold);color:var(--gold)" onclick="migrateToStateKV()">📦 Migrate KV → per-state</button>
+      <button class="osm-ctrl-btn" style="border-color:var(--gold);color:var(--gold)" onclick="rebuildOverviewCounts()">🧮 Rebuild overview counts</button>
+      <span id="rebuildOvStatus" style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);align-self:center"></span>
     </div>
     <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);margin-bottom:8px">New spot candidates (select &amp; import):</div>
     <div class="osm-controls">
@@ -6015,6 +6338,7 @@ const MOB_PANEL_TITLES={
 };
 
 function mobNavTo(panel){
+  if(panel==='zenklai'){openAchievements();return;}
   const isMobile=window.innerWidth<=600;
   if(!isMobile){
     // Desktop: use the normal drawer
@@ -6051,15 +6375,7 @@ function closeMobPanel(){
   setTimeout(()=>map&&map.invalidateSize(),50);
 }
 
-// Render helpers that output into a target element instead of a panel-xxx div
-function renderBadgesInto(target){
-  // Temporarily swap the target
-  const orig=document.getElementById('panel-zenklai');
-  const saved=orig.innerHTML;
-  renderBadges();
-  target.innerHTML=orig.innerHTML;
-  orig.innerHTML=saved;
-}
+// (renderBadgesInto now a shim defined with the achievements window)
 function renderListInto(target){
   const orig=document.getElementById('panel-vietos');
   const saved=orig.innerHTML;
@@ -6808,6 +7124,10 @@ window.onFbAuthReady=async function(user){
           else if(d.found.US){found=new Set(d.found.US);}else if(d.found.LT){found=new Set(d.found.LT);}// US format, LT legacy fallback
         }
         if(d.foundState) foundState=d.foundState;
+        if(d.foundMeta) foundMeta=d.foundMeta;
+        if(d.dailyLog){dailyLog=d.dailyLog;pruneDailyLog();}
+        if(d.activeDaysTotal!==undefined) activeDaysTotal=d.activeDaysTotal;
+        if(d.bestDay!==undefined) bestDay=d.bestDay;
         scheduleBackfill();
         if(d.name) playerName=d.name;
         if(d.totalXP) totalXP=d.totalXP;
@@ -7311,6 +7631,10 @@ async function fbLoadUserProgress(uid){
         else if(d.found.US){found=new Set(d.found.US);}else if(d.found.LT){found=new Set(d.found.LT);}// US format, LT legacy fallback
       }
       if(d.foundState) foundState=d.foundState;
+      if(d.foundMeta) foundMeta=d.foundMeta;
+      if(d.dailyLog){dailyLog=d.dailyLog;pruneDailyLog();}
+      if(d.activeDaysTotal!==undefined) activeDaysTotal=d.activeDaysTotal;
+      if(d.bestDay!==undefined) bestDay=d.bestDay;
       scheduleBackfill();
       if(d.streak!==undefined) streak=d.streak;
       if(d.lastDate) lastDate=d.lastDate;
@@ -7336,6 +7660,8 @@ async function fbSaveUserProgress(){
     await setDoc(doc(db,'users',user.uid),{
       found:{US:[...found]},
       foundState,
+      foundMeta,
+      dailyLog,activeDaysTotal,bestDay,
       foundCount:found.size,
       streak,lastDate,totalXP,notes,
       earnedBadges:[...earnedBadges],
@@ -7373,6 +7699,7 @@ async function backfillFoundStates(){
     for(const s of spots){
       const k=String(s.id);
       if(unresolved.has(k)){foundState[k]=code;unresolved.delete(k);changed=true;}
+      if(found.has(s.id)&&!foundMeta[k]){foundMeta[k]={c:s.cat,t:s.tier||1};changed=true;}
     }
   }
   if(changed){
@@ -7407,6 +7734,8 @@ save=function(){
   localStorage.setItem('ke7_dqdone',dailyQuestDone?'1':'0');
   localStorage.setItem('ke7_sm',JSON.stringify([...claimedStreakMiles]));
   localStorage.setItem('ke7_foundstate',JSON.stringify(foundState));
+  localStorage.setItem('ke7_dailylog',JSON.stringify({log:dailyLog,active:activeDaysTotal,best:bestDay}));
+  localStorage.setItem('ke7_foundmeta',JSON.stringify(foundMeta));
   fbSaveUserProgress(); // sync progress to Firestore if logged in
 };
 
@@ -7486,7 +7815,7 @@ deleteSpot=async function(){
   function anyLayerOpen(){
     const ids=['eauthOverlay','suggestOverlay','reviewOverlay',
                'mobPanelOverlay','mobFilterSheet','settingsSheet','editorModal',
-               'sheet','drawerSubPanel','drawer','delModalBg'];
+               'sheet','drawerSubPanel','drawer','delModalBg','achWindow'];
     return ids.some(id=>{
       const el=document.getElementById(id);
       if(!el) return false;
@@ -7496,6 +7825,7 @@ deleteSpot=async function(){
 
   function closeAllLayers(){
     // Close every possible panel — order doesn't matter, all close at once
+    try{if(typeof achState!=='undefined'&&achState.open)closeAchievements();}catch(e){}
     try{closeEmailModal();}catch(e){}
     try{closeSuggestModal();}catch(e){}
     try{closeReview(false);}catch(e){}
@@ -7510,6 +7840,7 @@ deleteSpot=async function(){
   }
 
   window.addEventListener('popstate',function(e){
+    if(typeof achState!=='undefined'&&achState.open){ if(achState.view==='detail'){achBack();} else {closeAchievements();} try{history.pushState({ss:'app'},'');}catch(_e){} return; }
     if(anyLayerOpen()){
       closeAllLayers();
       // Re-push so next back press still intercepts
