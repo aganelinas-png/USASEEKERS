@@ -846,6 +846,14 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 .ach-bar-fill{height:100%;background:linear-gradient(90deg,var(--gd),var(--gold));border-radius:4px;transition:width .5s}
 .ach-sum-row{display:flex;justify-content:space-between;margin-top:6px;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--gold);font-weight:600}
 .ach-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px calc(28px + env(safe-area-inset-bottom));min-height:0;overscroll-behavior:contain}
+.ach-section{margin-bottom:22px}
+.ach-sec-head{font-family:'Playfair Display',serif;font-size:1rem;color:var(--gold);margin:4px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--bdr)}
+.ach-state-pick{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.ach-state-pick label{font-family:'DM Mono',monospace;font-size:.7rem;color:var(--td);text-transform:uppercase;letter-spacing:.05em}
+.ach-select{flex:1;background:var(--surf2);color:var(--txt);border:1px solid var(--bdr);border-radius:9px;padding:9px 11px;font-size:.9rem;font-family:'DM Mono',monospace;cursor:pointer}
+.ach-select:focus{outline:none;border-color:var(--gold)}
+.ach-ladder-head{margin-bottom:12px}
+.ach-empty{color:var(--td);font-size:.8rem;padding:14px;text-align:center;background:var(--surf2);border:1px dashed var(--bdr);border-radius:10px}
 .ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
 .ach-card{background:var(--surf2);border:1px solid var(--bdr);border-radius:12px;padding:12px;cursor:pointer;transition:.18s;display:flex;flex-direction:column;gap:4px}
 .ach-card:hover{border-color:var(--gold);transform:translateY(-1px)}
@@ -1652,39 +1660,35 @@ const BADGE_GROUPS=[
     {id:'con4',name:'Master Cartographer',desc:'25 suggested spots approved',icon:'💎',contribNeed:25,xpReward:500},
   ]},
   {id:'activity',title:'Activity',icon:'\u26A1',cat:null,badges:[
-    {id:'am1',name:'Marathon Walker',desc:'Collect 10 spots in one day',icon:'\U0001F3C3',dayMax:10,xpReward:50},
-    {id:'am2',name:'Day Tripper',desc:'Collect 25 spots in one day',icon:'\U0001F525',dayMax:25,xpReward:120},
+    {id:'am1',name:'Marathon Walker',desc:'Collect 10 spots in one day',icon:'🏃',dayMax:10,xpReward:50},
+    {id:'am2',name:'Day Tripper',desc:'Collect 25 spots in one day',icon:'🔥',dayMax:25,xpReward:120},
     {id:'am3',name:'Tireless',desc:'Collect 50 spots in one day',icon:'\u26A1',dayMax:50,xpReward:300},
-    {id:'ad1',name:'Daily Devotee',desc:'5+ collects a day for 7 days straight',icon:'\U0001F4C5',dayStreak:7,dayMin:5,xpReward:200},
-    {id:'adt1',name:'Regular',desc:'Active on 30 different days',icon:'\U0001F5D3',activeDays:30,xpReward:150},
-    {id:'adt2',name:'Centurion',desc:'Active on 100 different days',icon:'\U0001F3C5',activeDays:100,xpReward:500},
+    {id:'ad1',name:'Daily Devotee',desc:'5+ collects a day for 7 days straight',icon:'📅',dayStreak:7,dayMin:5,xpReward:200},
+    {id:'adt1',name:'Regular',desc:'Active on 30 different days',icon:'🗓',activeDays:30,xpReward:150},
+    {id:'adt2',name:'Centurion',desc:'Active on 100 different days',icon:'🏅',activeDays:100,xpReward:500},
   ]},
-  {id:'levels',title:'Ranks',icon:'\U0001F396',cat:null,badges:[
+  {id:'levels',title:'Ranks',icon:'🎖',cat:null,badges:[
     {id:'lv5',name:'Rising Star',desc:'Reach level 5',icon:'\u2B50',levelNeed:5,xpReward:40},
-    {id:'lv10',name:'Seasoned',desc:'Reach level 10',icon:'\U0001F31F',levelNeed:10,xpReward:100},
-    {id:'lv20',name:'Veteran',desc:'Reach level 20',icon:'\U0001F4AB',levelNeed:20,xpReward:250},
-    {id:'lv35',name:'Elite',desc:'Reach level 35',icon:'\U0001F320',levelNeed:35,xpReward:500},
-    {id:'lv50',name:'Legend',desc:'Reach level 50',icon:'\U0001F451',levelNeed:50,xpReward:1000},
+    {id:'lv10',name:'Seasoned',desc:'Reach level 10',icon:'🌟',levelNeed:10,xpReward:100},
+    {id:'lv20',name:'Veteran',desc:'Reach level 20',icon:'💫',levelNeed:20,xpReward:250},
+    {id:'lv35',name:'Elite',desc:'Reach level 35',icon:'🌠',levelNeed:35,xpReward:500},
+    {id:'lv50',name:'Legend',desc:'Reach level 50',icon:'👑',levelNeed:50,xpReward:1000},
   ]},
-  {id:'completion',title:'Completionist',icon:'\U0001F9E9',cat:null,badges:[
-    {id:'cc1',name:'Finisher',desc:'Complete 1 category 100%',icon:'\u2705',catComplete:1,xpReward:100},
-    {id:'cc3',name:'Triple Threat',desc:'Complete 3 categories 100%',icon:'\U0001F947',catComplete:3,xpReward:300},
-    {id:'cc5',name:'Devoted',desc:'Complete 5 categories 100%',icon:'\U0001F48E',catComplete:5,xpReward:600},
-    {id:'ccall',name:'Total Completion',desc:'Complete every category 100%',icon:'\U0001F3C6',catCompleteAll:true,xpReward:2500},
-    {id:'gen',name:'Generalist',desc:'Collect at least one of every category',icon:'\U0001F308',generalist:true,xpReward:300},
+    {id:'completion',title:'Sampler',icon:'🌈',cat:null,badges:[
+    {id:'gen',name:'Generalist',desc:'Collect at least one of every category',icon:'🌈',generalist:true,xpReward:300},
   ]},
-  {id:'spread',title:'Coast to Coast',icon:'\U0001F5FA',cat:null,badges:[
-    {id:'sp1',name:'Regional',desc:'Collected spots span 100 km',icon:'\U0001F4CD',spanKm:100,xpReward:40},
-    {id:'sp2',name:'Cross-State',desc:'Span 500 km',icon:'\U0001F6E3',spanKm:500,xpReward:120},
-    {id:'sp3',name:'Nationwide',desc:'Span 2,000 km',icon:'\U0001F985',spanKm:2000,xpReward:300},
-    {id:'sp4',name:'Sea to Shining Sea',desc:'Span 4,000 km coast to coast',icon:'\U0001F31F',spanKm:4000,xpReward:800},
+  {id:'spread',title:'Coast to Coast',icon:'🗺',cat:null,badges:[
+    {id:'sp1',name:'Regional',desc:'Collected spots span 100 km',icon:'📍',spanKm:100,xpReward:40},
+    {id:'sp2',name:'Cross-State',desc:'Span 500 km',icon:'🛣',spanKm:500,xpReward:120},
+    {id:'sp3',name:'Nationwide',desc:'Span 2,000 km',icon:'🦅',spanKm:2000,xpReward:300},
+    {id:'sp4',name:'Sea to Shining Sea',desc:'Span 4,000 km coast to coast',icon:'🌟',spanKm:4000,xpReward:800},
   ]},
-  {id:'states50',title:'50 States',icon:'\U0001F30E',cat:null,badges:[
-    {id:'ss5',name:'Road Trip',desc:'Collect in 5 states',icon:'\U0001F697',statesCount:5,xpReward:80},
+  {id:'states50',title:'50 States',icon:'🌎',cat:null,badges:[
+    {id:'ss5',name:'Road Trip',desc:'Collect in 5 states',icon:'🚗',statesCount:5,xpReward:80},
     {id:'ss10',name:'Frequent Flyer',desc:'Collect in 10 states',icon:'\u2708',statesCount:10,xpReward:200},
-    {id:'ss20',name:'Continental',desc:'Collect in 20 states',icon:'\U0001F30E',statesCount:20,xpReward:450},
-    {id:'ss35',name:'Almost There',desc:'Collect in 35 states',icon:'\U0001F5FA',statesCount:35,xpReward:800},
-    {id:'ss50',name:'All Fifty',desc:'Collect in every one of the 50 states',icon:'\U0001F3C6',statesCount:50,xpReward:2500},
+    {id:'ss20',name:'Continental',desc:'Collect in 20 states',icon:'🌎',statesCount:20,xpReward:450},
+    {id:'ss35',name:'Almost There',desc:'Collect in 35 states',icon:'🗺',statesCount:35,xpReward:800},
+    {id:'ss50',name:'All Fifty',desc:'Collect in every one of the 50 states',icon:'🏆',statesCount:50,xpReward:2500},
   ]},
 ];
 // \u2550\u2550\u2550 DYNAMIC BADGES (per-state ladders + auto-scaling caps) \u2550\u2550\u2550
@@ -1698,7 +1702,7 @@ function buildDynamicBadgeGroups(){
   // 1) Hidden ladder \u2014 open-ended; only earned badges ever render.
   const hg=BADGE_GROUPS.find(g=>g.id==='hidden');
   if(hg&&!hg._extended){
-    [30,50,75,100,150,250,400,600,1000].forEach(function(n,k){ if(!hg.badges.some(b=>b.need===n)) hg.badges.push({id:'hid_x'+n,name:'Hidden +'+n,desc:'Find '+n+' hidden spots',icon:'\U0001F311',need:n,xpReward:60+k*15}); });
+    [30,50,75,100,150,250,400,600,1000].forEach(function(n,k){ if(!hg.badges.some(b=>b.need===n)) hg.badges.push({id:'hid_x'+n,name:'Hidden +'+n,desc:'Find '+n+' hidden spots',icon:'🌑',need:n,xpReward:60+k*15}); });
     hg._extended=true;
   }
   // 2) Category caps + prune unearnable rungs (needs authoritative OVERVIEW.cats).
@@ -1710,7 +1714,7 @@ function buildDynamicBadgeGroups(){
       g.badges=g.badges.filter(b=>{ if(b.complete) return true; if(typeof b.need==='number'&&b.need>=tot&&!earnedBadges.has(b.id)) return false; return true; });
       if(!g.badges.some(b=>b.complete)){
         const lbl=(typeof CATS!=='undefined'&&CATS[g.cat])?CATS[g.cat].label:g.cat;
-        g.badges.push({id:g.cat+'_all',name:'Complete '+lbl,desc:'Collect every '+lbl+' spot',icon:'\U0001F451',complete:true,xpReward:Math.min(1500,300+Math.round(tot*0.15))});
+        g.badges.push({id:g.cat+'_all',name:'Complete '+lbl,desc:'Collect every '+lbl+' spot',icon:'👑',complete:true,xpReward:Math.min(1500,300+Math.round(tot*0.15))});
       }
     });
   }
@@ -1723,9 +1727,9 @@ function buildDynamicBadgeGroups(){
       const tot=o?((typeof o.countNoHidden==='number')?o.countNoHidden:(o.count||0)):0;
       if(!tot||tot<5) return;
       const badges=[];
-      STATE_RUNGS.forEach(function(n,idx){ if(n<tot) badges.push({id:'st_'+code+'_'+n,name:name+' \u00D7'+n,desc:'Collect '+n+' spots in '+name,icon:'\U0001F4CD',state:code,stateNeed:n,xpReward:15+idx*20}); });
-      badges.push({id:'st_'+code+'_all',name:'Conquer '+name,desc:'Collect every spot in '+name,icon:'\U0001F451',state:code,stateComplete:true,xpReward:Math.min(2000,200+Math.round(tot*0.3))});
-      BADGE_GROUPS.push({id:'state_'+code,title:name,icon:'\U0001F4CD',cat:null,stateCode:code,_dyn:true,badges:badges});
+      STATE_RUNGS.forEach(function(n,idx){ if(n<tot) badges.push({id:'st_'+code+'_'+n,name:name+' \u00D7'+n,desc:'Collect '+n+' spots in '+name,icon:'📍',state:code,stateNeed:n,xpReward:15+idx*20}); });
+      badges.push({id:'st_'+code+'_all',name:'Conquer '+name,desc:'Collect every spot in '+name,icon:'👑',state:code,stateComplete:true,xpReward:Math.min(2000,200+Math.round(tot*0.3))});
+      BADGE_GROUPS.push({id:'state_'+code,title:name,icon:'📍',cat:null,stateCode:code,_dyn:true,badges:badges});
     });
   }
 }
@@ -3534,7 +3538,7 @@ function checkBadges(){
       if(evalBadge(b,g,ctx).met){earnedBadges.add(b.id);newOnes.push(b);const bxp=b.xpReward||10;addXP(bxp);setTimeout(()=>showXPBurst(bxp),600);}
     });
   });
-  if(newOnes.length){save();setTimeout(()=>toast(`\U0001F396 New badge: ${newOnes[0].icon} ${newOnes[0].name}${newOnes.length>1?` (+${newOnes.length-1})`:''}`,'gold'),500);refreshAchIfOpen();}
+  if(newOnes.length){save();setTimeout(()=>toast(`🎖 New badge: ${newOnes[0].icon} ${newOnes[0].name}${newOnes.length>1?` (+${newOnes.length-1})`:''}`,'gold'),500);refreshAchIfOpen();}
 }
 
 // ═══════════ ABOUT ME PANEL ═══════════
@@ -3626,6 +3630,37 @@ function closeAchievements(){achState.open=false;const w=document.getElementById
 function achBack(){achState.view='overview';achState.group=null;renderAch();}
 function achOpenGroup(id){achState.view='detail';achState.group=id;renderAch();}
 function refreshAchIfOpen(){if(achState.open)renderAch();}
+let achSelectedState=null;
+function defaultAchState(){
+  try{const m=localStorage.getItem('ke7_ach_state');if(m&&BADGE_GROUPS.some(g=>g.stateCode===m))return m;}catch(e){}
+  const c={};let best=null,bestN=0;
+  for(const id in foundState){const st=foundState[id];if(!st)continue;c[st]=(c[st]||0)+1;if(c[st]>bestN){bestN=c[st];best=st;}}
+  if(best&&BADGE_GROUPS.some(g=>g.stateCode===best))return best;
+  try{ if(userLat!==null&&userLng!==null){const gs=assignState(userLat,userLng);if(gs&&BADGE_GROUPS.some(x=>x.stateCode===gs))return gs;} }catch(e){}
+  return null;
+}
+function achSetState(code){ achSelectedState=code||null; try{ if(code) localStorage.setItem('ke7_ach_state',code); }catch(e){} renderAch(); }
+function achCardHtml(g,ctx){
+  const r=groupRollup(g,ctx);
+  if(g.cat==='hidden'){
+    return `<div class="ach-card" onclick="achOpenGroup('${g.id}')"><div class="ach-card-icon">${g.icon}</div><div class="ach-card-title">${g.title}</div><div class="ach-card-count">${r.earned} found</div><div class="ach-card-spots">🗺 ${r.cur} / ???</div></div>`;
+  }
+  const pct=r.total?Math.round(r.earned/r.total*100):0;
+  const done=r.earned>=r.total&&r.total>0;
+  const spotLine=(r.cur!==null&&r.tot!==null&&r.tot>0)?`<div class="ach-card-spots">🗺 ${r.cur} / ${r.tot}</div>`:'';
+  return `<div class="ach-card ${done?'done':''}" onclick="achOpenGroup('${g.id}')"><div class="ach-card-icon">${g.icon}</div><div class="ach-card-title">${g.title}</div><div class="ach-card-count">${r.earned}/${r.total}${done?' ✓':''}</div>${spotLine}<div class="ach-bar sm"><div class="ach-bar-fill" style="width:${pct}%"></div></div></div>`;
+}
+function achLadderHtml(g,ctx){
+  const r=groupRollup(g,ctx);
+  const dpct=r.total?Math.round(r.earned/r.total*100):0;
+  const spotLine=(r.cur!==null&&r.tot!==null&&r.tot>0)?` · 🗺 ${r.cur} / ${r.tot}`:'';
+  const head=`<div class="ach-ladder-head"><div class="ach-bar"><div class="ach-bar-fill" style="width:${dpct}%"></div></div><div class="ach-sum-row"><span>${r.earned} / ${r.total} badges${spotLine}</span><span>${dpct}%</span></div></div>`;
+  const rows=g.badges.map(b=>{
+    const st=evalBadge(b,g,ctx);const earned=earnedBadges.has(b.id)||st.met;const showProg=!earned&&st.need>0;
+    return `<div class="ach-row ${earned?'earned':''}"><div class="ach-row-icon">${b.icon}</div><div class="ach-row-main"><div class="ach-row-name">${b.name}${earned?' <span class="ach-check">✓</span>':''}</div><div class="ach-row-desc">${b.desc}</div>${showProg?`<div class="ach-row-prog"><div class="ach-bar sm"><div class="ach-bar-fill" style="width:${st.pct}%"></div></div><span class="ach-row-pct">${st.cur}/${st.need}</span></div>`:''}</div></div>`;
+  }).join('');
+  return head+`<div class="ach-list">${rows}</div>`;
+}
 
 function renderAch(){
   if(!achState.open)return;
@@ -3637,36 +3672,32 @@ function renderAch(){
   if(!body)return;
 
   if(achState.view==='overview'){
-    // Global totals EXCLUDE hidden so its badge count can't leak.
     let gEarned=0,gTotal=0;
     BADGE_GROUPS.forEach(g=>{if(g.cat==='hidden')return;gTotal+=g.badges.length;g.badges.forEach(b=>{if(badgeEarned(b,g,ctx))gEarned++;});});
     const gpct=gTotal?Math.round(gEarned/gTotal*100):0;
     backBtn.style.display='none';
-    titleEl.textContent='\U0001F3C6 Achievements';
+    titleEl.textContent='🏆 Achievements';
     sumEl.innerHTML=`<div class="ach-bar"><div class="ach-bar-fill" style="width:${gpct}%"></div></div>
       <div class="ach-sum-row"><span>${gEarned} / ${gTotal} badges</span><span>${gpct}%</span></div>`;
-    const cards=BADGE_GROUPS.map(g=>{
-      const r=groupRollup(g,ctx);
-      if(g.cat==='hidden'){
-        return `<div class="ach-card" onclick="achOpenGroup('${g.id}')">
-          <div class="ach-card-icon">${g.icon}</div>
-          <div class="ach-card-title">${g.title}</div>
-          <div class="ach-card-count">${r.earned} found</div>
-          <div class="ach-card-spots">\U0001F5FA ${r.cur} / ???</div>
-        </div>`;
-      }
-      const pct=r.total?Math.round(r.earned/r.total*100):0;
-      const done=r.earned>=r.total&&r.total>0;
-      const spotLine=(r.cur!==null&&r.tot!==null&&r.tot>0)?`<div class="ach-card-spots">\U0001F5FA ${r.cur} / ${r.tot}</div>`:'';
-      return `<div class="ach-card ${done?'done':''}" onclick="achOpenGroup('${g.id}')">
-        <div class="ach-card-icon">${g.icon}</div>
-        <div class="ach-card-title">${g.title}</div>
-        <div class="ach-card-count">${r.earned}/${r.total}${done?' \u2713':''}</div>
-        ${spotLine}
-        <div class="ach-bar sm"><div class="ach-bar-fill" style="width:${pct}%"></div></div>
-      </div>`;
-    }).join('');
-    body.innerHTML=`<div class="ach-grid">${cards}</div>`;
+    const stateGroups=BADGE_GROUPS.filter(g=>g.stateCode);
+    const catGroups=BADGE_GROUPS.filter(g=>g.cat);
+    const mileGroups=BADGE_GROUPS.filter(g=>!g.cat&&!g.stateCode);
+    // States section: one state at a time via dropdown (defaults to the user's own state)
+    if(achSelectedState===null) achSelectedState=defaultAchState();
+    let statesHtml;
+    if(stateGroups.length===0){
+      statesHtml='<div class="ach-empty">State badges appear once spot data finishes loading.</div>';
+    } else {
+      const opts=stateGroups.slice().sort((a,b)=>a.title.localeCompare(b.title)).map(g=>`<option value="${g.stateCode}"${g.stateCode===achSelectedState?' selected':''}>${g.title}</option>`).join('');
+      const placeholder=achSelectedState?'':'<option value="" selected>Select your state…</option>';
+      const selG=achSelectedState?BADGE_GROUPS.find(g=>g.stateCode===achSelectedState):null;
+      const ladder=selG?achLadderHtml(selG,ctx):'<div class="ach-empty">Pick your state above to see its badges.</div>';
+      statesHtml=`<div class="ach-state-pick"><label>State</label><select class="ach-select" onchange="achSetState(this.value)">${placeholder}${opts}</select></div>${ladder}`;
+    }
+    const cardsFor=arr=>arr.map(g=>achCardHtml(g,ctx)).join('');
+    body.innerHTML=`<div class="ach-section"><div class="ach-sec-head">🗺️ States</div>${statesHtml}</div>`+
+      `<div class="ach-section"><div class="ach-sec-head">📚 Categories</div><div class="ach-grid">${cardsFor(catGroups)}</div></div>`+
+      `<div class="ach-section"><div class="ach-sec-head">🏆 Milestones</div><div class="ach-grid">${cardsFor(mileGroups)}</div></div>`;
     body.scrollTop=0;return;
   }
 
@@ -3678,14 +3709,14 @@ function renderAch(){
 
   if(g.cat==='hidden'){
     const earnedRows=g.badges.filter(b=>earnedBadges.has(b.id)||evalBadge(b,g,ctx).met);
-    sumEl.innerHTML=`<div class="ach-sum-row"><span>${earnedRows.length} found \u00B7 \U0001F5FA ${r.cur} / ???</span><span></span></div>`;
+    sumEl.innerHTML=`<div class="ach-sum-row"><span>${earnedRows.length} found \u00B7 🗺 ${r.cur} / ???</span><span></span></div>`;
     const rows=earnedRows.map(b=>`<div class="ach-row earned"><div class="ach-row-icon">${b.icon}</div><div class="ach-row-main"><div class="ach-row-name">${b.name} <span class="ach-check">\u2713</span></div><div class="ach-row-desc">${b.desc}</div></div></div>`).join('');
     body.innerHTML=`<div class="ach-list">${rows||'<div style="color:var(--td);font-size:.78rem;padding:10px">No hidden spots discovered yet\u2026</div>'}</div>`;
     body.scrollTop=0;return;
   }
 
   const dpct=r.total?Math.round(r.earned/r.total*100):0;
-  const spotLine=(r.cur!==null&&r.tot!==null&&r.tot>0)?` \u00B7 \U0001F5FA ${r.cur} / ${r.tot}`:'';
+  const spotLine=(r.cur!==null&&r.tot!==null&&r.tot>0)?` \u00B7 🗺 ${r.cur} / ${r.tot}`:'';
   sumEl.innerHTML=`<div class="ach-bar"><div class="ach-bar-fill" style="width:${dpct}%"></div></div>
     <div class="ach-sum-row"><span>${r.earned} / ${r.total} badges${spotLine}</span><span>${dpct}%</span></div>`;
   const rows=g.badges.map(b=>{
