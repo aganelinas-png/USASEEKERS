@@ -686,8 +686,10 @@ export default {
       html = html.replace(FIREBASE_CONFIG_PLACEHOLDER, injected);
     }
 
-    // Inject admin secret
-    html = html.replace(ADMIN_SECRET_PLACEHOLDER, `window._adminSecret='${adminSecret}';`);
+    // Admin secret is intentionally NOT injected into the served HTML —
+    // doing so would expose it to every visitor. Admins enter it once per
+    // device via the in-app prompt; it is then stored locally in the browser.
+    // (see _getAdminSecret() in index.html)
 
     // Inject ADMIN_UIDS
     const adminUid = env.ADMIN_UID || 'K9DGewbvOKZsidYDaiAk2pc0J0m1';
