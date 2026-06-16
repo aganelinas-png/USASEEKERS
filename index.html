@@ -57,6 +57,7 @@ window._fb={db,auth,
 // Auth state listener — runs as soon as Firebase initialises
 onAuthStateChanged(auth,user=>{
   window._fbUser=user||null;
+  if(user&&window.flushClientErrors){try{window.flushClientErrors();}catch(e){}}
   if(typeof window.onFbAuthReady==='function') window.onFbAuthReady(user);
 });
 
@@ -606,6 +607,14 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 .set-toggle.on{background:var(--gold)}
 .set-toggle::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.3)}
 .set-toggle.on::after{transform:translateX(18px)}
+#legalBody h3{color:var(--gold);font-size:1rem;margin:16px 0 6px}
+#legalBody h3:first-child{margin-top:0}
+#legalBody p{margin:0 0 10px}
+#legalBody ul{padding-left:1.2em;margin:0 0 10px}
+#legalBody li{margin:.25em 0}
+#legalBody a{color:var(--gold)}
+#legalBody .eff{color:var(--td);font-size:.78rem;font-family:'DM Mono',monospace;margin-bottom:14px}
+#legalBody .safe{background:var(--bg);border:1px solid var(--gold);border-radius:10px;padding:12px 14px;margin:12px 0}
 .set-danger{color:var(--red);font-size:.85rem}
 /* ── DELETE ACCOUNT MODAL ── */
 .del-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
@@ -1256,11 +1265,19 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
       </div>
       <button class="set-toggle" id="setCollectedToggle" onclick="event.stopPropagation();toggleHideCollected();updateSettingsUI()"></button>
     </div>
-    <div class="settings-row" onclick="window.open('https://www.spotseekers.net/privacy','_blank')">
+    <div class="settings-row" onclick="openLegal('privacy')">
       <div class="set-icon">🔒</div>
       <div class="set-label">
-        <div class="set-name">Privatumo politika</div>
-        <div class="set-sub">spotseekers.net/privacy</div>
+        <div class="set-name">Privacy Policy</div>
+        <div class="set-sub">How we handle your data</div>
+      </div>
+      <span style="color:var(--tm);font-size:1rem">›</span>
+    </div>
+    <div class="settings-row" onclick="openLegal('terms')">
+      <div class="set-icon">📜</div>
+      <div class="set-label">
+        <div class="set-name">Terms of Service</div>
+        <div class="set-sub">Rules for using SpotSeekers</div>
       </div>
       <span style="color:var(--tm);font-size:1rem">›</span>
     </div>
@@ -1275,6 +1292,18 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
     <div id="setDeleteRow" style="display:none;text-align:center;padding:14px 0 2px">
       <span onclick="deleteAccountPrompt()" style="font-size:.72rem;color:var(--tm);font-family:'DM Mono',monospace;cursor:pointer;text-decoration:underline;text-underline-offset:3px">Delete account</span>
     </div>
+  </div>
+</div>
+
+<!-- LEGAL SHEET (Privacy / Terms) -->
+<div class="settings-sheet" id="legalSheet">
+  <div class="settings-bg" onclick="closeLegal()"></div>
+  <div class="settings-panel">
+    <div class="settings-header">
+      <div class="settings-title" id="legalTitle">Privacy Policy</div>
+      <div class="settings-close" onclick="closeLegal()">✕</div>
+    </div>
+    <div id="legalBody" style="font-size:.9rem;line-height:1.6;color:var(--txt)"></div>
   </div>
 </div>
 
@@ -2104,7 +2133,7 @@ function spotRadius(spot){
 
 function save(){
   localStorage.setItem('ke7_spots',JSON.stringify(SPOTS));
-  localStorage.setItem('ke7_found',JSON.stringify({LT:[...found]}));
+  localStorage.setItem('ke7_found',JSON.stringify({US:[...found]}));
   localStorage.setItem('ke7_streak',streak);
   localStorage.setItem('ke7_lastDate',lastDate||'');
   localStorage.setItem('ke7_notes',JSON.stringify(notes));
@@ -2196,6 +2225,179 @@ function toggleTheme(){isDark=!isDark;applyTheme();save();}
 
 // ═══════════ SETTINGS ═══════════
 
+const LEGAL_PRIVACY=`
+<div class="eff">Effective: 2026-07-01 · Last updated: 2026-07-01</div>
+<p>SpotSeekers ("we", "us", "the app") is a location-based game that lets you discover and collect historic places across the United States. This policy explains what we collect, why, and the choices you have. By using SpotSeekers you agree to this policy.</p>
+<p>This app is operated by <strong>Aidas Ganelinas</strong>. Questions? Contact <a href="mailto:aidas@spotseekers.net">aidas@spotseekers.net</a>.</p>
+<h3>What we collect</h3>
+<ul>
+<li><strong>Account information</strong> — your email address and a display name, handled through Google Firebase Authentication.</li>
+<li><strong>Location</strong> — your device's GPS position, used in real time to check whether you're close enough to a place to collect it. We don't keep a continuous history of where you go; we store which places you collected and the state they're in, not a trail of your movements.</li>
+<li><strong>Gameplay data</strong> — the places you've collected, experience points, streaks, badges, daily activity, and notes you write. Saved to Firebase Firestore so your progress follows you across devices.</li>
+<li><strong>Usage and device data</strong> — basic, largely anonymous information such as visit counts and standard technical data needed to run and secure the service.</li>
+<li><strong>Content you submit</strong> — if you suggest a new place or leave a note, we store what you send.</li>
+</ul>
+<h3>How we use it</h3>
+<ul>
+<li>To run the game: award collections, track progress, show maps and place information.</li>
+<li>To operate the leaderboard and social features.</li>
+<li>To keep the service secure, prevent abuse, and fix problems.</li>
+<li>To improve the app using aggregate, non-identifying usage information.</li>
+</ul>
+<h3>What's public</h3>
+<p>The leaderboard is public. If you're signed in, your display name and game stats (experience points, places collected, streak) can be visible to other players. Choose a display name you're comfortable showing publicly.</p>
+<h3>Third-party services</h3>
+<p>To work, the app sends limited data to trusted providers: Google Firebase (sign-in and progress), OpenStreetMap (map tiles and place data), Wikipedia (optional place descriptions), and routing and weather providers (directions and local conditions). Each has its own privacy policy governing the data it receives.</p>
+<h3>Storage on your device</h3>
+<p>We use your browser's local storage to keep settings and a local copy of your progress so the app loads quickly. You can clear this any time in your browser settings.</p>
+<h3>Keeping and deleting your data</h3>
+<p>We keep your account and game data while your account is active. You can delete your account in Settings, or ask us to delete it by emailing <a href="mailto:aidas@spotseekers.net">aidas@spotseekers.net</a>.</p>
+<h3>Children</h3>
+<p>SpotSeekers is not directed to children under 13, and we don't knowingly collect their data. If you believe a child has given us information, contact us and we'll delete it.</p>
+<h3>Your rights</h3>
+<p>Depending on where you live (e.g. U.S. state laws such as California's, or the GDPR in the EU/UK), you may have the right to access, correct, or delete your data, or object to certain processing. Email <a href="mailto:aidas@spotseekers.net">aidas@spotseekers.net</a> to exercise any of these.</p>
+<h3>Changes</h3>
+<p>We may update this policy as the app evolves. We'll change the "Last updated" date above, and note significant changes in the app.</p>
+<p style="color:var(--td);font-size:.8rem;margin-top:18px">© 2026 Aidas Ganelinas · SpotSeekers USA</p>
+`;
+const LEGAL_TERMS=`
+<div class="eff">Effective: 2026-07-01 · Last updated: 2026-07-01</div>
+<p>These Terms govern your use of SpotSeekers ("the app"), operated by <strong>Aidas Ganelinas</strong>. By creating an account or using the app, you agree to these Terms. If you don't agree, please don't use the app.</p>
+<h3>1. Who can use SpotSeekers</h3>
+<p>You must be at least 13 years old to use the app. If you're under the age of majority where you live, you should have a parent or guardian's permission.</p>
+<h3>2. Your account</h3>
+<p>You're responsible for keeping your login details secure and for activity under your account. Provide accurate information when you sign up, and tell us if you suspect unauthorized use.</p>
+<h3>3. Fair play</h3>
+<p>SpotSeekers is meant to be played by actually visiting places. You agree not to:</p>
+<ul>
+<li>Fake or spoof your GPS location, or use bots, scripts, or automation to collect places.</li>
+<li>Interfere with, overload, or try to break the service or its security.</li>
+<li>Harass other players, or choose a display name that is offensive, impersonates someone, or infringes others' rights.</li>
+<li>Submit false, misleading, or inappropriate place suggestions or content.</li>
+</ul>
+<div class="safe">
+<h3 style="margin-top:0">4. Play safe — your responsibility</h3>
+<p style="margin-bottom:0">SpotSeekers sends you to real-world locations. <strong>Always be aware of your surroundings.</strong> Don't play while driving, don't trespass on private property or restricted areas, follow all local laws and posted signs, and use common sense around traffic, water, weather, and hazards. You are solely responsible for your safety and conduct while using the app, and for respecting other people and places you visit.</p>
+</div>
+<h3>5. Content you submit</h3>
+<p>You keep ownership of place suggestions, notes, and other content you submit. By submitting it, you give us a non-exclusive, worldwide, royalty-free license to use, display, and incorporate it into the app so we can run and improve the game. Don't submit anything you don't have the right to share.</p>
+<h3>6. Our content</h3>
+<p>The app, its design, branding, and original content are owned by us or our licensors and are protected by law. You may use the app for personal, non-commercial play only.</p>
+<h3>7. Availability and changes</h3>
+<p>We may add, change, or remove features, and may suspend or stop the service at any time. We aren't liable to you for changes, suspension, or discontinuation of the app.</p>
+<h3>8. "As is" — no warranties</h3>
+<p>The app is provided "as is" and "as available," without warranties of any kind, express or implied, including fitness for a particular purpose and accuracy of place data, directions, or maps. We don't guarantee the app will be uninterrupted, error-free, or that location information is precise.</p>
+<h3>9. Limitation of liability</h3>
+<p>To the fullest extent permitted by law, we won't be liable for any indirect, incidental, or consequential damages, or for any injury, loss, or damage arising from your use of the app or your visits to real-world locations. Where liability can't be excluded, it is limited to the amount you paid us (if any) in the prior 12 months.</p>
+<h3>10. Termination</h3>
+<p>You can stop using the app and delete your account at any time. We may suspend or terminate your access if you break these Terms or misuse the service.</p>
+<h3>11. Governing law</h3>
+<p>These Terms are governed by the laws of the State of Maine, USA, without regard to conflict-of-law rules. Disputes will be handled in the courts located there, unless your local law requires otherwise.</p>
+<h3>12. Changes to these Terms</h3>
+<p>We may update these Terms from time to time. We'll update the "Last updated" date and note significant changes in the app. Continuing to use SpotSeekers after changes means you accept them.</p>
+<h3>13. Contact</h3>
+<p>Questions? Email <a href="mailto:aidas@spotseekers.net">aidas@spotseekers.net</a>.</p>
+<p style="color:var(--td);font-size:.8rem;margin-top:18px">© 2026 Aidas Ganelinas · SpotSeekers USA</p>
+`;
+function openLegal(which){
+  const sheet=document.getElementById('legalSheet');
+  const title=document.getElementById('legalTitle');
+  const body=document.getElementById('legalBody');
+  if(!sheet||!title||!body) return;
+  if(which==='terms'){title.textContent='Terms of Service';body.innerHTML=LEGAL_TERMS;}
+  else{title.textContent='Privacy Policy';body.innerHTML=LEGAL_PRIVACY;}
+  body.scrollTop=0;
+  sheet.classList.add('open');
+  history.pushState({ss:'app'},'');
+}
+function closeLegal(){
+  document.getElementById('legalSheet')?.classList.remove('open');
+}
+// ───── CLIENT ERROR MONITORING (buffers locally, writes to Firestore 'errors' once signed in) ─────
+const ERR_BUF_KEY='ss_err_buf';
+let _errSession=0;
+const _errSeen=new Set();
+function _errBufRead(){try{return JSON.parse(localStorage.getItem(ERR_BUF_KEY)||'[]');}catch(e){return[];}}
+function logClientError(message,source,errObj){
+  try{
+    if(!message) return;
+    const key=String(message).slice(0,120);
+    if(_errSeen.has(key)) return;            // de-dup identical messages this session
+    _errSeen.add(key);
+    const rec={
+      message:String(message).slice(0,300),
+      source:String(source||'').slice(0,200),
+      stack:String((errObj&&errObj.stack)||'').slice(0,600),
+      path:(location&&location.pathname)||'',
+      ua:((navigator&&navigator.userAgent)||'').slice(0,200),
+      ts:Date.now(),
+      v:(typeof APP_VERSION!=='undefined'?APP_VERSION:'')
+    };
+    const buf=_errBufRead();buf.push(rec);while(buf.length>20)buf.shift();
+    try{localStorage.setItem(ERR_BUF_KEY,JSON.stringify(buf));}catch(e){}
+    flushClientErrors();
+  }catch(e){/* the logger must never throw */}
+}
+async function flushClientErrors(){
+  try{
+    if(!window._fb||!window._fbUser) return;  // only signed-in users write (no anonymous spam)
+    if(_errSession>=10) return;               // cap writes per session
+    const buf=_errBufRead();if(!buf.length) return;
+    const{db,collection,addDoc,serverTimestamp}=window._fb;
+    if(!addDoc||!collection) return;
+    localStorage.removeItem(ERR_BUF_KEY);     // claim the buffer before sending
+    for(const rec of buf){
+      if(_errSession>=10) break;
+      _errSession++;
+      try{addDoc(collection(db,'errors'),Object.assign({},rec,{uid:window._fbUser.uid,serverTs:serverTimestamp()})).catch(()=>{});}catch(e){}
+    }
+  }catch(e){/* swallow */}
+}
+window.flushClientErrors=flushClientErrors;
+window.addEventListener('error',function(e){logClientError(e.message,((e.filename||'')+':'+(e.lineno||'')),e.error);});
+window.addEventListener('unhandledrejection',function(e){var r=e&&e.reason;logClientError((r&&r.message)||String(r)||'unhandledrejection','promise',r);});
+
+// ───── ADMIN: spot data-quality DRY-RUN — read-only, makes NO changes. Run in console: spotCleanupScan() ─────
+const JUNK_TYPE_WORDS=new Set(['house','building','structure','site','object','district','hut','shed','hangar','barn','garage','outbuilding','ruin','ruins','wall','tower','monument','memorial','bridge','dam','well','silo']);
+function _classifyName(name){
+  const n=(name||'').trim();
+  if(!n) return 'empty';
+  if(JUNK_TYPE_WORDS.has(n.toLowerCase())) return 'typeWord';
+  if(!/\s\S+\s/.test(n) && /^[A-Za-z]{0,8}[\s-]?\d{1,6}[A-Za-z]?$/.test(n)) return 'codeLike'; // S382, hangar133, Building 5
+  return null;
+}
+async function spotCleanupScan(){
+  if(typeof STATE_BBOXES==='undefined'){console.warn('STATE_BBOXES missing');return;}
+  const codes=Object.keys(STATE_BBOXES);
+  const report={total:0,empty:0,typeWord:0,codeLike:0,clusterDupes:0,byState:{}};
+  const samples={typeWord:[],codeLike:[]};
+  console.log('Spot cleanup dry-run: scanning '+codes.length+' states (read-only, no changes)...');
+  for(const code of codes){
+    let arr;
+    try{arr=await fetchStatePack(code);}catch(e){console.warn('skip',code,e.message);continue;}
+    const st={n:arr.length,empty:0,typeWord:0,codeLike:0,clusterDupes:0};
+    const buckets=new Map();
+    for(const s of arr){
+      const c=_classifyName(s.name);
+      if(c){st[c]++;report[c]++;if(c!=='empty'&&samples[c].length<20)samples[c].push((s.name||'')+' ['+code+']');}
+      const k=(s.name||'').toLowerCase()+'@'+(+s.lat).toFixed(3)+','+(+s.lng).toFixed(3);
+      buckets.set(k,(buckets.get(k)||0)+1);
+    }
+    for(const c of buckets.values()){if(c>=5){st.clusterDupes+=c;report.clusterDupes+=c;}}
+    report.byState[code]=st;report.total+=arr.length;
+    console.log(code,JSON.stringify(st));
+  }
+  const junk=report.empty+report.typeWord+report.codeLike;
+  console.log('═══ SPOT CLEANUP DRY-RUN — NO CHANGES MADE ═══');
+  console.log('Total spots scanned:',report.total);
+  try{console.table(report.byState);}catch(e){}
+  console.log('empty:',report.empty,'| typeWord:',report.typeWord,'| codeLike:',report.codeLike,'| clustered(>=5 same name+location):',report.clusterDupes);
+  console.log('typeWord samples:',samples.typeWord);
+  console.log('codeLike samples:',samples.codeLike);
+  if(typeof toast==='function') toast('Scan done: '+junk+' junk-named, '+report.clusterDupes+' clustered (see console)','info');
+  return report;
+}
+window.spotCleanupScan=spotCleanupScan;
 function openSettings(){
   const el=document.getElementById('settingsSheet');
   if(!el) return;
@@ -7218,7 +7420,7 @@ function scheduleBackfill(){
 const _localSave=save;
 save=function(){
   // Save everything EXCEPT spots (Firestore owns spots now)
-  localStorage.setItem('ke7_found',JSON.stringify({LT:[...found]}));
+  localStorage.setItem('ke7_found',JSON.stringify({US:[...found]}));
   localStorage.setItem('ke7_streak',streak);
   localStorage.setItem('ke7_lastDate',lastDate||'');
   localStorage.setItem('ke7_notes',JSON.stringify(notes));
