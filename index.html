@@ -2037,6 +2037,8 @@ let _routePolyline=null;
 let _spotRouteLayer=null,_spotRouteSteps=null,_spotRouteSpot=null;
 let _routeEditMode=false;
 let _routeEditRouteId=null;
+let _tpStart=null,_tpDest=null,_tpPreview=null,_tpPreviewLayer=null;
+let _tpUI={cat:'any',city:'near',mode:'car',shape:'loop',time:120};
 let selectedSpot=null,userLat=null,userLng=null;
 let isDark=false;
 // Filter: Set of HIDDEN category ids. Empty = show all. Toggle-off model.
@@ -3464,7 +3466,7 @@ function openSheet(spot){
 
   const _footer=document.getElementById('sheetFooter');
   if(_footer){
-    _footer.innerHTML = locked ? '' : `<button class="route-show-btn" id="routeShowBtn" onclick="showRouteToSpot(selectedSpot)">🧭 Show route</button><div class="crow"><div class="dbadge" id="distBadge">—</div><button class="${isF?'cbtn done':'cbtn gps-wait'}" id="collectBtn" onclick="collectCurrent()">${isF?'✓ Collected':'⌛ Get closer'}</button><button class="editbtn" id="favBtn" onclick="toggleSpotInActiveRoute()" title="Add to route" style="font-size:18px;padding:10px 12px">＋</button>${(window._fbUser&&ADMIN_UIDS.includes(window._fbUser.uid))?'<button class="editbtn" onclick="openEditor(selectedSpot)">✏️</button>':''}</div>`;
+    _footer.innerHTML = locked ? '' : `<button class="route-show-btn" id="routeShowBtn" onclick="showRouteToSpot(selectedSpot)">🧭 Show route</button><button class="route-show-btn" onclick="tpFromHere(selectedSpot.id)">🗺 Plan a trip from here</button><div class="crow"><div class="dbadge" id="distBadge">—</div><button class="${isF?'cbtn done':'cbtn gps-wait'}" id="collectBtn" onclick="collectCurrent()">${isF?'✓ Collected':'⌛ Get closer'}</button><button class="editbtn" id="favBtn" onclick="toggleSpotInActiveRoute()" title="Add to route" style="font-size:18px;padding:10px 12px">＋</button>${(window._fbUser&&ADMIN_UIDS.includes(window._fbUser.uid))?'<button class="editbtn" onclick="openEditor(selectedSpot)">✏️</button>':''}</div>`;
   }
   hideProxPopup();   // B1: don't let the proximity popup cover the footer
   clearSpotRoute();  // clear any prior per-spot route when opening a new spot
@@ -6229,10 +6231,10 @@ function optimizeRoute(routeId){
 // OSRM: fetch real road distance + draw polyline on map
 async function fetchAndDrawRoute(routeId){
   const r=routes.find(rr=>rr.id===routeId);
-  if(!r||r.spots.length<2){clearRoutePolyline();return;}
-  const objs=r.spots.map(id=>SPOTS.find(s=>String(s.id)===id)).filter(Boolean);
-  if(objs.length<2) return;
-  const coords=objs.map(s=>`${s.lng},${s.lat}`).join(';');
+  if(!r){clearRoutePolyline();return;}
+  const wp=_routeWaypoints(r);              // stop centroids (<=20) or auto-clustered legacy spots — never 1000
+  if(wp.length<2){clearRoutePolyline();return;}
+  const coords=wp.map(p=>`${p[1]},${p[0]}`).join(';');
   try{
     const res=await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`,{signal:AbortSignal.timeout(8000)});
     const data=await res.json();
@@ -6246,13 +6248,13 @@ async function fetchAndDrawRoute(routeId){
       return;
     }
   }catch(e){}
-  // Fallback: straight-line with 1.3 urban correction
+  // Fallback: straight-line through stop waypoints with urban correction
   let total=0;
-  for(let i=0;i<objs.length-1;i++) total+=dist(objs[i].lat,objs[i].lng,objs[i+1].lat,objs[i+1].lng);
-  r.distKm=(total/1000*1.3).toFixed(1);
+  for(let i=0;i<wp.length-1;i++) total+=dist(wp[i][0],wp[i][1],wp[i+1][0],wp[i+1][1]);
+  r.distKm=(total/1000*TRIP_DETOUR).toFixed(1);
   saveRoutes();updateRouteBar();
   clearRoutePolyline();
-  _routePolyline=L.polyline(objs.map(s=>[s.lat,s.lng]),{color:'#c9a84c',weight:2,opacity:.5,dashArray:'4,8'}).addTo(map);
+  _routePolyline=L.polyline(wp,{color:'#c9a84c',weight:2,opacity:.5,dashArray:'4,8'}).addTo(map);
 }
 
 function clearRoutePolyline(){
@@ -6441,18 +6443,40 @@ function renderRoutesInto(body){
 }
 
 function _buildAutoGenSection(){
-  return`<div style="margin:14px 14px 0;padding-top:14px;border-top:1px solid var(--bdr)">
-    <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">⚡ Auto-routed</div>
+  const sel=(v,cur)=>v===cur?' selected':'';
+  const cats=Object.entries(CATS).filter(([k])=>k!=='hidden').map(([k,v])=>`<option value="${k}"${sel(k,_tpUI.cat)}>${v.emoji} ${v.label}</option>`).join('');
+  const cities=Object.keys(getCityBounds()).filter(c=>SPOTS.some(s=>spotInCity(s,c))).sort().map(c=>`<option value="${c}"${sel(c,_tpUI.city)}>${c}</option>`).join('');
+  const start=_tpResolveStart();
+  const startLbl=start?start.label:'\u26a0 none';
+  const SS="flex:1;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;padding:8px 10px;font-family:'DM Sans',sans-serif;font-size:.8rem;color:var(--txt);outline:none";
+  const BS="background:var(--surf2);border:1px solid var(--bdr);border-radius:7px;padding:5px 9px;font-size:.72rem;color:var(--td);cursor:pointer";
+  setTimeout(_tpUpdateEstimate,30);
+  return `<div style="margin:14px 14px 0;padding-top:14px;border-top:1px solid var(--bdr)">
+    <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">\u26a1 Auto-plan a trip</div>
     <div style="display:flex;gap:8px;margin-bottom:8px">
-      <select id="autoGenCat" style="flex:1;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;padding:8px 10px;font-family:'DM Sans',sans-serif;font-size:.8rem;color:var(--txt);outline:none">
-        ${Object.entries(CATS).filter(([k])=>k!=='hidden').map(([k,v])=>`<option value="${k}">${v.emoji} ${v.label}</option>`).join('')}
-      </select>
-      <select id="autoGenCity" style="flex:1;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;padding:8px 10px;font-family:'DM Sans',sans-serif;font-size:.8rem;color:var(--txt);outline:none">
-        <option value="all">🗺 All spots</option>
-        ${Object.keys(getCityBounds()).filter(c=>SPOTS.some(s=>spotInCity(s,c))).sort().map(c=>`<option value="${c}">${c}</option>`).join('')}
-      </select>
+      <select id="tpCat" onchange="_tpInval()" style="${SS}"><option value="any"${sel('any',_tpUI.cat)}>\u2737 Any category</option>${cats}</select>
+      <select id="tpCity" onchange="_tpInval()" style="${SS}"><option value="near"${sel('near',_tpUI.city)}>\ud83d\udccd Near me</option>${cities}</select>
     </div>
-    <button onclick="autoGenerateRoute()" style="width:100%;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;padding:9px;font-family:'DM Sans',sans-serif;font-size:.82rem;color:var(--txt);cursor:pointer;transition:background .15s">🎲 Generuoti route</button>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <select id="tpMode" onchange="_tpInval()" style="${SS}"><option value="car"${sel('car',_tpUI.mode)}>\ud83d\ude97 By car</option><option value="foot"${sel('foot',_tpUI.mode)}>\ud83d\udeb6 On foot</option></select>
+      <select id="tpShape" onchange="_tpShapeChange()" style="${SS}"><option value="loop"${sel('loop',_tpUI.shape)}>\ud83d\udd01 Round trip</option><option value="open"${sel('open',_tpUI.shape)}>\u27a1 One-way</option><option value="dest"${sel('dest',_tpUI.shape)}>\ud83c\udfaf To a destination</option></select>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;font-size:.74rem;color:var(--td)">
+      <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Start: ${startLbl}</span>
+      <button onclick="_tpUseGps()" style="${BS}">\ud83d\udccd GPS</button>
+      <button onclick="_tpPick('start')" style="${BS}">Map</button>
+    </div>
+    <div id="tpDestRow" style="display:${_tpUI.shape==='dest'?'flex':'none'};gap:8px;align-items:center;margin-bottom:8px;font-size:.74rem;color:var(--td)">
+      <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Destination: ${_tpDest?_tpDest.label:'\u26a0 none'}</span>
+      <button onclick="_tpPick('dest')" style="${BS}">Pick on map</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <span style="font-size:.72rem;color:var(--td)">Time</span>
+      <input type="range" id="tpTime" min="30" max="360" step="15" value="${_tpUI.time}" oninput="_tpUpdateEstimate()" style="flex:1;accent-color:var(--gold)">
+      <span id="tpTimeLabel" style="font-size:.74rem;color:var(--gold);font-family:'DM Mono',monospace;min-width:48px;text-align:right">${_fmtMin(_tpUI.time)}</span>
+    </div>
+    <div id="tpReadout" style="font-size:.76rem;color:var(--txt);margin:6px 2px 10px;min-height:18px;line-height:1.4"></div>
+    <button onclick="tpGenerate()" style="width:100%;background:var(--gold);color:#0e0c09;border:none;border-radius:8px;padding:10px;font-family:'DM Sans',sans-serif;font-size:.84rem;font-weight:600;cursor:pointer">\ud83e\udded Generate trip</button>
   </div>`;
 }
 
@@ -6515,6 +6539,7 @@ function renderRouteDetailInto(r,body,routeId){
     <div style="padding:6px 14px 8px;border-bottom:1px solid var(--bdr)">
       <button onclick="startRouteEditMode('${routeId}')" style="width:100%;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;padding:8px;font-family:'DM Sans',sans-serif;font-size:.82rem;color:var(--txt);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">＋ Add stops on map</button>
     </div>
+    ${r.campaign?`<div style="padding:6px 14px 8px;border-bottom:1px solid var(--bdr)"><button onclick="tpGenerateNext('${routeId}')" style="width:100%;background:rgba(201,168,76,.12);border:1px solid var(--gold);border-radius:8px;padding:8px;font-family:'DM Sans',sans-serif;font-size:.82rem;color:var(--gold);cursor:pointer">\u2795 Generate next trip</button></div>`:''}
     <div>${spotsHtml}</div>
   </div>`;
 }
@@ -6527,21 +6552,7 @@ function promptCreateRoute(){
   toast(`✓ Sukurtas "${r.name}"`,'success');
 }
 
-function autoGenerateRoute(){
-  const cat=document.getElementById('autoGenCat')?.value;
-  const city=document.getElementById('autoGenCity')?.value;
-  if(!cat) return;
-  let pool=SPOTS.filter(s=>s.cat===cat&&s.cat!=='hidden'&&!found.has(s.id));
-  if(city&&city!=='all') pool=pool.filter(s=>spotInCity(s,city));
-  if(!pool.length){toast('No suitable spots found','info');return;}
-  const catObj=CATS[cat]||{label:cat,emoji:''};
-  const cityLabel=city==='all'?'USA':city;
-  const name=`${catObj.emoji} ${catObj.label} — ${cityLabel}`.trim();
-  const r=createRoute(name);
-  pool.forEach(s=>r.spots.push(String(s.id)));
-  saveRoutes();setActiveRoute(r.id);renderRoutes();updateAll();
-  toast(`✓ Route created: ${pool.length} spots`,'success');
-}
+function autoGenerateRoute(){ tpGenerate(); }
 
 // ── Filter: toggle all off ──
 function mobHideAll(){
@@ -6565,6 +6576,304 @@ function toggleRouteFilter(){
 
 function renderFavoritesInto(target){renderRoutesInto(target);}
 function renderFavorites(){renderRoutes();}
+
+// ═══════════ TRIP ENGINE (clustering + generation) ═══════════
+// Spot -> Stop (cluster) -> Trip (<=20 stops). Time-budget master. Driving polyline (OSRM /trip), foot time estimated. Free tier only.
+const TRIP_MODE_SPEED={foot:80,car:600};      // metres per minute (effective)
+const TRIP_CLUSTER_M=170;                       // spots within this distance form one "stop"
+const TRIP_REACH_M={foot:5000,car:80000};       // prefilter radius from start
+const TRIP_CORRIDOR_M={foot:1200,car:9000};     // corridor half-buffer for destination trips
+const TRIP_DETOUR=1.35;                          // straight-line -> road correction for estimates
+const TRIP_DWELL_PER_SPOT=3;                     // minutes spent collecting each spot at a stop
+const TRIP_MAX_STOPS=20;
+const TRIP_MAX_WP=25;                            // hard OSRM waypoint cap (start + stops + dest)
+
+function _fmtMin(m){m=Math.round(m);if(m<60)return m+' min';const h=Math.floor(m/60),r=m%60;return r?`${h}h ${r}m`:`${h}h`;}
+
+function _clusterSpots(arr){
+  const cl=[];
+  for(const s of arr){
+    let best=null,bd=TRIP_CLUSTER_M;
+    for(const c of cl){const d=dist(s.lat,s.lng,c.lat,c.lng);if(d<bd){bd=d;best=c;}}
+    if(best){best.spots.push(s);best.sumLat+=s.lat;best.sumLng+=s.lng;best.lat=best.sumLat/best.spots.length;best.lng=best.sumLng/best.spots.length;}
+    else cl.push({spots:[s],lat:s.lat,lng:s.lng,sumLat:s.lat,sumLng:s.lng});
+  }
+  return cl;
+}
+function _legMin(aLat,aLng,bLat,bLng,mode){const d=dist(aLat,aLng,bLat,bLng)*TRIP_DETOUR;return d/(TRIP_MODE_SPEED[mode]||TRIP_MODE_SPEED.car);}
+function _stopDwell(c){return c.spots.length*TRIP_DWELL_PER_SPOT;}
+
+function _segLen(nodes,start,end,mode){let t=0,prev=start;for(const n of nodes){t+=_legMin(prev.lat,prev.lng,n.lat,n.lng,mode);prev=n;}if(end)t+=_legMin(prev.lat,prev.lng,end.lat,end.lng,mode);return t;}
+function _twoOpt(nodes,start,end,mode){
+  if(nodes.length<3)return;let improved=true,guard=0;
+  while(improved&&guard++<40){improved=false;
+    for(let i=0;i<nodes.length-1;i++)for(let j=i+1;j<nodes.length;j++){
+      const before=_segLen(nodes,start,end,mode);
+      const trial=nodes.slice(0,i).concat(nodes.slice(i,j+1).reverse(),nodes.slice(j+1));
+      if(_segLen(trial,start,end,mode)<before-1e-6){for(let k=0;k<nodes.length;k++)nodes[k]=trial[k];improved=true;}
+    }
+  }
+}
+
+// Pure planner: clustering + budget-bounded greedy + 2-opt + straight-line estimate. No network.
+function buildTripPlan(opts){
+  const mode=opts.mode||'car';
+  const sLat=opts.startLat,sLng=opts.startLng;
+  if(sLat==null||sLng==null)return null;
+  let pool=SPOTS.filter(s=>s&&s.cat!=='hidden'&&!found.has(s.id));
+  if(opts.cat&&opts.cat!=='any')pool=pool.filter(s=>s.cat===opts.cat);
+  if(opts.city&&opts.city!=='near')pool=pool.filter(s=>spotInCity(s,opts.city));
+  if(opts.excludeIds&&opts.excludeIds.size)pool=pool.filter(s=>!opts.excludeIds.has(String(s.id)));
+  const hasDest=opts.shape==='dest'&&opts.destLat!=null&&opts.destLng!=null;
+  if(hasDest){
+    const direct=dist(sLat,sLng,opts.destLat,opts.destLng)||1;
+    const corr=TRIP_CORRIDOR_M[mode]||TRIP_CORRIDOR_M.car;
+    const slack=Math.min(1+corr*2/direct,2.4);
+    pool=pool.filter(s=>(dist(sLat,sLng,s.lat,s.lng)+dist(s.lat,s.lng,opts.destLat,opts.destLng))<=direct*slack);
+  }else{
+    const reach=TRIP_REACH_M[mode]||TRIP_REACH_M.car;
+    pool=pool.filter(s=>dist(sLat,sLng,s.lat,s.lng)<=reach);
+  }
+  if(!pool.length)return{stops:[],spots:[],estKm:0,estMin:0,poolCount:0};
+  if(pool.length>1500){pool.sort((a,b)=>dist(sLat,sLng,a.lat,a.lng)-dist(sLat,sLng,b.lat,b.lng));pool=pool.slice(0,1500);}
+  const clusters=_clusterSpots(pool);
+  const budget=opts.budgetMin||120;
+  const rem=clusters.slice();const chosen=[];
+  let cur={lat:sLat,lng:sLng},used=0;
+  while(rem.length&&chosen.length<TRIP_MAX_STOPS){
+    let bi=-1,bd=Infinity;
+    for(let i=0;i<rem.length;i++){const d=dist(cur.lat,cur.lng,rem[i].lat,rem[i].lng);if(d<bd){bd=d;bi=i;}}
+    if(bi<0)break;
+    const cand=rem[bi];
+    const leg=_legMin(cur.lat,cur.lng,cand.lat,cand.lng,mode),dwell=_stopDwell(cand);
+    let closing=0;
+    if(opts.shape==='loop')closing=_legMin(cand.lat,cand.lng,sLat,sLng,mode);
+    else if(hasDest)closing=_legMin(cand.lat,cand.lng,opts.destLat,opts.destLng,mode);
+    if(chosen.length>0&&used+leg+dwell+closing>budget)break;
+    chosen.push(cand);used+=leg+dwell;cur=cand;rem.splice(bi,1);
+  }
+  _twoOpt(chosen,{lat:sLat,lng:sLng},opts.shape==='loop'?{lat:sLat,lng:sLng}:(hasDest?{lat:opts.destLat,lng:opts.destLng}:null),mode);
+  let km=0,min=0,prev={lat:sLat,lng:sLng};
+  for(const c of chosen){km+=dist(prev.lat,prev.lng,c.lat,c.lng)*TRIP_DETOUR;min+=_legMin(prev.lat,prev.lng,c.lat,c.lng,mode)+_stopDwell(c);prev=c;}
+  if(opts.shape==='loop'){km+=dist(prev.lat,prev.lng,sLat,sLng)*TRIP_DETOUR;min+=_legMin(prev.lat,prev.lng,sLat,sLng,mode);}
+  else if(hasDest){km+=dist(prev.lat,prev.lng,opts.destLat,opts.destLng)*TRIP_DETOUR;min+=_legMin(prev.lat,prev.lng,opts.destLat,opts.destLng,mode);}
+  const spots=[];chosen.forEach(c=>c.spots.forEach(s=>spots.push(String(s.id))));
+  return{stops:chosen,spots,estKm:km/1000,estMin:Math.round(min),poolCount:pool.length};
+}
+
+// OSRM /trip — optimal order + real road polyline (driving). Fallback handled by caller.
+async function osrmTripRefine(plan,opts){
+  if(!plan.stops.length)return null;
+  const pts=[[opts.startLat,opts.startLng],...plan.stops.map(c=>[c.lat,c.lng])];
+  let destIdx=null;
+  if(opts.shape==='dest'&&opts.destLat!=null){pts.push([opts.destLat,opts.destLng]);destIdx=pts.length-1;}
+  if(pts.length>TRIP_MAX_WP||pts.length<2)return null;
+  const coordStr=pts.map(p=>`${p[1]},${p[0]}`).join(';');
+  let params='geometries=geojson&overview=full';
+  if(opts.shape==='loop')params+='&source=first&roundtrip=true';
+  else if(opts.shape==='dest')params+='&source=first&destination=last&roundtrip=false';
+  else params+='&source=first&roundtrip=false';
+  try{
+    const res=await fetch(`https://router.project-osrm.org/trip/v1/driving/${coordStr}?${params}`,{signal:AbortSignal.timeout(9000)});
+    const data=await res.json();
+    const trip=data.trips&&data.trips[0];
+    if(!trip)return null;
+    const coords=trip.geometry.coordinates.map(c=>[c[1],c[0]]);
+    const wp=data.waypoints||[];const order=[];
+    wp.forEach((w,inputIdx)=>{if(inputIdx===0)return;if(destIdx!=null&&inputIdx===destIdx)return;order.push({inputIdx,ti:w.waypoint_index});});
+    order.sort((a,b)=>a.ti-b.ti);
+    const reord=order.map(o=>plan.stops[o.inputIdx-1]).filter(Boolean);
+    return{coords,km:trip.distance/1000,min:Math.round(trip.duration/60),stops:reord.length===plan.stops.length?reord:plan.stops};
+  }catch(e){return null;}
+}
+
+// ── Waypoints for drawing any route safely (stop centroids; legacy flat routes auto-clustered, hard-capped) ──
+function _routeWaypoints(route){
+  if(route.stops&&route.stops.length){
+    return route.stops.slice(0,TRIP_MAX_STOPS).map(grp=>{
+      const objs=grp.map(id=>SPOTS.find(s=>String(s.id)===String(id))).filter(Boolean);
+      if(!objs.length)return null;
+      return[objs.reduce((a,s)=>a+s.lat,0)/objs.length,objs.reduce((a,s)=>a+s.lng,0)/objs.length];
+    }).filter(Boolean);
+  }
+  const objs=route.spots.map(id=>SPOTS.find(s=>String(s.id)===String(id))).filter(Boolean);
+  if(objs.length<=TRIP_MAX_WP)return objs.map(s=>[s.lat,s.lng]);
+  return _clusterSpots(objs.map(s=>({lat:s.lat,lng:s.lng,id:s.id}))).slice(0,TRIP_MAX_WP).map(c=>[c.lat,c.lng]);
+}
+
+// ═══════════ TRIP PLANNER UI ═══════════
+function _tpResolveStart(){
+  if(_tpStart)return{lat:_tpStart.lat,lng:_tpStart.lng,label:_tpStart.label||'Picked point'};
+  if(userLat!=null)return{lat:userLat,lng:userLng,label:'My location 📍'};
+  return null;
+}
+function _tpReadOpts(){
+  const start=_tpResolveStart();
+  const shape=document.getElementById('tpShape')?.value||'loop';
+  const o={
+    cat:document.getElementById('tpCat')?.value||'any',
+    city:document.getElementById('tpCity')?.value||'near',
+    mode:document.getElementById('tpMode')?.value||'car',
+    shape,
+    budgetMin:parseInt(document.getElementById('tpTime')?.value||'120',10),
+    startLat:start?start.lat:null,startLng:start?start.lng:null,
+    destLat:_tpDest?_tpDest.lat:null,destLng:_tpDest?_tpDest.lng:null
+  };
+  return o;
+}
+function _tpSync(){const g=id=>document.getElementById(id);if(g('tpCat'))_tpUI.cat=g('tpCat').value;if(g('tpCity'))_tpUI.city=g('tpCity').value;if(g('tpMode'))_tpUI.mode=g('tpMode').value;if(g('tpShape'))_tpUI.shape=g('tpShape').value;if(g('tpTime'))_tpUI.time=parseInt(g('tpTime').value,10);}
+function _tpInval(){_tpUpdateEstimate();}
+function _tpShapeChange(){
+  const row=document.getElementById('tpDestRow');
+  if(row)row.style.display=(document.getElementById('tpShape').value==='dest')?'flex':'none';
+  _tpUpdateEstimate();
+}
+let _tpEstTimer=null;
+function _tpUpdateEstimate(){
+  _tpSync();
+  const tEl=document.getElementById('tpTimeLabel');
+  if(tEl){const v=parseInt(document.getElementById('tpTime').value,10);tEl.textContent=_fmtMin(v);}
+  if(_tpEstTimer)clearTimeout(_tpEstTimer);
+  _tpEstTimer=setTimeout(()=>{
+    const out=document.getElementById('tpReadout');if(!out)return;
+    const o=_tpReadOpts();
+    if(o.startLat==null){out.innerHTML='<span style="color:var(--td)">Set a start point first (📍 or pick on map).</span>';return;}
+    if(o.shape==='dest'&&o.destLat==null){out.innerHTML='<span style="color:var(--td)">Pick a destination to plan a route there.</span>';return;}
+    const plan=buildTripPlan(o);
+    if(!plan||!plan.stops.length){out.innerHTML='<span style="color:var(--td)">No spots in range — try a wider time, a city, or a start nearer your spots.</span>';return;}
+    out.innerHTML=`<b style="color:var(--gold)">≈ ${plan.stops.length} stop${plan.stops.length===1?'':'s'}</b> · ${plan.spots.length} spots · ~${plan.estKm.toFixed(1)} km · ~${_fmtMin(plan.estMin)}`;
+  },140);
+}
+function _tpPick(which){
+  closeDrawer();closeMobPanel();
+  let b=document.getElementById('routeEditBanner');
+  if(!b){b=document.createElement('div');b.id='routeEditBanner';b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:500;background:var(--gold);color:#0e0c09;padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top));display:flex;align-items:center;gap:10px;box-shadow:0 2px 12px rgba(0,0,0,.3);font-family:"DM Sans",sans-serif;font-size:.85rem;font-weight:600';document.body.appendChild(b);}
+  b.innerHTML=`<span style="flex:1">🗺 Tap the map to set the ${which==='dest'?'destination':'start'}</span>`;b.style.display='flex';
+  const handler=(e)=>{
+    const ll={lat:e.latlng.lat,lng:e.latlng.lng,label:`${e.latlng.lat.toFixed(3)}, ${e.latlng.lng.toFixed(3)}`};
+    if(which==='dest')_tpDest=ll;else _tpStart=ll;
+    b.style.display='none';
+    setTimeout(()=>mobNavTo('routes'),150);
+    toast(`📍 ${which==='dest'?'Destination':'Start'} set`,'success');
+  };
+  map.once('click',handler);
+}
+function _tpUseGps(){_tpStart=null;mobNavTo('routes');toast(userLat!=null?'📍 Using your location':'No GPS — pick a start on the map','info');}
+
+function tpFromHere(spotId){
+  const s=SPOTS.find(x=>String(x.id)===String(spotId));if(!s)return;
+  _tpStart={lat:s.lat,lng:s.lng,label:(s.name||'This spot')};
+  _tpDest=null;_tpUI.shape='loop';
+  closeSheet&&closeSheet();
+  mobNavTo('routes');
+  setTimeout(()=>{const sh=document.getElementById('tpShape');if(sh)sh.value='loop';_tpUpdateEstimate();},200);
+}
+
+function tpGenerate(){
+  const o=_tpReadOpts();
+  if(o.startLat==null){toast('Set a start point first','info');return;}
+  if(o.shape==='dest'&&o.destLat==null){toast('Pick a destination first','info');return;}
+  const plan=buildTripPlan(o);
+  if(!plan||!plan.stops.length){toast('No spots in range for this trip','info');return;}
+  _tpPreview={plan,opts:o};
+  _tpShowPreview();
+  _tpDrawPreview(plan,o);
+  // refine with OSRM in background
+  osrmTripRefine(plan,o).then(ref=>{
+    if(!_tpPreview||_tpPreview.plan!==plan||!ref)return;
+    plan.stops=ref.stops;
+    const spots=[];plan.stops.forEach(c=>c.spots.forEach(s=>spots.push(String(s.id))));plan.spots=spots;
+    plan.estKm=ref.km;
+    if(o.mode==='car')plan.estMin=ref.min; // foot keeps walking estimate; polyline still drawn
+    plan._osrmCoords=ref.coords;
+    _tpDrawPreview(plan,o);
+    _tpShowPreview();
+  });
+}
+function _tpDrawPreview(plan,o){
+  if(_tpPreviewLayer){try{map.removeLayer(_tpPreviewLayer);}catch(e){}_tpPreviewLayer=null;}
+  let ll;
+  if(plan._osrmCoords)ll=plan._osrmCoords;
+  else{ll=[[o.startLat,o.startLng],...plan.stops.map(c=>[c.lat,c.lng])];if(o.shape==='loop')ll.push([o.startLat,o.startLng]);else if(o.shape==='dest'&&o.destLat!=null)ll.push([o.destLat,o.destLng]);}
+  _tpPreviewLayer=L.layerGroup().addTo(map);
+  L.polyline(ll,{color:'#c9a84c',weight:4,opacity:.8,dashArray:plan._osrmCoords?null:'6,8'}).addTo(_tpPreviewLayer);
+  L.circleMarker([o.startLat,o.startLng],{radius:7,color:'#fff',weight:2,fillColor:'#3aa655',fillOpacity:1}).addTo(_tpPreviewLayer);
+  plan.stops.forEach((c,i)=>{L.marker([c.lat,c.lng],{icon:L.divIcon({className:'',iconSize:[24,24],iconAnchor:[12,12],html:`<div style="width:24px;height:24px;border-radius:50%;background:#c9a84c;color:#0e0c09;border:2px solid #0e0c09;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px">${i+1}</div>`})}).addTo(_tpPreviewLayer);});
+  if(o.shape==='dest'&&o.destLat!=null)L.circleMarker([o.destLat,o.destLng],{radius:7,color:'#fff',weight:2,fillColor:'#c0392b',fillOpacity:1}).addTo(_tpPreviewLayer);
+  try{map.fitBounds(L.polyline(ll).getBounds(),{padding:[60,70],maxZoom:15});}catch(e){}
+}
+function _tpClearPreview(){if(_tpPreviewLayer){try{map.removeLayer(_tpPreviewLayer);}catch(e){}_tpPreviewLayer=null;}_tpPreview=null;}
+function _tpShowPreview(){
+  if(!_tpPreview)return;const{plan,opts}=_tpPreview;
+  let el=document.getElementById('tpPreviewSheet');
+  if(!el){el=document.createElement('div');el.id='tpPreviewSheet';document.body.appendChild(el);}
+  el.style.cssText='position:fixed;inset:0;z-index:700;display:flex;align-items:flex-end';
+  const shapeLbl=opts.shape==='loop'?'Round trip':(opts.shape==='dest'?'To destination':'One-way');
+  const stopsHtml=plan.stops.map((c,i)=>{
+    const names=c.spots.slice(0,3).map(s=>s.name||'—').join(', ');
+    return`<div style="display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--bdr)">
+      <div style="width:22px;height:22px;border-radius:50%;background:var(--gold);color:#0e0c09;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0">${i+1}</div>
+      <div style="flex:1;min-width:0"><div style="font-size:.82rem;color:var(--txt)">${c.spots.length} spot${c.spots.length===1?'':'s'}</div><div style="font-size:.68rem;color:var(--tm);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${names}${c.spots.length>3?'…':''}</div></div>
+    </div>`;}).join('');
+  el.innerHTML=`<div onclick="tpDiscardPreview()" style="position:absolute;inset:0;background:rgba(0,0,0,.55)"></div>
+    <div style="position:relative;width:100%;background:var(--surf);border-radius:20px 20px 0 0;padding:16px 16px 36px;max-height:78vh;overflow-y:auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--txt)">Trip preview</div>
+        <div onclick="tpDiscardPreview()" style="width:28px;height:28px;background:var(--surf2);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--td)">✕</div>
+      </div>
+      <div style="font-size:.74rem;color:var(--td);margin-bottom:12px">${opts.mode==='foot'?'🚶 Foot':'🚗 Car'} · ${shapeLbl} · <b style="color:var(--gold)">${plan.stops.length} stops</b> · ${plan.spots.length} spots · ~${plan.estKm.toFixed(1)} km · ~${_fmtMin(plan.estMin)}</div>
+      <div style="margin-bottom:14px">${stopsHtml}</div>
+      <div style="display:flex;gap:8px">
+        <button onclick="tpRegenerate()" style="flex:1;background:var(--surf2);border:1px solid var(--bdr);border-radius:9px;padding:11px;font-family:'DM Sans',sans-serif;font-size:.82rem;color:var(--td);cursor:pointer">🔄 Regenerate</button>
+        <button onclick="tpSavePreview()" style="flex:1.4;background:var(--gold);color:#0e0c09;border:none;border-radius:9px;padding:11px;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer">✓ Save & start</button>
+      </div>
+    </div>`;
+  el.style.display='flex';
+}
+function tpDiscardPreview(){const el=document.getElementById('tpPreviewSheet');if(el)el.style.display='none';_tpClearPreview();}
+function tpRegenerate(){if(!_tpPreview)return;const o=_tpPreview.opts;const plan=buildTripPlan(o);if(!plan||!plan.stops.length){toast('No spots in range','info');return;}_tpPreview={plan,opts:o};_tpShowPreview();_tpDrawPreview(plan,o);osrmTripRefine(plan,o).then(ref=>{if(!_tpPreview||_tpPreview.plan!==plan||!ref)return;plan.stops=ref.stops;const sp=[];plan.stops.forEach(c=>c.spots.forEach(s=>sp.push(String(s.id))));plan.spots=sp;plan.estKm=ref.km;if(o.mode==='car')plan.estMin=ref.min;plan._osrmCoords=ref.coords;_tpDrawPreview(plan,o);_tpShowPreview();});}
+function _tpCampaignTripCount(sig){return routes.filter(r=>r.campaign&&r.campaign.sig===sig).length;}
+function tpSavePreview(){
+  if(!_tpPreview)return;const{plan,opts}=_tpPreview;
+  const catObj=opts.cat==='any'?{label:'Mixed',emoji:'✷'}:(CATS[opts.cat]||{label:opts.cat,emoji:''});
+  const place=opts.city==='near'?'Near me':opts.city;
+  const sig=`${opts.cat}|${opts.city}|${opts.mode}|${opts.shape}`;
+  const n=_tpCampaignTripCount(sig)+1;
+  const r={
+    id:'r_'+Date.now(),name:`${catObj.emoji} ${catObj.label} · ${place} · Trip ${n}`.trim(),
+    spots:plan.spots.slice(),
+    stops:plan.stops.map(c=>c.spots.map(s=>String(s.id))),
+    created:Date.now(),mode:opts.mode,shape:opts.shape,
+    distKm:plan.estKm.toFixed(1),durationMin:plan.estMin,
+    campaign:{sig,cat:opts.cat,city:opts.city,mode:opts.mode,shape:opts.shape}
+  };
+  routes.push(r);saveRoutes();
+  const el=document.getElementById('tpPreviewSheet');if(el)el.style.display='none';
+  if(_tpPreviewLayer){try{map.removeLayer(_tpPreviewLayer);}catch(e){}_tpPreviewLayer=null;}
+  _tpPreview=null;
+  setActiveRoute(r.id);
+  renderRoutes();updateAll();
+  toast(`✓ Trip saved: ${r.stops.length} stops`,'success');
+}
+
+// "Generate next trip" from a saved campaign route — fresh stops, picks up from where you are now.
+function tpGenerateNext(routeId){
+  const base=routes.find(r=>r.id===routeId);
+  if(!base||!base.campaign){toast('Not a generated trip','info');return;}
+  const c=base.campaign;
+  const exclude=new Set();
+  routes.filter(r=>r.campaign&&r.campaign.sig===c.sig).forEach(r=>r.spots.forEach(id=>exclude.add(String(id))));
+  const start=_tpResolveStart();
+  const o={cat:c.cat,city:c.city,mode:c.mode,shape:c.shape,budgetMin:base.durationMin||120,
+    startLat:start?start.lat:null,startLng:start?start.lng:null,
+    destLat:_tpDest?_tpDest.lat:null,destLng:_tpDest?_tpDest.lng:null,excludeIds:exclude};
+  if(o.startLat==null){toast('Enable GPS or set a start to plan the next trip','info');return;}
+  const plan=buildTripPlan(o);
+  if(!plan||!plan.stops.length){toast('🎉 No uncollected spots left in this campaign','success');return;}
+  closeDrawer();closeMobPanel();
+  _tpPreview={plan,opts:o};_tpShowPreview();_tpDrawPreview(plan,o);
+  osrmTripRefine(plan,o).then(ref=>{if(!_tpPreview||_tpPreview.plan!==plan||!ref)return;plan.stops=ref.stops;const sp=[];plan.stops.forEach(cl=>cl.spots.forEach(s=>sp.push(String(s.id))));plan.spots=sp;plan.estKm=ref.km;if(o.mode==='car')plan.estMin=ref.min;plan._osrmCoords=ref.coords;_tpDrawPreview(plan,o);_tpShowPreview();});
+}
 
 // ═══════════ REVIEW SYSTEM ═══════════
 
