@@ -6232,7 +6232,13 @@ function optimizeRoute(routeId){
 async function fetchAndDrawRoute(routeId){
   const r=routes.find(rr=>rr.id===routeId);
   if(!r){clearRoutePolyline();return;}
-  const wp=_routeWaypoints(r);              // stop centroids (<=20) or auto-clustered legacy spots — never 1000
+  let wp=_routeWaypoints(r);                // stop centroids (<=20) or auto-clustered legacy spots — never 1000
+  if(r.startLat!=null){
+    wp=[[r.startLat,r.startLng]].concat(wp);
+    if(r.shape==='dest'&&r.destLat!=null) wp=wp.concat([[r.destLat,r.destLng]]);   // end at destination — no loop back
+    else wp=wp.concat([[r.startLat,r.startLng]]);                                  // round trip closes to start
+  }
+  if(wp.length>25) wp=wp.slice(0,25);
   if(wp.length<2){clearRoutePolyline();return;}
   const coords=wp.map(p=>`${p[1]},${p[0]}`).join(';');
   try{
@@ -6907,6 +6913,7 @@ function tpSavePreview(){
     spots:plan.spots.slice(),
     stops:plan.stops.map(c=>c.spots.map(s=>String(s.id))),
     created:Date.now(),mode:opts.mode,shape:opts.shape,
+    startLat:opts.startLat,startLng:opts.startLng,destLat:opts.destLat,destLng:opts.destLng,
     distKm:plan.estKm.toFixed(1),durationMin:plan.estMin,
     campaign:{sig,cats:opts.cats.slice(),mode:opts.mode,shape:opts.shape}
   };
