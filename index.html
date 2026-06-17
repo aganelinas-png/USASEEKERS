@@ -191,6 +191,43 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 .dnmi-label{flex:1;font-size:.95rem;font-weight:500;color:var(--txt)}
 .dnmi-arrow{font-size:1.1rem;color:var(--tm);flex-shrink:0}
 
+/* ── HELP / USER MANUAL WINDOW ── */
+.help-window{position:fixed;inset:0;z-index:1150;display:none;flex-direction:column;background:var(--bg)}
+.help-window.open{display:flex;animation:fadeIn .22s ease}
+.help-header{display:flex;align-items:center;gap:10px;padding:calc(14px + env(safe-area-inset-top)) 16px 12px;background:var(--surf2);border-bottom:1px solid var(--bdr);flex-shrink:0}
+.help-close,.help-back{background:none;border:none;color:var(--gold);font-size:1.3rem;cursor:pointer;padding:4px 6px;line-height:1;-webkit-user-select:none;user-select:none}
+.help-back{font-size:.95rem;font-family:'DM Mono',monospace}
+.help-title{font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--txt);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.help-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px calc(28px + env(safe-area-inset-bottom));min-height:0;overscroll-behavior:contain}
+.help-hero{font-size:.9rem;color:var(--td);line-height:1.5;margin-bottom:18px}
+.help-kicker{font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.08em;margin:6px 2px 10px}
+.help-steps{display:flex;flex-direction:column;gap:9px;margin-bottom:22px}
+.help-step{display:flex;gap:12px;align-items:flex-start;background:var(--surf2);border:1px solid var(--bdr);border-radius:12px;padding:12px 13px}
+.help-step-num{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,var(--gd),var(--gold));color:#0e0c09;font-family:'DM Mono',monospace;font-weight:700;font-size:.78rem;display:flex;align-items:center;justify-content:center}
+.help-step-main{flex:1;min-width:0}
+.help-step-title{font-size:.88rem;font-weight:700;color:var(--txt);display:flex;align-items:center;gap:6px}
+.help-step-desc{font-size:.76rem;color:var(--td);margin-top:2px;line-height:1.35}
+.help-toc{display:flex;flex-direction:column;gap:8px}
+.help-toc-item{display:flex;gap:11px;align-items:center;background:var(--surf2);border:1px solid var(--bdr);border-radius:11px;padding:12px;cursor:pointer;transition:.18s}
+.help-toc-item:hover{border-color:var(--gold);transform:translateY(-1px)}
+.help-toc-icon{font-size:1.4rem;line-height:1;flex-shrink:0}
+.help-toc-main{flex:1;min-width:0}
+.help-toc-name{font-size:.86rem;font-weight:700;color:var(--txt)}
+.help-toc-teaser{font-size:.72rem;color:var(--td);margin-top:2px;line-height:1.3}
+.help-toc-arr{color:var(--td);font-size:1rem;flex-shrink:0}
+.help-sec h4{font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--gold);margin:18px 0 8px;font-weight:600}
+.help-sec h4:first-child{margin-top:2px}
+.help-sec p{font-size:.84rem;color:var(--txt);line-height:1.55;margin:0 0 11px}
+.help-sec strong{color:var(--txt);font-weight:700}
+.help-sec ul{margin:0 0 12px;padding-left:4px;list-style:none}
+.help-sec li{font-size:.83rem;color:var(--td);line-height:1.5;margin-bottom:7px;padding-left:18px;position:relative}
+.help-sec li::before{content:'\203A';position:absolute;left:4px;color:var(--gold)}
+.help-tip{background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);border-radius:10px;padding:10px 12px;font-size:.8rem;color:var(--txt);line-height:1.45;margin:0 0 14px;display:flex;gap:8px}
+.help-tip-ico{flex-shrink:0}
+.help-faq-q{font-size:.85rem;font-weight:700;color:var(--txt);margin:14px 0 4px}
+.help-faq-a{font-size:.82rem;color:var(--td);line-height:1.5;margin:0 0 6px}
+@media(max-width:600px){.help-title{font-size:1rem}}
+
 /* ── DRAWER SUB-PANEL ── */
 .drawer-sub-panel{position:absolute;inset:0;z-index:2;background:var(--surf);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1)}
 .drawer-sub-panel.open{transform:translateX(0)}
@@ -1066,6 +1103,10 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
       <div class="dnav-main-item" id="mySuggestionsNavItem" style="display:none" onclick="openSubPanel('mysuggestions')">
         <span class="dnmi-icon">🗂</span><span class="dnmi-label">My suggestions</span><span class="dnmi-arrow">›</span>
       </div>
+      <!-- Help -->
+      <div class="dnav-main-item" onclick="openHelp()">
+        <span class="dnmi-icon">❓</span><span class="dnmi-label">Help &amp; guide</span><span class="dnmi-arrow">›</span>
+      </div>
       <!-- Settings -->
       <div class="dnav-main-item" onclick="closeDrawer();openSettings()">
         <span class="dnmi-icon">⚙️</span><span class="dnmi-label">Settings</span><span class="dnmi-arrow">›</span>
@@ -1336,6 +1377,16 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
     <div class="mob-panel-title" id="mobPanelTitle"></div>
   </div>
   <div class="mob-panel-body" id="mobPanelBody"></div>
+</div>
+
+<!-- HELP / USER MANUAL WINDOW -->
+<div class="help-window" id="helpWindow">
+  <div class="help-header">
+    <button class="help-back" id="helpBackBtn" style="display:none" onclick="helpBack()">← Back</button>
+    <div class="help-title" id="helpTitle">❓ Help</div>
+    <button class="help-close" onclick="closeHelp()">✕</button>
+  </div>
+  <div class="help-body" id="helpBody"></div>
 </div>
 
 <!-- REVIEW MODAL -->
@@ -3796,6 +3847,165 @@ function renderAboutMe(){
 }
 
 // \u2550\u2550\u2550 ACHIEVEMENTS WINDOW \u2550\u2550\u2550
+// ═══════════ HELP / USER MANUAL ═══════════
+const HELP_QUICKSTART=[
+  {ico:'🗺',title:'Find a spot on the map',desc:'The map is dotted with thousands of historic places — houses, churches, bridges, forts, monuments and more. Every one has a story.'},
+  {ico:'🚶',title:'Go there in person',desc:'You can only collect a spot by physically traveling to it. Your GPS checks that you are close enough.'},
+  {ico:'⭐',title:'Collect the spot',desc:'Once you are inside the spot\'s zone, tap “⭐ Collect spot!”. You earn XP and the spot is marked as collected. (You need to be signed in with GPS on.)'},
+  {ico:'📈',title:'Level up',desc:'XP raises your level. The higher your level, the more new spots appear on the map. There are 50 levels in all — from Newcomer to USA Legend!'},
+];
+const HELP_SECTIONS=[
+  {id:'what',icon:'🧭',title:'What is SpotSeekers',teaser:'A travel game across the real USA',html:`
+    <p><strong>SpotSeekers</strong> turns exploring America into a game. The map is marked with tens of thousands of real historic places drawn from the National Register of Historic Places (NRHP) and OpenStreetMap — across all <strong>50 states and Washington, D.C.</strong></p>
+    <p>The goal is simple: <strong>physically visit places</strong>, collect them, earn XP, level up, unlock badges and climb the leaderboard. It is a nudge to discover how much history is hiding right around you.</p>
+    <div class="help-tip"><span class="help-tip-ico">💡</span><span>Spots are real and must be visited in real life — there is no way to collect one remotely.</span></div>
+    <div class="help-tip"><span class="help-tip-ico">⚠️</span><span>Stay aware of your surroundings. Don't play while driving, don't trespass on private property, and follow all local laws and posted signs.</span></div>`},
+  {id:'collect',icon:'⭐',title:'How collecting works',teaser:'GPS, zones and the Collect button',html:`
+    <h4>Three things you need</h4>
+    <ul>
+      <li><strong>Sign in</strong> — you must be signed in to your account.</li>
+      <li><strong>GPS</strong> — turn on location and allow the app to use it.</li>
+      <li><strong>Distance</strong> — you must be close enough to the spot.</li>
+    </ul>
+    <h4>What it looks like in practice</h4>
+    <p>When you get within about <strong>300 m</strong> of a spot, a popup appears showing its name and your distance. Once you step inside the spot's zone, the button changes to <strong>“⭐ Collect spot!”</strong> — tap it. You can also tap any spot on the map to open its card and collect from there.</p>
+    <h4>How big is a zone?</h4>
+    <p>It depends on the spot type: small spots (viewpoints, monuments, murals) are about <strong>50–55 m</strong>, mid-size ones around 80 m, and large ones (cemeteries ~220 m, historic districts ~250 m) are bigger. The default is 80 m.</p>
+    <div class="help-tip"><span class="help-tip-ico">📡</span><span>If your GPS is jumpy, a <strong>backup zone twice the size</strong> also works (you'll see a “GPS off?” option). This helps you collect even with a weak signal.</span></div>
+    <p>If you see <strong>“Too far”</strong>, just move closer — the distance updates live in metres.</p>`},
+  {id:'levels',icon:'📈',title:'Levels, XP and tiers',teaser:'How you grow and how new spots unlock',html:`
+    <h4>XP and levels</h4>
+    <p>Every spot you collect gives you <strong>experience points (XP)</strong>. Badges, the daily quest and weekly challenges give XP too. Earn enough and you level up. There are <strong>50 levels</strong>, from <strong>Newcomer 🐣</strong> to <strong>USA Legend 💎</strong> (150,000 XP).</p>
+    <h4>The key idea: your level unlocks new spots</h4>
+    <p>Each spot has a hidden level requirement. You only see spots whose level is <strong>at or below your own</strong>. Every time you level up, more spots appear on the map.</p>
+    <div class="help-tip"><span class="help-tip-ico">💡</span><span>If the map looks a little empty, collect what you can see, level up, and the map will gradually fill in.</span></div>
+    <h4>Tiers — how rare a spot is</h4>
+    <ul>
+      <li><strong>🔴 T1 — Landmark:</strong> National Historic Landmarks — the rarest and most significant. +20 XP.</li>
+      <li><strong>🟡 T2 — National:</strong> nationally significant historic places. +25 XP.</li>
+      <li><strong>🔵 T3 — State:</strong> state-significant places. +35 XP.</li>
+      <li><strong>⚪ T4 — Local:</strong> locally significant places. +20 XP.</li>
+    </ul>
+    <p>Tier shows a spot's significance and how much XP it gives. Don't confuse it with level: your <strong>level</strong> decides what you can <strong>see</strong>, while <strong>tier</strong> decides how much you <strong>earn</strong>.</p>`},
+  {id:'daily',icon:'🔥',title:'Streaks, daily quest, challenges',teaser:'Daily and weekly goals',html:`
+    <h4>🔥 Streaks</h4>
+    <p>Collect at least <strong>one spot per day</strong> to keep your streak alive. Miss a day and the streak resets. Streaks earn badges at 3, 7, 14, 30, 60, 100 and more days in a row.</p>
+    <h4>🎯 Daily quest</h4>
+    <p>Each day you get a simple quest — collect 1 spot. Complete it for <strong>+10 XP</strong>. It refreshes every day.</p>
+    <h4>🏆 Weekly challenge</h4>
+    <p>A new challenge appears each week, such as visiting a few spots of a certain type or collecting a set number of any spots. Complete it for a solid XP reward. The challenge rotates weekly, so it's worth coming back.</p>`},
+  {id:'badges',icon:'🏅',title:'Badges',teaser:'Trophies for your achievements',html:`
+    <p>Badges are your exploration trophies. Open them from the menu (☰) → <strong>🏅 Badges</strong>.</p>
+    <h4>Kinds of badges</h4>
+    <ul>
+      <li><strong>By category</strong> — separate ladders for houses, churches, bridges, railroads, cemeteries, murals, viewpoints and more.</li>
+      <li><strong>Overall progress</strong> — for 10, 50, 100, 500… spots collected.</li>
+      <li><strong>Streaks</strong> — for consecutive days.</li>
+      <li><strong>Ranks</strong> — for reaching levels.</li>
+      <li><strong>Tier progress</strong> — for completing every Landmark, National or State spot.</li>
+      <li><strong>Coast to Coast</strong> — for spots spread far apart (e.g. 500 km span).</li>
+      <li><strong>50 States</strong> — for collecting across many different states.</li>
+      <li><strong>Community Builder</strong> — for your suggested spots that get approved.</li>
+    </ul>
+    <p>All badges are visible from the start — locked ones appear greyed out. Reach the goal and the badge lights up and awards XP.</p>
+    <div class="help-tip"><span class="help-tip-ico">🔮</span><span>There are also <strong>hidden spots</strong> with secret badges. You won't see them in advance — only once you're nearby.</span></div>`},
+  {id:'map',icon:'🗺',title:'The map and tools',teaser:'Filters, Surprise, weather, theme',html:`
+    <h4>Filters</h4>
+    <p>At the top you can filter spots by group: <strong>🏛 Heritage</strong>, <strong>⚙️ Engineering</strong>, <strong>🌾 Land &amp; Legacy</strong>, <strong>🌿 Nature</strong> and <strong>🎨 Urban</strong> — each with sub-categories (houses, churches, bridges, viewpoints, murals and more, 22 in total).</p>
+    <h4>Filtering by state / city</h4>
+    <p>You can narrow the map to a single state or city, or choose <strong>🇺🇸 All</strong> to see everything. Spots load per state as you move around the country, so give large areas a moment to fill in.</p>
+    <h4>Tools</h4>
+    <ul>
+      <li><strong>🎲 Surprise</strong> — jumps to a random spot you haven't collected yet. Great when you don't know where to go.</li>
+      <li><strong>🌤 Weather</strong> — current conditions in your area.</li>
+      <li><strong>☀️ / 🌙 Theme</strong> — switch between day and night mode.</li>
+      <li><strong>📍 Center</strong> — re-centers the map on you.</li>
+      <li><strong>↻ GPS</strong> — refreshes your location if it drifts.</li>
+    </ul>`},
+  {id:'routes',icon:'🧭',title:'Routes and the auto planner',teaser:'Plan a trip, or let the app do it',html:`
+    <h4>🗺 Routes</h4>
+    <p>From a spot's card you can add it to a route. In a route you can reorder stops, optimize them (the shortest path along real roads is calculated) and travel with turn-by-turn guidance showing where to go next.</p>
+    <h4>⚡ Automatic trip planner</h4>
+    <p>Don't want to plan yourself? Open <strong>Routes</strong> and use the auto planner:</p>
+    <ul>
+      <li>Pick the <strong>categories</strong> you want to visit (you can select several).</li>
+      <li>Mode: <strong>🚗 Car</strong> or <strong>🚶 Walking</strong>.</li>
+      <li>Shape: <strong>🔁 Loop</strong> (return to start) or <strong>🎯 A → B</strong>.</li>
+      <li>A start point (GPS or a point on the map) and a <strong>time budget</strong> (30 min – 6 hours).</li>
+    </ul>
+    <p>The app generates an optimized route that fits your time, clustering nearby spots into stops along the way. Like it? Save it and go.</p>`},
+  {id:'account',icon:'👥',title:'Account, friends and suggestions',teaser:'Sync, leaderboard, suggesting new spots',html:`
+    <h4>Account and sync</h4>
+    <p>Sign in with <strong>email and password</strong>. Once signed in, your progress — collected spots, XP, streak, badges — is <strong>synced</strong> and available on any device.</p>
+    <h4>👥 Friends and leaderboard</h4>
+    <p>The leaderboard shows who has collected the most. Invite friends with a share link and compete together.</p>
+    <h4>📍 Suggest a spot</h4>
+    <p>Know a place that isn't on the map? Choose <strong>Suggest a spot</strong> from the menu, give a name, category, coordinates (GPS or pin it on the map) and a description. An admin reviews your suggestion — once approved you earn <strong>Community Builder</strong> badges.</p>
+    <h4>💬 Settings</h4>
+    <p>In Settings you can hide collected spots, switch the theme, or delete your account.</p>`},
+  {id:'faq',icon:'❓',title:'FAQ — common questions',teaser:'Quick answers when something isn\'t working',html:`
+    <div class="help-faq-q">❓ Why can't I see a certain spot?</div>
+    <div class="help-faq-a">Three common reasons: (1) the spot needs a higher level — keep leveling up; (2) a filter is hiding it — choose “All”; (3) it's in a state that hasn't loaded yet — move the map there and wait a moment.</div>
+    <div class="help-faq-q">❓ Why can't I collect a spot?</div>
+    <div class="help-faq-a">Check that you're signed in, GPS is on, and you're close enough. If it shows “Too far”, move closer.</div>
+    <div class="help-faq-q">❓ Where did my streak go?</div>
+    <div class="help-faq-a">A streak breaks if you go a day without collecting any spot. Start again — collect at least one spot today.</div>
+    <div class="help-faq-q">❓ Does it work offline?</div>
+    <div class="help-faq-a">The map and app work partly offline (once installed as an app), but collecting spots needs GPS and sign-in, and syncing needs internet.</div>
+    <div class="help-faq-q">❓ How do I earn more XP?</div>
+    <div class="help-faq-a">Collect rarer spots (State spots give the most, +35), complete the daily quest and weekly challenge, and don't forget badges — they award XP too.</div>`},
+];
+let helpState={open:false,view:'overview',section:null};
+function openHelp(){
+  if(typeof closeDrawer==='function'){try{closeDrawer();}catch(e){}}
+  if(typeof closeMobPanel==='function'){try{closeMobPanel();}catch(e){}}
+  helpState.open=true;helpState.view='overview';helpState.section=null;
+  document.getElementById('helpWindow').classList.add('open');
+  renderHelp();
+}
+function closeHelp(){
+  helpState.open=false;
+  document.getElementById('helpWindow').classList.remove('open');
+  setTimeout(()=>{try{map&&map.invalidateSize();}catch(e){}},60);
+}
+function helpBack(){helpState.view='overview';helpState.section=null;renderHelp();}
+function helpOpenSection(id){
+  helpState.view='detail';helpState.section=id;renderHelp();
+  const b=document.getElementById('helpBody');if(b)b.scrollTop=0;
+}
+function renderHelp(){
+  const body=document.getElementById('helpBody');
+  const backBtn=document.getElementById('helpBackBtn');
+  const title=document.getElementById('helpTitle');
+  if(!body) return;
+  if(helpState.view==='detail'){
+    const sec=HELP_SECTIONS.find(s=>s.id===helpState.section);
+    if(!sec){helpBack();return;}
+    if(backBtn) backBtn.style.display='';
+    if(title) title.textContent=sec.icon+' '+sec.title;
+    body.innerHTML=`<div class="help-sec">${sec.html}</div>`;
+    return;
+  }
+  if(backBtn) backBtn.style.display='none';
+  if(title) title.textContent='❓ Help';
+  const steps=HELP_QUICKSTART.map((s,i)=>`<div class="help-step">
+    <div class="help-step-num">${i+1}</div>
+    <div class="help-step-main">
+      <div class="help-step-title">${s.ico} ${s.title}</div>
+      <div class="help-step-desc">${s.desc}</div>
+    </div></div>`).join('');
+  const toc=HELP_SECTIONS.map(s=>`<div class="help-toc-item" onclick="helpOpenSection('${s.id}')">
+    <span class="help-toc-icon">${s.icon}</span>
+    <div class="help-toc-main"><div class="help-toc-name">${s.title}</div><div class="help-toc-teaser">${s.teaser}</div></div>
+    <span class="help-toc-arr">›</span></div>`).join('');
+  body.innerHTML=`
+    <div class="help-hero">Hi, Seeker! 👋 Here's how everything works. Start with the quick start, then dig into the topics below.</div>
+    <div class="help-kicker">⚡ Quick start</div>
+    <div class="help-steps">${steps}</div>
+    <div class="help-kicker">📖 Full guide</div>
+    <div class="help-toc">${toc}</div>`;
+}
+
 const achState={open:false,view:'overview',group:null};
 function badgeEarned(b,g,ctx){return earnedBadges.has(b.id)||evalBadge(b,g,ctx).met;}
 function groupRollup(g,ctx){
@@ -7130,7 +7340,7 @@ maybeShowAuthOnFirstVisit();
   // Register service worker for offline caching
   if('serviceWorker' in navigator){
     const swCode=`
-const CACHE='spotseekers-usa-v5';
+const CACHE='spotseekers-usa-v6';
 const SPOTS_CACHE='ss-spots-v1';
 const PRECACHE=['/'];
 self.addEventListener('install',e=>{
