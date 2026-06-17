@@ -250,7 +250,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:200;background:var(--surf);border-radius:20px 20px 0 0;border-top:1px solid var(--bdr);transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);max-height:85vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 -8px 40px var(--sh)}
 .sheet.open{transform:translateY(0)}
 .sheet-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 10px;border-bottom:1px solid var(--bdr);flex-shrink:0;gap:10px;min-height:48px}
-.sheet-header-name{font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.sheet-header-name{font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
 .sheet-close{background:var(--surf2);border:1px solid var(--bdr);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;color:var(--td);flex-shrink:0;line-height:1;-webkit-user-select:none;user-select:none}
 .sheet-close:active{background:var(--surf3)}
 .sscroll{overflow-y:auto;flex:1;padding:14px 18px 16px;-webkit-overflow-scrolling:touch}
@@ -3466,7 +3466,7 @@ function openSheet(spot){
 
   const _footer=document.getElementById('sheetFooter');
   if(_footer){
-    _footer.innerHTML = locked ? '' : `<button class="route-show-btn" id="routeShowBtn" onclick="showRouteToSpot(selectedSpot)">🧭 Show route</button><button class="route-show-btn" onclick="tpFromHere(selectedSpot.id)">🗺 Plan a trip from here</button><div class="crow"><div class="dbadge" id="distBadge">—</div><button class="${isF?'cbtn done':'cbtn gps-wait'}" id="collectBtn" onclick="collectCurrent()">${isF?'✓ Collected':'⌛ Get closer'}</button><button class="editbtn" id="favBtn" onclick="toggleSpotInActiveRoute()" title="Add to route" style="font-size:18px;padding:10px 12px">＋</button>${(window._fbUser&&ADMIN_UIDS.includes(window._fbUser.uid))?'<button class="editbtn" onclick="openEditor(selectedSpot)">✏️</button>':''}</div>`;
+    _footer.innerHTML = locked ? '' : `<div style="display:flex;gap:8px;margin-bottom:8px"><button class="route-show-btn" id="routeShowBtn" style="flex:1;margin-bottom:0" onclick="showRouteToSpot(selectedSpot)">🧭 Show route</button><button class="route-show-btn" style="flex:1;margin-bottom:0" onclick="tpFromHere(selectedSpot.id)">🗺 Plan trip</button></div><div class="crow"><div class="dbadge" id="distBadge">—</div><button class="${isF?'cbtn done':'cbtn gps-wait'}" id="collectBtn" onclick="collectCurrent()">${isF?'✓ Collected':'⌛ Get closer'}</button><button class="editbtn" id="favBtn" onclick="toggleSpotInActiveRoute()" title="Add to route" style="font-size:18px;padding:10px 12px">＋</button>${(window._fbUser&&ADMIN_UIDS.includes(window._fbUser.uid))?'<button class="editbtn" onclick="openEditor(selectedSpot)">✏️</button>':''}</div>`;
   }
   hideProxPopup();   // B1: don't let the proximity popup cover the footer
   clearSpotRoute();  // clear any prior per-spot route when opening a new spot
@@ -6265,7 +6265,15 @@ function navigateToNext(){
   const r=getActiveRoute();if(!r) return;
   const next=r.spots.map(id=>SPOTS.find(s=>String(s.id)===id)).filter(s=>s&&!found.has(s.id))[0];
   if(!next){toast('🎉 All route stops collected!','success');return;}
-  window.open(`https://www.google.com/maps/dir/?api=1&destination=${next.lat},${next.lng}`,'_blank');
+  closeDrawer();closeMobPanel();
+  goToSpot(next.id);
+}
+function startRouteNav(routeId){
+  const r=routes.find(x=>x.id===routeId);if(!r) return;
+  if(r.spots.length<1){toast('No stops in this trip yet','info');return;}
+  if(activeRouteId!==routeId) setActiveRoute(routeId);  // activate + draw + route bar (same as Save & start)
+  closeDrawer();closeMobPanel();
+  navigateToNext();
 }
 
 function endActiveRoute(){
@@ -6408,7 +6416,7 @@ function renderRoutesInto(body){
     return;
   }
   let h=`<div style="padding:12px 14px 6px;display:flex;align-items:center;justify-content:space-between">
-    <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.08em">${routes.length} route${routes.length===1?'':'s'}</div>
+    <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.08em">${routes.length} trip${routes.length===1?'':'s'}</div>
     <button onclick="promptCreateRoute()" style="background:var(--gold);color:#0e0c09;border:none;border-radius:8px;padding:5px 12px;font-family:'DM Sans',sans-serif;font-size:.75rem;font-weight:600;cursor:pointer">+ New</button>
   </div>`;
   routes.forEach(r=>{
@@ -6487,9 +6495,9 @@ function renderRouteDetailInto(r,body,routeId){
       </div>
     </div>
     <div style="padding:8px 14px;display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--bdr)">
-      <button onclick="setActiveRoute('${routeId}')" style="flex:1;background:${isActive?'rgba(201,168,76,.15)':'var(--surf2)'};border:1px solid ${isActive?'var(--gold)':'var(--bdr)'};border-radius:8px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:.78rem;color:${isActive?'var(--gold)':'var(--td)'};cursor:pointer">${isActive?'▶ Aktyvus':'▷ Aktyvuoti'}</button>
-      <button onclick="optimizeRoute('${routeId}')" style="flex:1;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:.78rem;color:var(--td);cursor:pointer">⚡ Optimize</button>
-      <button onclick="navigateToNext()" style="flex:1;background:var(--gold);color:#0e0c09;border:none;border-radius:8px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer" ${!isActive?'disabled style="flex:1;opacity:.4;background:var(--gold);color:#0e0c09;border:none;border-radius:8px;padding:7px 10px;font-family:DM Sans,sans-serif;font-size:.78rem;font-weight:600;cursor:default"':''}>→ Navigacija</button>
+      <button onclick="setActiveRoute('${routeId}')" style="flex:1;background:${isActive?'rgba(201,168,76,.15)':'var(--surf2)'};border:1px solid ${isActive?'var(--gold)':'var(--bdr)'};border-radius:8px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:.78rem;color:${isActive?'var(--gold)':'var(--td)'};cursor:pointer">${isActive?'▶ Active':'▷ Activate'}</button>
+      ${!r.campaign?`<button onclick="optimizeRoute('${routeId}')" style="flex:1;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:.78rem;color:var(--td);cursor:pointer">⚡ Optimize</button>`:''}
+      <button onclick="startRouteNav('${routeId}')" style="flex:1;background:var(--gold);color:#0e0c09;border:none;border-radius:8px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer">🧭 Navigate</button>
     </div>
     <div style="padding:6px 14px 8px;border-bottom:1px solid var(--bdr)">
       <button onclick="startRouteEditMode('${routeId}')" style="width:100%;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;padding:8px;font-family:'DM Sans',sans-serif;font-size:.82rem;color:var(--txt);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">＋ Add stops on map</button>
@@ -6764,7 +6772,7 @@ function _tpOpenCats(){
   el.style.cssText='position:fixed;inset:0;z-index:760;display:flex;align-items:flex-end';
   const chips=Object.entries(CATS).filter(([k])=>k!=='hidden').map(([k,v])=>{
     const on=_tpUI.cats.includes(k);
-    return `<div onclick="_tpToggleCat('${k}')" data-k="${k}" style="display:inline-flex;align-items:center;gap:6px;padding:8px 12px;margin:0 7px 8px 0;border-radius:20px;cursor:pointer;font-size:.8rem;border:1px solid ${on?'var(--gold)':'var(--bdr)'};background:${on?'rgba(201,168,76,.15)':'var(--surf2)'};color:${on?'var(--gold)':'var(--td)'}">${v.emoji} ${v.label}</div>`;
+    return `<div onclick="_tpToggleCat('${k}')" data-k="${k}" style="display:inline-flex;align-items:center;gap:6px;padding:8px 12px;margin:0 7px 8px 0;border-radius:20px;cursor:pointer;font-size:.8rem;border:1px solid ${on?'var(--gold)':'var(--bdr)'};background:${on?'var(--gold)':'var(--surf2)'};color:${on?'#0e0c09':'var(--td)'}">${v.emoji} ${v.label}</div>`;
   }).join('');
   el.innerHTML=`<div onclick="_tpCloseCats()" style="position:absolute;inset:0;background:rgba(0,0,0,.55)"></div>
     <div style="position:relative;width:100%;background:var(--surf);border-radius:20px 20px 0 0;padding:16px 16px 36px;max-height:75vh;overflow-y:auto">
@@ -6780,7 +6788,7 @@ function _tpOpenCats(){
 function _tpToggleCat(k){
   const i=_tpUI.cats.indexOf(k);if(i>=0)_tpUI.cats.splice(i,1);else _tpUI.cats.push(k);
   const el=document.querySelector(`#tpCatSheet [data-k="${k}"]`);
-  if(el){const on=_tpUI.cats.includes(k);el.style.border='1px solid '+(on?'var(--gold)':'var(--bdr)');el.style.background=on?'rgba(201,168,76,.15)':'var(--surf2)';el.style.color=on?'var(--gold)':'var(--td)';}
+  if(el){const on=_tpUI.cats.includes(k);el.style.border='1px solid '+(on?'var(--gold)':'var(--bdr)');el.style.background=on?'var(--gold)':'var(--surf2)';el.style.color=on?'#0e0c09':'var(--td)';}
 }
 function _tpClearCats(){_tpUI.cats=[];document.querySelectorAll('#tpCatSheet [data-k]').forEach(e=>{e.style.border='1px solid var(--bdr)';e.style.background='var(--surf2)';e.style.color='var(--td)';});}
 function _tpCloseCats(refresh){const el=document.getElementById('tpCatSheet');if(el)el.style.display='none';if(refresh)_tpRefresh();}
@@ -7928,7 +7936,7 @@ deleteSpot=async function(){
     <div class="rb-name" id="rbName">—</div>
     <div class="rb-stop" id="rbStop">0/0 collected</div>
   </div>
-  <button class="rb-btn" onclick="navigateToNext()">→ Eiti</button>
+  <button class="rb-btn" onclick="navigateToNext()">→ Next</button>
   <button class="rb-end" onclick="endActiveRoute()">✕</button>
 </div>
 
