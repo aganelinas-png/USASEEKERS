@@ -1003,9 +1003,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
   <!-- FILTERS inline in topbar -->
   <div class="tb-filters" id="filterBar">
     <div class="fcap on" data-cat="all" onclick="setFilter('all')">All</div>
-    <div class="fgroup" data-group="heritage" onclick="toggleFilterGroup('heritage')">🏛 Heritage <span class="fg-arr">▾</span></div>
-    <div class="fgroup" data-group="nature" onclick="toggleFilterGroup('nature')">🌿 Nature <span class="fg-arr">▾</span></div>
-    <div class="fgroup" data-group="urban" onclick="toggleFilterGroup('urban')">🏙 Urban <span class="fg-arr">▾</span></div>
+    <!-- group buttons built dynamically from FILTER_GROUPS by buildDesktopFilterBar() -->
   </div>
   <div class="tb-right">
     <div class="ib wx-ib" id="wxBtn" onclick="toggleWeather()" title="Weather"><span id="wxIcon">🌤</span></div>
@@ -1461,7 +1459,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
     <div class="auth-sub" id="authSub">Sign in to sync</div>
   </div>
   <button class="auth-btn" id="authBtn" onclick="openEmailModal()">Sign in</button>
-  <button class="auth-btn" id="authEmailBtn" onclick="openEmailModal()" style="background:var(--surf2);border:1px solid var(--bdr);color:var(--txt)">Email</button>
+  <button class="auth-btn" id="authEmailBtn" onclick="openEmailModalRegister()" style="background:var(--surf2);border:1px solid var(--bdr);color:var(--txt)">Create account</button>
 </div>
 
 <!-- EMAIL AUTH MODAL -->
@@ -2759,6 +2757,21 @@ function centerUser(){
 // ═══════════ FILTER ═══════════
 
 let activeGroup=null;
+
+function buildDesktopFilterBar(){
+  const bar=document.getElementById('filterBar');
+  if(!bar) return;
+  // single source of truth: FILTER_GROUPS (same list mobile uses). Keep the 'All' cap, rebuild groups.
+  bar.querySelectorAll('.fgroup').forEach(el=>el.remove());
+  FILTER_GROUPS.forEach(grp=>{
+    const el=document.createElement('div');
+    el.className='fgroup';
+    el.dataset.group=grp.id;
+    el.onclick=()=>toggleFilterGroup(grp.id);
+    el.innerHTML=`${grp.emoji} ${grp.label} <span class="fg-arr">▾</span>`;
+    bar.appendChild(el);
+  });
+}
 
 function toggleFilterGroup(gid){
   if(activeGroup===gid){
@@ -7325,7 +7338,7 @@ function maybeShowAuthOnFirstVisit(){
   },300);
 }
 
-load();initMap();updateAll();startGPS();updateRouteBar();checkRefParam();
+buildDesktopFilterBar();load();initMap();updateAll();startGPS();updateRouteBar();checkRefParam();
 maybeShowAuthOnFirstVisit();
 
 // ═══════════ PWA SETUP ═══════════
@@ -7531,6 +7544,11 @@ function openEmailModal(){
   const fw=document.getElementById('eauthForgotWrap');
   if(fw) fw.style.display='';
   document.getElementById('eauthOverlay').classList.add('show');
+}
+
+function openEmailModalRegister(){
+  openEmailModal();
+  toggleEmailMode(); // flip straight into Create-account / sign-up mode
 }
 
 function closeEmailModal(){
