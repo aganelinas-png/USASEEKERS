@@ -949,7 +949,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
     </div>
     <div class="suggest-body">
       <div class="suggest-label">Spot name</div>
-      <input class="suggest-input" id="sugName" maxlength="80" placeholder="Pvz. Napoleono tiltas">
+      <input class="suggest-input" id="sugName" maxlength="80" placeholder="e.g. Brooklyn Bridge">
       <div class="suggest-label">Category</div>
       <select class="suggest-select" id="sugCat">
         <option value="history">⚔️ History</option>
@@ -1008,7 +1008,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
     <div class="fgroup" data-group="urban" onclick="toggleFilterGroup('urban')">🏙 Urban <span class="fg-arr">▾</span></div>
   </div>
   <div class="tb-right">
-    <div class="ib wx-ib" id="wxBtn" onclick="toggleWeather()" title="Oras"><span id="wxIcon">🌤</span></div>
+    <div class="ib wx-ib" id="wxBtn" onclick="toggleWeather()" title="Weather"><span id="wxIcon">🌤</span></div>
     <div class="ib" id="themeBtn" onclick="toggleTheme()" title="Day/night mode">☀️</div>
     <div class="ib" id="gpsRefreshBtn" onclick="refreshGPS()" title="Refresh GPS" style="position:relative"><span id="gpsRefreshIcon">↻</span><span class="gd" id="gpsDot" style="position:absolute;top:8px;right:8px;width:6px;height:6px"></span></div>
     <div class="ib" onclick="centerUser()">📍</div>
@@ -1023,7 +1023,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 <!-- WEATHER EXPANDED -->
 <div class="wx-expanded" id="wxExpanded">
   <div style="display:flex;justify-content:space-between;align-items:flex-start">
-    <div><div class="we-temp" id="weTemp">—°C</div><div class="we-desc" id="weDesc">Kraunama...</div></div>
+    <div><div class="we-temp" id="weTemp">—°C</div><div class="we-desc" id="weDesc">Loading...</div></div>
     <div style="font-size:26px" id="weIcon">🌤</div>
   </div>
   <div class="we-row">
@@ -1104,7 +1104,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
         <span class="dnmi-arrow">›</span>
       </div>
       <div class="dnav-main-item" onclick="openSubPanel('social')">
-        <span class="dnmi-icon">👥</span><span class="dnmi-label">Draugai</span>
+        <span class="dnmi-icon">👥</span><span class="dnmi-label">Friends</span>
         <span class="dnav-badge" id="socialBadge" style="display:none">!</span>
         <span class="dnmi-arrow">›</span>
       </div>
@@ -1232,12 +1232,12 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
     </div>
     <div class="frow">
       <div class="fg"><label class="fl">Year</label><input class="fi" id="eYear" placeholder="1930"></div>
-      <div class="fg"><label class="fl">Zona (m)</label><input class="fi" id="eRadius" type="number" placeholder="80" min="30" max="500"></div>
+      <div class="fg"><label class="fl">Zone (m)</label><input class="fi" id="eRadius" type="number" placeholder="80" min="30" max="500"></div>
     </div>
-    <div class="fg"><label class="fl">Tag</label><input class="fi" id="eTag" placeholder="Modernizmas"></div>
+    <div class="fg"><label class="fl">Tag</label><input class="fi" id="eTag" placeholder="e.g. Art Deco"></div>
     <div class="frow">
-      <div class="fg"><label class="fl">Platuma (lat)</label><input class="fi" id="eLat" type="number" step="any"></div>
-      <div class="fg"><label class="fl">Ilguma (lng)</label><input class="fi" id="eLng" type="number" step="any"></div>
+      <div class="fg"><label class="fl">Latitude</label><input class="fi" id="eLat" type="number" step="any"></div>
+      <div class="fg"><label class="fl">Longitude</label><input class="fi" id="eLng" type="number" step="any"></div>
     </div>
     <button class="mbtn" id="mapPickBtn" onclick="startMapPick()" style="width:100%;background:var(--surf2);border:1px solid var(--bdr);color:var(--td);border-radius:10px;padding:11px;margin-bottom:6px;font-size:.88rem;cursor:pointer">📍 Pick location on map</button>
     <div class="hint" id="edHint">💡 Tap the button then tap the map</div>
@@ -1307,7 +1307,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
       <div class="set-icon">🌙</div>
       <div class="set-label">
         <div class="set-name">Theme mode</div>
-        <div class="set-sub" id="setThemeSub">Tamsus</div>
+        <div class="set-sub" id="setThemeSub">Dark</div>
       </div>
       <button class="set-toggle on" id="setThemeToggle" onclick="event.stopPropagation();toggleTheme();updateSettingsUI()"></button>
     </div>
@@ -2122,7 +2122,7 @@ let dailyQuestDate=null;
 // XP system
 let totalXP=0;
 // Player name
-let playerName='Tu';
+let playerName='You';
 // Guest ID — stable anonymous identity for users who skip login
 function getGuestId(){
   let id=localStorage.getItem('ss_guest_id');
@@ -2260,7 +2260,7 @@ function load(){
   const b=localStorage.getItem('ke7_badges');earnedBadges=b?new Set(JSON.parse(b)):new Set();
   isDark=localStorage.getItem('ke7_theme')!=='light';
   totalXP=parseInt(localStorage.getItem('ke7_xp')||'0');
-  playerName=localStorage.getItem('ke7_name')||'Tu';
+  playerName=localStorage.getItem('ke7_name')||'You';
   dailyQuestDate=localStorage.getItem('ke7_dqdate')||null;
   dailyQuestDone=localStorage.getItem('ke7_dqdone')==='1';
   const sm=localStorage.getItem('ke7_sm');claimedStreakMiles=sm?new Set(JSON.parse(sm)):new Set();
@@ -2486,7 +2486,7 @@ function updateSettingsUI(){
   const collToggle=document.getElementById('setCollectedToggle');
   const collSub=document.getElementById('setCollectedSub');
   if(themeToggle){themeToggle.classList.toggle('on',isDark);} 
-  if(themeSub){themeSub.textContent=isDark?'Tamsus':'Light';}
+  if(themeSub){themeSub.textContent=isDark?'Dark':'Light';}
   // hideCollected=true means spots ARE hidden → toggle should be OFF (not showing)
   // toggle ON = showing collected, toggle OFF = hidden
   if(collToggle){collToggle.classList.toggle('on',!hideCollected);}
@@ -2816,13 +2816,13 @@ function _syncFilterUI(){
   const hiddenCount=activeFilterHidden.size;
   if(mobLabel&&mobBtn){
     if(hiddenCount===0){mobLabel.textContent='All spots';mobBtn.classList.remove('active-filter');}
-    else{mobLabel.textContent=`-${hiddenCount} kategorija`;mobBtn.classList.add('active-filter');}
+    else{mobLabel.textContent=`-${hiddenCount} categories`;mobBtn.classList.add('active-filter');}
   }
   // Mobile nav bar filter icon
   const mfi=document.getElementById('mobNavFilterIcon');
   const mfl=document.getElementById('mobNavFilterLabel');
   if(mfi&&mfl){
-    if(activeFilterHidden.size===0){mfi.textContent='🎛';mfl.textContent='Filtras';}
+    if(activeFilterHidden.size===0){mfi.textContent='🎛';mfl.textContent='Filter';}
     else{mfi.textContent='🎛';mfl.textContent=`-${activeFilterHidden.size}`;}
   }
 }
@@ -2873,7 +2873,7 @@ function setCityFilter(city){
   activeCity=city;
   const pill=document.getElementById('cityFilterPill');
   if(pill){
-    pill.innerHTML=city==='all'?`📍 Regionas <span class="fg-arr" id="cityFilterArr">▾</span>`:`📍 ${city} <span class="fg-arr" id="cityFilterArr">▾</span>`;
+    pill.innerHTML=city==='all'?`📍 Region <span class="fg-arr" id="cityFilterArr">▾</span>`:`📍 ${city} <span class="fg-arr" id="cityFilterArr">▾</span>`;
     pill.classList.toggle('on',city!=='all');
   }
   closeCityFilterSheet();
@@ -3183,7 +3183,7 @@ function fetchWeather(lat,lng){
     }).catch(()=>{});
 }
 function wxIcon(c){if(c===0)return'☀️';if(c<=2)return'⛅';if(c<=3)return'☁️';if(c<=48)return'🌫';if(c<=57)return'🌦';if(c<=67)return'🌧';if(c<=77)return'❄️';if(c<=82)return'🌧';return'⛈';}
-function wxDesc(c){if(c===0)return'Giedra';if(c<=2)return'Partly cloudy';if(c<=3)return'Debesuota';if(c<=48)return'Fog';if(c<=57)return'Drizzle';if(c<=67)return'Lietus';if(c<=77)return'Sniegas';if(c<=82)return'Heavy rain';return'Thunderstorm';}
+function wxDesc(c){if(c===0)return'Clear';if(c<=2)return'Partly cloudy';if(c<=3)return'Cloudy';if(c<=48)return'Fog';if(c<=57)return'Drizzle';if(c<=67)return'Rain';if(c<=77)return'Snow';if(c<=82)return'Heavy rain';return'Thunderstorm';}
 function toggleWeather(){
   wxOpen=!wxOpen;
   document.getElementById('wxExpanded').classList.toggle('open',wxOpen);
@@ -3223,7 +3223,7 @@ const PANEL_TITLES={
   routes:'🗺 Routes',
   favs:'🗺 Routes',
   zenklai:'🏅 Badges',
-  social:'👥 Draugai',
+  social:'👥 Friends',
   osm:'🗺 OSM Import',
   reviews:'💬 Reviews',
   suggestions:'📬 User suggestions',
@@ -3267,7 +3267,7 @@ function renderCurrentPanel(name){if(name) openSubPanel(name);}
 function updateDrawerHeader(){
   document.getElementById('drawerSub').textContent=`🇺🇸 ${found.size} / ${totalSpots().toLocaleString()} · ${getLevel(totalXP).icon} Lv.${getLevel(totalXP).level} · ⭐ ${totalXP} XP`;
   const streakEl=document.getElementById('drawerStreak');
-  if(streakEl) streakEl.textContent=streak>0?`🔥 ${streak} d. serija`:'Start a streak!';
+  if(streakEl) streakEl.textContent=streak>0?`🔥 ${streak}-day streak`:'Start a streak!';
 }
 
 function renderTierProgressHTML(){
@@ -3364,7 +3364,7 @@ function renderQuestCard(){
   const done=dailyQuestDone||prog>=target;
   const pct=Math.round(prog/target*100);
   return`<div class="quest-card ${done?'done':''}">
-    ${done?'<div class="quest-done-badge">✓ Atlikta</div>':''}
+    ${done?'<div class="quest-done-badge">✓ Done</div>':''}
     <div class="quest-header">
       <div class="quest-icon">🎯</div>
       <div>
@@ -4287,7 +4287,7 @@ function renderWeeklyChallenge(){
   const day=now.getDay();
   const daysLeft=day===0?0:(7-day);
   return`<div class="quest-card ${done?'done':''}" style="border-color:${done?'var(--gold)':'rgba(201,168,76,.2)'}">
-    ${done?'<div class="quest-done-badge">✓ Atlikta</div>':''}
+    ${done?'<div class="quest-done-badge">✓ Done</div>':''}
     <div class="quest-header">
       <div class="quest-icon">${ch.icon}</div>
       <div>
@@ -4319,7 +4319,7 @@ function renderWeeklySummary(){
   try{allPrev=parseInt(localStorage.getItem(allPrevKey)||'0');}catch(e){}
 
   const diff=allThis-allPrev;
-  const diffStr=diff>0?`<span style="color:var(--green)">▲${diff} vs praeita sav.</span>`:diff<0?`<span style="color:var(--red)">▼${Math.abs(diff)} vs praeita sav.</span>`:`<span style="color:var(--td)">= praeita sav.</span>`;
+  const diffStr=diff>0?`<span style="color:var(--green)">▲${diff} vs last week</span>`:diff<0?`<span style="color:var(--red)">▼${Math.abs(diff)} vs last week</span>`:`<span style="color:var(--td)">= vs last week</span>`;
 
   // Days this week that had at least 1 collect
   const daysKey='ke7_weekly_days_'+getWeekSeed();
@@ -4778,7 +4778,7 @@ function showShareSheet(url, text){
 
 function copyInviteUrl(url){
   if(navigator.clipboard){
-    navigator.clipboard.writeText(url).then(()=>toast('📋 Nuoroda nukopijuota!','success')).catch(()=>fallbackCopy(url));
+    navigator.clipboard.writeText(url).then(()=>toast('📋 Link copied!','success')).catch(()=>fallbackCopy(url));
   } else fallbackCopy(url);
   document.getElementById('shareSheet')?.remove();
 }
@@ -4794,7 +4794,7 @@ function nativeShare(url,text){
 
 function copyText(text){
   if(navigator.clipboard){
-    navigator.clipboard.writeText(text).then(()=>toast('📋 Nukopijuota!','success')).catch(()=>fallbackCopy(text));
+    navigator.clipboard.writeText(text).then(()=>toast('📋 Copied!','success')).catch(()=>fallbackCopy(text));
   } else fallbackCopy(text);
 }
 
@@ -4803,7 +4803,7 @@ function fallbackCopy(text){
   ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
   document.body.appendChild(ta);ta.select();
   document.execCommand('copy');document.body.removeChild(ta);
-  toast('📋 Nukopijuota!','success');
+  toast('📋 Copied!','success');
 }
 
 // Check for ?ref= param on load — show invite banner
@@ -4845,7 +4845,7 @@ function renderSocial(){
     <div class="my-stats-card">
       <div class="msc-title">${lv.icon} Lv.${lv.level} — ${lv.name}</div>
       <div class="msc-grid">
-        <div class="msc-cell"><div class="msc-val">${found.size}</div><div class="msc-lbl">Vietos</div></div>
+        <div class="msc-cell"><div class="msc-val">${found.size}</div><div class="msc-lbl">Spots</div></div>
         <div class="msc-cell"><div class="msc-val">${totalXP}</div><div class="msc-lbl">XP</div></div>
         <div class="msc-cell"><div class="msc-val">${streak}</div><div class="msc-lbl">🔥 Streak</div></div>
       </div>
@@ -4894,7 +4894,7 @@ function renderSocial(){
       <div class="lb-tab ${_lbTab==='spots'?'on':''}" onclick="setLbTab('spots')">📍 Spots</div>
       <div class="lb-tab ${_lbTab==='streak'?'on':''}" onclick="setLbTab('streak')">🔥 Streak</div>
     </div>
-    <div id="lbList" style="padding-bottom:40px"><div class="lb-loading">Kraunama...</div></div>
+    <div id="lbList" style="padding-bottom:40px"><div class="lb-loading">Loading...</div></div>
   </div>`;
 
   document.getElementById('socialBadge').style.display='none';
@@ -4975,7 +4975,7 @@ function renderLbUsers(users,el){
         <div class="lb-rank">#${myRank}</div>
         <div class="lb-avatar me">${myData.photo?`<img src="${myData.photo}" referrerpolicy="no-referrer">`:'👤'}</div>
         <div class="lb-info">
-          <div class="lb-name me">${myData.name} (Tu)</div>
+          <div class="lb-name me">${myData.name} (You)</div>
           <div class="lb-meta">${lbMeta(myData)}</div>
         </div>
         <div class="lb-val">${val}</div>
@@ -4990,7 +4990,7 @@ function renderLbUsers(users,el){
         <div class="lb-rank ${rankClass(i)}">${rank}</div>
         <div class="lb-avatar ${isMe?'me':''}">${u.photo?`<img src="${u.photo}" referrerpolicy="no-referrer">`:'👤'}</div>
         <div class="lb-info">
-          <div class="lb-name ${isMe?'me':''}">${u.name}${isMe?' (Tu)':''}</div>
+          <div class="lb-name ${isMe?'me':''}">${u.name}${isMe?' (You)':''}</div>
           <div class="lb-meta">${lbMeta(u)}</div>
         </div>
         <div class="lb-val">${val}</div>
@@ -5054,7 +5054,7 @@ function saveSpot(){
     const idx=SPOTS.findIndex(s=>s.id==id);
     if(idx!==-1){SPOTS[idx]={...SPOTS[idx],...data};toast(`✅ ${name} updated`,'success');}
   } else {
-    data.id=Date.now();data.country='LT';SPOTS.push(data);toast(`📍 ${name} added!`,'success');
+    data.id=Date.now();data.country='US';SPOTS.push(data);toast(`📍 ${name} added!`,'success');
   }
   save();refreshMarkers();updateAll();closeEditor();
 }
@@ -5091,7 +5091,7 @@ function updateAll(){
   const mfi=document.getElementById('mobNavFilterIcon');
   const mfl=document.getElementById('mobNavFilterLabel');
   if(mfi&&mfl){
-    if(activeFilterHidden.size===0){mfi.textContent='🎛';mfl.textContent='Filtras';}
+    if(activeFilterHidden.size===0){mfi.textContent='🎛';mfl.textContent='Filter';}
     else{mfi.textContent='🎛';mfl.textContent=`-${activeFilterHidden.size}`;}
   }
 }
@@ -5188,7 +5188,7 @@ function renderStreakCard(){
       <div class="sc-fire">${streak>=2?'🔥':'🕯'}</div>
       <div class="sc-info">
         <div class="sc-title">${streak>0?`${streak}-day streak`:'No streak'}</div>
-        <div class="sc-sub">${nextM?`Dar ${daysLeft}d. iki ${nextM.icon} ${nextM.label}`:'All rewards earned!'}</div>
+        <div class="sc-sub">${nextM?`${daysLeft}d to ${nextM.icon} ${nextM.label}`:'All rewards earned!'}</div>
       </div>
     </div>
     <div class="sc-miles">${miles}</div>
@@ -5200,7 +5200,7 @@ function checkStreakMilestones(){
     if(streak>=m.day&&!claimedStreakMiles.has(m.day)){
       claimedStreakMiles.add(m.day);
       addXP(m.reward);showXPBurst(m.reward);
-      toast(`${m.icon} ${m.day}d. serija! +${m.reward} XP`,'gold');
+      toast(`${m.icon} ${m.day}-day streak! +${m.reward} XP`,'gold');
       save();
     }
   });
@@ -5256,7 +5256,7 @@ async function doOsmSearch(){
     const res=await fetch(url,{headers:{'Accept-Language':'en'}});
     const data=await res.json();
     if(!data.length){
-      box.innerHTML=`<div style="padding:10px;font-size:.78rem;color:var(--td);font-family:'DM Mono',monospace">Nieko nerasta</div>`;
+      box.innerHTML=`<div style="padding:10px;font-size:.78rem;color:var(--td);font-family:'DM Mono',monospace">Nothing found</div>`;
       return;
     }
     box.innerHTML=data.map((r,i)=>`
@@ -6168,7 +6168,7 @@ async function renderAdminSuggestions(){
       body.innerHTML=`<div style="padding:30px 16px;text-align:center;color:var(--td);font-size:.85rem">✅ No pending suggestions</div>`;
       return;
     }
-    let html=`<div style="padding:12px 14px"><div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);margin-bottom:10px">${snap.size} laukia patvirtinimo</div>`;
+    let html=`<div style="padding:12px 14px"><div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);margin-bottom:10px">${snap.size} pending approval</div>`;
     snap.forEach(d=>{
       const s=d.data();
       const cat=CATS[s.cat]||CATS.history;
@@ -6712,7 +6712,7 @@ function renderRouteDetailInto(r,body,routeId){
 
   body.innerHTML=`<div id="_routeDetailPanel">
     <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--bdr)">
-      <button onclick="renderRoutesInto(document.getElementById('_routeDetailPanel').closest('[id^=panel],[id=mobPanelBody]'))" style="background:none;border:none;color:var(--td);font-size:.85rem;cursor:pointer;padding:0;display:flex;align-items:center;gap:4px">← Visi</button>
+      <button onclick="renderRoutesInto(document.getElementById('_routeDetailPanel').closest('[id^=panel],[id=mobPanelBody]'))" style="background:none;border:none;color:var(--td);font-size:.85rem;cursor:pointer;padding:0;display:flex;align-items:center;gap:4px">← All</button>
       <div style="flex:1;font-family:'Playfair Display',serif;font-size:.95rem;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.name}</div>
       <button onclick="renameRoute('${routeId}')" style="background:none;border:none;color:var(--td);font-size:.8rem;cursor:pointer;padding:2px 6px">✏️</button>
       <button onclick="deleteRoute('${routeId}')" style="background:none;border:none;color:var(--red);font-size:.8rem;cursor:pointer;padding:2px 6px">🗑</button>
@@ -7228,7 +7228,7 @@ async function renderReviews(){
     body.innerHTML=`
       <div style="padding:14px 16px 10px;border-bottom:1px solid var(--bdr);background:var(--surf2)">
         <div style="font-family:'Playfair Display',serif;font-size:1.8rem;color:var(--gold);text-align:center">${avg} ⭐</div>
-        <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--td);text-align:center;margin-top:2px">${reviews.length} atsiliepimas(-ai)</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--td);text-align:center;margin-top:2px">${reviews.length} review${reviews.length===1?'':'s'}</div>
       </div>
       ${reviews.map(r=>{
         const d=r.ts?.toDate?r.ts.toDate():new Date(r.ts||0);
@@ -7340,7 +7340,7 @@ maybeShowAuthOnFirstVisit();
     background_color:'#0e0c09',
     theme_color:'#c9a84c',
     orientation:'portrait',
-    lang:'lt',
+    lang:'en',
     icons:[
       {src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='80' fill='%230e0c09'/><text y='340' x='256' text-anchor='middle' font-size='300' font-family='serif'>%F0%9F%97%BA</text></svg>",sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'},
     ],
@@ -7457,7 +7457,7 @@ window.onFbAuthReady=async function(user){
     const socialPanel=document.getElementById('panel-social');
     if(socialPanel&&socialPanel.innerHTML) renderSocial();
     // Sync Firebase displayName to playerName if still default
-    if(user.displayName&&user.displayName.trim().length>0&&(!playerName||playerName==='Tu')){
+    if(user.displayName&&user.displayName.trim().length>0&&(!playerName||playerName==='You'||playerName==='Tu')){
       playerName=user.displayName; save();
     }
   } else {
@@ -8174,12 +8174,12 @@ deleteSpot=async function(){
 <div class="mob-nav-bar" id="mobNavBar">
   <div class="mob-nav-item" onclick="openDrawer()">
     <div class="mob-nav-icon">🗺</div>
-    <div class="mob-nav-label">Vietos</div>
+    <div class="mob-nav-label">Spots</div>
     <div class="mob-nav-badge" id="mobNavFoundBadge" style="display:none">0</div>
   </div>
   <div class="mob-nav-item" onclick="openMobFilterSheet()">
     <div class="mob-nav-icon" id="mobNavFilterIcon">🎛</div>
-    <div class="mob-nav-label" id="mobNavFilterLabel">Filtras</div>
+    <div class="mob-nav-label" id="mobNavFilterLabel">Filter</div>
   </div>
   <div class="mob-nav-item" onclick="mobNavTo('zenklai')">
     <div class="mob-nav-icon">🏅</div>
