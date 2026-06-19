@@ -1468,7 +1468,8 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
     <button class="eauth-close" onclick="closeEmailModal()">✕</button>
     <div class="eauth-title" id="eauthTitle">Sign in</div>
     <div class="eauth-error" id="eauthError"></div>
-    <input class="eauth-input" id="eauthName" type="text" placeholder="Username" style="display:none" maxlength="30">
+    <input class="eauth-input" id="eauthName" type="text" placeholder="Username" style="display:none" maxlength="20" oninput="onUsernameInput()">
+    <div id="eauthNameStatus" style="font-size:.72rem;margin:-6px 0 8px 0;min-height:1em"></div>
     <input class="eauth-input" id="eauthEmail" type="email" placeholder="Email" autocomplete="email">
     <input class="eauth-input" id="eauthPass" type="password" placeholder="Password" autocomplete="current-password">
     <div id="eauthForgotWrap" style="text-align:right;margin:-6px 0 10px 0">
@@ -5021,11 +5022,20 @@ function lbMeta(u){
   return parts.join(' · ');
 }
 
-function saveName(){
+async function saveName(){
   const inp=document.getElementById('nameInput');
   if(!inp) return;
   const n=inp.value.trim();
-  if(!n){toast('⚠ Enter your name','info');return;}
+  const ve=_validUsername(n);
+  if(ve){toast('⚠ '+ve,'info');return;}
+  const user=window._fbUser;
+  if(user && _normUsername(n)!==_normUsername(playerName||'')){
+    const av=await usernameAvailable(n);
+    if(!av.available){toast('⚠ That name is taken','info');return;}
+    const ok=await claimUsername(n,user.uid);
+    if(!ok){toast('⚠ That name is taken','info');return;}
+    if(playerName) await freeUsername(playerName,user.uid);
+  }
   playerName=n;
   save();
   renderSocial();
@@ -5877,6 +5887,7 @@ function renderOsmImport(){
       <button class="osm-ctrl-btn pri" id="reclassBtn" onclick="applyReclass()">🔁 Apply ${_rcCount.toLocaleString()} reclass</button>
       <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red)" onclick="findDuplicateSpots()">🔍 Duplicates</button>
       <button class="osm-ctrl-btn" style="border-color:var(--red);color:var(--red);background:rgba(140,74,74,.1)" onclick="autoDeleteAllDuplicates()">🗑 Delete dupes</button>
+      <button class="osm-ctrl-btn" onclick="rebuildOverviewCounts()">🧮 Rebuild counts</button>
       <span id="rebuildOvStatus" style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);align-self:center"></span>
     </div>
     <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--tm);margin-bottom:8px">New spot candidates (select &amp; import):</div>
@@ -7541,6 +7552,7 @@ function openEmailModal(){
   document.getElementById('eauthEmail').value='';
   document.getElementById('eauthPass').value='';
   document.getElementById('eauthName').value='';
+  {const _s=document.getElementById('eauthNameStatus');if(_s)_s.textContent='';}
   const fw=document.getElementById('eauthForgotWrap');
   if(fw) fw.style.display='';
   document.getElementById('eauthOverlay').classList.add('show');
@@ -7567,7 +7579,67 @@ function toggleEmailMode(){
   // Hide forgot password link in register mode
   const fw=document.getElementById('eauthForgotWrap');
   if(fw) fw.style.display=_emailRegisterMode?'none':'';
+  {const _s=document.getElementById('eauthNameStatus');if(_s)_s.textContent='';}
   document.getElementById('eauthError').textContent='';
+}
+
+// ═══ USERNAMES (unique handles) ═══
+function _normUsername(name){return String(name||'').trim().toLowerCase();}
+function _validUsername(name){
+  const n=String(name||'').trim();
+  if(n.length<3) return 'Name must be at least 3 characters.';
+  if(n.length>20) return 'Name must be 20 characters or fewer.';
+  if(!/^[a-zA-Z0-9_]+$/.test(n)) return 'Use only letters, numbers, and underscore.';
+  return null;
+}
+async function usernameAvailable(name){
+  const{db,doc,getDoc}=window._fb||{};
+  if(!db) return {available:true,mine:false};
+  const key=_normUsername(name);
+  try{
+    const snap=await getDoc(doc(db,'usernames',key));
+    if(!snap.exists()) return {available:true,mine:false};
+    const mine=!!(window._fbUser&&snap.data().uid===window._fbUser.uid);
+    return {available:mine,mine};
+  }catch(e){return {available:true,mine:false};} // read error: don't block, claim is the real gate
+}
+async function claimUsername(name,uid){
+  const{db,doc,setDoc}=window._fb||{};
+  if(!db) return true;
+  try{
+    await setDoc(doc(db,'usernames',_normUsername(name)),{uid,name:String(name).trim(),ts:Date.now()});
+    return true;
+  }catch(e){return false;} // permission-denied = name already claimed (rules block overwrite)
+}
+async function freeUsername(name,uid){
+  const{db,doc,deleteDoc}=window._fb||{};
+  if(!db) return;
+  try{await deleteDoc(doc(db,'usernames',_normUsername(name)));}catch(e){}
+}
+async function generateDefaultName(uid){
+  for(let i=0;i<10;i++){
+    const cand='Seeker'+Math.floor(10000+Math.random()*90000);
+    if(await claimUsername(cand,uid)) return cand;
+  }
+  return 'Seeker'+String(Date.now()).slice(-5); // ultra-rare fallback
+}
+let _unameCheckTimer=null;
+function onUsernameInput(){
+  const inp=document.getElementById('eauthName');
+  const st=document.getElementById('eauthNameStatus');
+  if(!inp||!st) return;
+  const n=inp.value.trim();
+  if(!n){st.textContent='';return;}
+  const ve=_validUsername(n);
+  if(ve){st.style.color='var(--red)';st.textContent=ve;return;}
+  st.style.color='var(--tm)';st.textContent='checking…';
+  clearTimeout(_unameCheckTimer);
+  _unameCheckTimer=setTimeout(async()=>{
+    if(document.getElementById('eauthName').value.trim()!==n) return;
+    const av=await usernameAvailable(n);
+    if(av.available){st.style.color='var(--green)';st.textContent='✓ available';}
+    else{st.style.color='var(--red)';st.textContent='✗ taken';}
+  },400);
 }
 
 async function fbLoginEmail(){
@@ -7579,16 +7651,20 @@ async function fbLoginEmail(){
   const errEl=document.getElementById('eauthError');
   errEl.textContent='';
   if(!email||!pass){errEl.textContent='Enter your email and password.';return;}
-  if(_emailRegisterMode&&!name){errEl.textContent='Enter your name.';return;}
+  if(_emailRegisterMode&&name){const _ve=_validUsername(name);if(_ve){errEl.textContent=_ve;return;}}
   if(_emailRegisterMode&&pass.length<6){errEl.textContent='Password must be at least 6 characters.';return;}
   const btn=document.getElementById('eauthSubmit');
   btn.disabled=true;btn.textContent='...';
   try{
     if(_emailRegisterMode){
+      if(name){const av=await usernameAvailable(name);if(!av.available){errEl.textContent='That name is taken — pick another.';btn.disabled=false;btn.textContent='Create account';return;}}
       const cred=await createUserWithEmailAndPassword(auth,email,pass);
-      await updateProfile(cred.user,{displayName:name});
-      playerName=name; save();
-      toast(`👋 Welcome, ${name}!`,'success');
+      let finalName=name;
+      if(name){const ok=await claimUsername(name,cred.user.uid);if(!ok)finalName=await generateDefaultName(cred.user.uid);}
+      else finalName=await generateDefaultName(cred.user.uid);
+      await updateProfile(cred.user,{displayName:finalName});
+      playerName=finalName; save();
+      toast(`👋 Welcome, ${finalName}!`,'success');
     } else {
       const cred=await signInWithEmailAndPassword(auth,email,pass);
       toast(`👋 Welcome, ${cred.user.displayName||cred.user.email}!`,'success');
@@ -7806,6 +7882,50 @@ async function kvPushOverview(touched,secret){
   try{const c=await caches.open('ss-spots-v1');await c.delete('/api/spots/overview');}catch(e){}
   OVERVIEW=ov;
   return ov;
+}
+
+function rebuildOverviewCounts(){return _rebuildOverviewCounts();}
+async function _rebuildOverviewCounts(){
+  if(!isAdmin()){toast('⚠ Admin only','info');return;}
+  if(_kvBusy){toast('⏳ A KV sync is already running — wait','info');return;}
+  const secret=_getAdminSecret(); if(!secret) return;
+  const setS=m=>{const el=document.getElementById('rebuildOvStatus');if(el)el.textContent=m;};
+  _kvBusy=true; setSyncDot('syncing');
+  try{
+    let ov=null;
+    try{const r=await fetch('/api/spots/overview?t='+Date.now(),{cache:'no-store'});if(r.ok)ov=await r.json();}catch(e){}
+    if(!ov||!ov.states) ov={total:0,states:{}};
+    const cats={}, tiers={1:0,2:0,3:0,4:0};
+    const codes=Object.keys(STATE_BBOXES);
+    let grand=0;
+    for(let i=0;i<codes.length;i++){
+      const code=codes[i];
+      setS(`counting ${code} (${i+1}/${codes.length})…`);
+      let arr; try{arr=await kvFetchStateFresh(code);}catch(e){continue;} // state may have no shard yet
+      for(const raw of arr){
+        const s=normalizeSpot(raw);
+        if(s.cat==='hidden') continue;
+        cats[s.cat]=(cats[s.cat]||0)+1;
+        if(s.tier>=1&&s.tier<=4) tiers[s.tier]++;
+        grand++;
+      }
+    }
+    ov.cats=cats; ov.tiers=tiers; ov.updated=new Date().toISOString();
+    if(!ov.total) ov.total=grand;
+    setS('writing overview…');
+    const res=await fetch('/api/admin/overview',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Secret':secret},body:JSON.stringify(ov)});
+    if(!res.ok){const t=await res.text();throw new Error('HTTP '+res.status+': '+t.slice(0,80));}
+    try{const c=await caches.open('ss-spots-v1');await c.delete('/api/spots/overview');}catch(e){}
+    OVERVIEW=ov;
+    setS(`✓ done — ${grand.toLocaleString()} spots tallied`);
+    toast('✓ Overview counts rebuilt','success');
+    try{updateAll();}catch(e){}
+  }catch(e){
+    setS('✗ '+e.message);
+    toast('✗ '+e.message,'info');
+  } finally {
+    _kvBusy=false; setSyncDot('synced');
+  }
 }
 
 // Core: for each state code, mutator(code, spotsArr) mutates in place and
