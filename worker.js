@@ -59,7 +59,7 @@ const PRIVACY_HTML = `<!DOCTYPE html>
   <div class="updated">Privacy Policy · Last updated: April 2026</div>
 
   <h2>1. Who We Are</h2>
-  <p>SpotSeekers is a location discovery and gamification app for the United States, developed by an independent developer. Our website is <a href="https://www.spotseekers.net">www.spotseekers.net</a>.</p>
+  <p>SpotSeekers is a location discovery and gamification app for the United States, developed by an independent developer. Our website is <a href="https://spotseekers.net">spotseekers.net</a>.</p>
 
   <h2>2. What We Collect</h2>
   <ul>
@@ -100,7 +100,7 @@ const PRIVACY_HTML = `<!DOCTYPE html>
   <p>Questions or data deletion requests: <a href="mailto:privacy@spotseekers.net">privacy@spotseekers.net</a></p>
 
   <hr>
-  <div class="footer">© 2026 SpotSeekers · <a href="https://www.spotseekers.net">www.spotseekers.net</a></div>
+  <div class="footer">© 2026 SpotSeekers · <a href="https://spotseekers.net">spotseekers.net</a></div>
 </div>
 </body>
 </html>`;
@@ -146,7 +146,7 @@ const DELETE_ACCOUNT_HTML = `<!DOCTYPE html>
   </div>
 
   <hr>
-  <div class="footer">© 2026 SpotSeekers · <a href="https://www.spotseekers.net">www.spotseekers.net</a> · <a href="/privacy">Privacy Policy</a></div>
+  <div class="footer">© 2026 SpotSeekers · <a href="https://spotseekers.net">spotseekers.net</a> · <a href="/privacy">Privacy Policy</a></div>
 </div>
 </body>
 </html>`;
@@ -246,7 +246,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
           <div class="step"><div class="step-num">3</div><div class="step-text">Select <strong>"Add to Home screen"</strong></div></div>
           <div class="step"><div class="step-num">4</div><div class="step-text">Confirm — SpotSeekers will appear as an app on your phone 🎉</div></div>
         </div>
-        <a class="action-btn" href="https://www.spotseekers.net" target="_blank">Open SpotSeekers →</a>
+        <a class="action-btn" href="https://spotseekers.net" target="_blank">Open SpotSeekers →</a>
       </div>
     </div>
 
@@ -267,7 +267,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
           <div class="step"><div class="step-num">3</div><div class="step-text">Scroll down and select <strong>"Add to Home Screen"</strong></div></div>
           <div class="step"><div class="step-num">4</div><div class="step-text">Confirm — SpotSeekers will appear as an app on your iPhone 🎉</div></div>
         </div>
-        <a class="action-btn" href="https://www.spotseekers.net" target="_blank">Open SpotSeekers →</a>
+        <a class="action-btn" href="https://spotseekers.net" target="_blank">Open SpotSeekers →</a>
       </div>
     </div>
 
@@ -298,7 +298,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   </div>
 
   <div class="footer">
-    <a href="https://www.spotseekers.net">← Back to SpotSeekers</a>
+    <a href="https://spotseekers.net">← Back to SpotSeekers</a>
     <div class="footer-copy">© 2026 SpotSeekers · <a href="/privacy" style="color:var(--tm);font-size:.65rem">Privacy Policy</a></div>
   </div>
 </div>
