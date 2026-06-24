@@ -297,13 +297,13 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 /* ── BOTTOM SHEET ── */
 .sback{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:199;pointer-events:none;transition:background .3s}
 .sback.open{background:rgba(0,0,0,.4);pointer-events:all}
-.sheet{position:fixed;left:0;right:0;bottom:0;z-index:200;background:var(--surf);border-radius:20px 20px 0 0;border-top:1px solid var(--bdr);transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);max-height:85vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 -8px 40px var(--sh)}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:200;background:var(--surf);border-radius:20px 20px 0 0;border-top:1px solid var(--bdr);transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);max-height:85vh;max-height:85dvh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 -8px 40px var(--sh)}
 .sheet.open{transform:translateY(0)}
 .sheet-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 10px;border-bottom:1px solid var(--bdr);flex-shrink:0;gap:10px;min-height:48px}
 .sheet-header-name{font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
 .sheet-close{background:var(--surf2);border:1px solid var(--bdr);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;color:var(--td);flex-shrink:0;line-height:1;-webkit-user-select:none;user-select:none}
 .sheet-close:active{background:var(--surf3)}
-.sscroll{overflow-y:auto;flex:1;padding:14px 18px 16px;-webkit-overflow-scrolling:touch}
+.sscroll{overflow-y:auto;flex:1;min-height:0;padding:14px 18px 16px;-webkit-overflow-scrolling:touch}
 
 /* TIER BADGE IN SHEET */
 .tier-badge{display:inline-flex;align-items:center;gap:5px;border-radius:20px;padding:4px 10px;font-family:'DM Mono',monospace;font-size:.68rem;font-weight:500;margin-bottom:10px;border:1px solid}
@@ -707,6 +707,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
   .sheet{
     border-radius:20px 20px 0 0;
     max-height:calc(92vh - 70px - env(safe-area-inset-bottom));
+    max-height:calc(92dvh - 70px - env(safe-area-inset-bottom));
     bottom:calc(70px + env(safe-area-inset-bottom))!important;
   }
   .sscroll{padding-bottom:16px}
@@ -996,7 +997,6 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
     <div class="logo-pill" onclick="handleLogoClick()">
       <div class="logo-text">SpotSeekers</div>
       <div class="logo-sub" id="topSub">0 / 0 collected</div>
-      <div style="font-family:'DM Mono',monospace;font-size:.48rem;color:var(--tm);letter-spacing:.06em;margin-top:1px;opacity:.7">v24.03</div>
     </div>
     <div class="streak-pill" id="streakPill" style="display:none">🔥 <span id="streakNum">0</span></div>
   </div>
@@ -1058,7 +1058,6 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
       <div style="display:flex;align-items:flex-start;justify-content:space-between">
         <div style="flex:1;min-width:0">
           <div class="drawer-logo">SpotSeekers</div>
-          <div style="font-family:'DM Mono',monospace;font-size:.52rem;color:var(--tm);letter-spacing:.06em;margin-top:-2px;opacity:.7">v24.03</div>
           <div class="drawer-sub" id="drawerSub">0 / 0 collected · ⭐ 0 XP</div>
           <div class="drawer-sub" id="drawerStreak" style="margin-top:2px;color:var(--gold)">Start a streak!</div>
           <!-- XP progress bar -->
