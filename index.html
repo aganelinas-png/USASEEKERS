@@ -922,6 +922,14 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 .ach-card-title{font-size:.82rem;font-weight:700;color:var(--txt);line-height:1.2}
 .ach-card-count{font-family:'DM Mono',monospace;font-size:.7rem;color:var(--gold);font-weight:600}
 .ach-card-spots{font-family:'DM Mono',monospace;font-size:.64rem;color:var(--td)}
+.ach-card.compact{flex-direction:row;align-items:center;gap:9px;padding:10px 11px}
+.ach-card.compact .ach-card-icon{font-size:1.05rem;flex-shrink:0;width:18px;text-align:center}
+.ach-scc-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.ach-scc-main .ach-card-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ach-scc-sub{font-family:'DM Mono',monospace;font-size:.64rem;color:var(--gold);font-weight:600;display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ach-scc-sub .spots{color:var(--td);font-weight:500}
+.ach-showall{width:100%;margin-top:12px;background:var(--surf2);color:var(--td);border:1px solid var(--bdr);border-radius:9px;padding:10px;font-family:'DM Mono',monospace;font-size:.74rem;cursor:pointer;transition:.18s}
+.ach-showall:hover{border-color:var(--gold);color:var(--txt)}
 .ach-list{display:flex;flex-direction:column;gap:8px}
 .ach-row{display:flex;gap:11px;align-items:flex-start;background:var(--surf2);border:1px solid var(--bdr);border-radius:11px;padding:11px 12px;opacity:.72}
 .ach-row.earned{opacity:1;border-color:rgba(201,168,76,.5);box-shadow:inset 0 0 16px rgba(201,168,76,.06)}
@@ -4059,6 +4067,7 @@ function achBack(){achState.view='overview';achState.group=null;renderAch();}
 function achOpenGroup(id){achState.view='detail';achState.group=id;renderAch();}
 function refreshAchIfOpen(){if(achState.open)renderAch();}
 let achSelectedState=null;
+let achShowAllStates=false;
 function defaultAchState(){
   try{const m=localStorage.getItem('ke7_ach_state');if(m&&BADGE_GROUPS.some(g=>g.stateCode===m))return m;}catch(e){}
   const c={};let best=null,bestN=0;
@@ -4068,6 +4077,7 @@ function defaultAchState(){
   return null;
 }
 function achSetState(code){ achSelectedState=code||null; try{ if(code) localStorage.setItem('ke7_ach_state',code); }catch(e){} renderAch(); }
+function achToggleAllStates(){ const b=document.getElementById('achBody'); const sc=b?b.scrollTop:0; achShowAllStates=!achShowAllStates; renderAch(); if(b) b.scrollTop=sc; }
 function achCardHtml(g,ctx){
   const r=groupRollup(g,ctx);
   if(g.cat==='hidden'){
@@ -4077,6 +4087,13 @@ function achCardHtml(g,ctx){
   const done=r.earned>=r.total&&r.total>0;
   const spotLine=(r.cur!==null&&r.tot!==null&&r.tot>0)?`<div class="ach-card-spots">🗺 ${r.cur} / ${r.tot}</div>`:'';
   return `<div class="ach-card ${done?'done':''}" onclick="achOpenGroup('${g.id}')"><div class="ach-card-icon">${g.icon}</div><div class="ach-card-title">${g.title}</div><div class="ach-card-count">${r.earned}/${r.total}${done?' ✓':''}</div>${spotLine}<div class="ach-bar sm"><div class="ach-bar-fill" style="width:${pct}%"></div></div></div>`;
+}
+function achStateCardHtml(g,ctx,isGps){
+  const r=groupRollup(g,ctx);
+  const pct=r.total?Math.round(r.earned/r.total*100):0;
+  const done=r.earned>=r.total&&r.total>0;
+  const spots=(r.cur!==null&&r.tot!==null&&r.tot>0)?`<span class="spots">🗺 ${r.cur}/${r.tot}</span>`:'';
+  return `<div class="ach-card compact ${done?'done':''}" onclick="achOpenGroup('${g.id}')"><div class="ach-card-icon">${isGps?'📌':g.icon}</div><div class="ach-scc-main"><div class="ach-card-title">${g.title}</div><div class="ach-scc-sub">${r.earned}/${r.total}${done?' ✓':''} ${spots}</div><div class="ach-bar sm"><div class="ach-bar-fill" style="width:${pct}%"></div></div></div></div>`;
 }
 function achLadderHtml(g,ctx){
   const r=groupRollup(g,ctx);
@@ -4110,22 +4127,33 @@ function renderAch(){
     const stateGroups=BADGE_GROUPS.filter(g=>g.stateCode);
     const catGroups=BADGE_GROUPS.filter(g=>g.cat);
     const mileGroups=BADGE_GROUPS.filter(g=>!g.cat&&!g.stateCode);
-    // States section: one state at a time via dropdown (defaults to the user's own state)
-    if(achSelectedState===null) achSelectedState=defaultAchState();
+    const cardsFor=arr=>arr.map(g=>achCardHtml(g,ctx)).join('');
+    // States: compact card grid — GPS state + states you've collected in float to top; rest behind "show all".
     let statesHtml;
     if(stateGroups.length===0){
       statesHtml='<div class="ach-empty">State badges appear once spot data finishes loading.</div>';
     } else {
-      const opts=stateGroups.slice().sort((a,b)=>a.title.localeCompare(b.title)).map(g=>`<option value="${g.stateCode}"${g.stateCode===achSelectedState?' selected':''}>${g.title}</option>`).join('');
-      const placeholder=achSelectedState?'':'<option value="" selected>Select your state…</option>';
-      const selG=achSelectedState?BADGE_GROUPS.find(g=>g.stateCode===achSelectedState):null;
-      const ladder=selG?achLadderHtml(selG,ctx):'<div class="ach-empty">Pick your state above to see its badges.</div>';
-      statesHtml=`<div class="ach-state-pick"><label>State</label><select class="ach-select" onchange="achSetState(this.value)">${placeholder}${opts}</select></div>${ladder}`;
+      let gpsCode=null;
+      try{ if(userLat!==null&&userLng!==null) gpsCode=assignState(userLat,userLng); }catch(e){}
+      const coll=g=>ctx.stC[g.stateCode]||0;
+      const relevant=stateGroups.filter(g=>g.stateCode===gpsCode||coll(g)>0).sort((a,b)=>{
+        if(a.stateCode===gpsCode)return -1; if(b.stateCode===gpsCode)return 1;
+        const d=coll(b)-coll(a); if(d)return d;
+        return a.title.localeCompare(b.title);
+      });
+      const relSet=new Set(relevant.map(g=>g.stateCode));
+      const rest=stateGroups.filter(g=>!relSet.has(g.stateCode)).sort((a,b)=>a.title.localeCompare(b.title));
+      const showRest=achShowAllStates||relevant.length===0;
+      const cards=relevant.map(g=>achStateCardHtml(g,ctx,g.stateCode===gpsCode)).join('')
+        +(showRest?rest.map(g=>achStateCardHtml(g,ctx,false)).join(''):'');
+      const toggle=(rest.length>0&&relevant.length>0)
+        ?`<button class="ach-showall" onclick="achToggleAllStates()">${showRest?'Show fewer ▴':('Show all '+stateGroups.length+' states ▾')}</button>`
+        :'';
+      statesHtml=`<div class="ach-grid">${cards}</div>`+toggle;
     }
-    const cardsFor=arr=>arr.map(g=>achCardHtml(g,ctx)).join('');
-    body.innerHTML=`<div class="ach-section"><div class="ach-sec-head">🗺️ States</div>${statesHtml}</div>`+
-      `<div class="ach-section"><div class="ach-sec-head">📚 Categories</div><div class="ach-grid">${cardsFor(catGroups)}</div></div>`+
-      `<div class="ach-section"><div class="ach-sec-head">🏆 Milestones</div><div class="ach-grid">${cardsFor(mileGroups)}</div></div>`;
+    body.innerHTML=`<div class="ach-section"><div class="ach-sec-head">📚 Categories</div><div class="ach-grid">${cardsFor(catGroups)}</div></div>`+
+      `<div class="ach-section"><div class="ach-sec-head">🏆 Milestones</div><div class="ach-grid">${cardsFor(mileGroups)}</div></div>`+
+      `<div class="ach-section"><div class="ach-sec-head">🗺️ States</div>${statesHtml}</div>`;
     body.scrollTop=0;return;
   }
 
