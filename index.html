@@ -930,6 +930,8 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 .ach-scc-sub .spots{color:var(--td);font-weight:500}
 .ach-showall{width:100%;margin-top:12px;background:var(--surf2);color:var(--td);border:1px solid var(--bdr);border-radius:9px;padding:10px;font-family:'DM Mono',monospace;font-size:.74rem;cursor:pointer;transition:.18s}
 .ach-showall:hover{border-color:var(--gold);color:var(--txt)}
+.spots-back{background:none;border:none;color:var(--gold);font-family:'DM Mono',monospace;font-size:.72rem;cursor:pointer;padding:8px 2px 6px;display:inline-flex;align-items:center;gap:5px}
+.spots-back:hover{color:var(--txt)}
 .ach-list{display:flex;flex-direction:column;gap:8px}
 .ach-row{display:flex;gap:11px;align-items:flex-start;background:var(--surf2);border:1px solid var(--bdr);border-radius:11px;padding:11px 12px;opacity:.72}
 .ach-row.earned{opacity:1;border-color:rgba(201,168,76,.5);box-shadow:inset 0 0 16px rgba(201,168,76,.06)}
@@ -2092,6 +2094,8 @@ function compactSpot(s){
 let found=new Set();
 let foundState={};          // id(string) → 2-letter state code; the per-state breakdown source
 let _spotsPanelState=null;  // currently selected state in the Spots panel (no viewport auto-follow)
+let _spotsView='states';    // 'states' = card grid | 'list' = drilled into one state
+let _spotsShowAll=false;    // reveal all states in the Spots grid
 let _fsBackfillDone=false;  // one-time-per-session guard for the foundState backfill
 let streak=0,lastDate=null,notes={},earnedBadges=new Set();
 // ── per-day activity log (powers Activity badges) ──
@@ -3259,7 +3263,7 @@ function openSubPanel(name){
   document.getElementById('drawerSubTitle').textContent=PANEL_TITLES[name]||'';
   document.getElementById('drawerSubPanel').classList.add('open');
   if(name==='aboutme') renderAboutMe();
-  if(name==='vietos') renderList();
+  if(name==='vietos'){ _spotsView='states'; _spotsShowAll=false; renderList(); }
   if(name==='routes'||name==='favs') renderRoutes();
   if(name==='zenklai') renderBadges();
   if(name==='social') renderSocial();
@@ -4617,35 +4621,65 @@ function spotsPanelState(){
 
 function onSpotsStateChange(code){_spotsPanelState=code;renderList();}
 
+function stateName(code){
+  try{ if(typeof US_STATES!=='undefined'){ const r=US_STATES.find(x=>x[0]===code); if(r) return r[1]; } }catch(e){}
+  return code;
+}
+function spotsToggleAll(){ const b=document.getElementById('panel-vietos'); const sc=b?b.scrollTop:0; _spotsShowAll=!_spotsShowAll; renderList(); if(b) b.scrollTop=sc; }
+function spotsOpenState(code){ _spotsPanelState=code; _spotsView='list'; renderList(); const b=document.getElementById('panel-vietos'); if(b) b.scrollTop=0; }
+function spotsBackToStates(){ _spotsView='states'; renderList(); const b=document.getElementById('panel-vietos'); if(b) b.scrollTop=0; }
+function spotsStateCardHtml(code,collected,isGps){
+  const o=(OVERVIEW&&OVERVIEW.states)?OVERVIEW.states[code]:null;
+  const tot=o?((typeof o.countNoHidden==='number')?o.countNoHidden:(o.count||0)):0;
+  const pct=tot?Math.round(collected/tot*100):0;
+  const done=tot>0&&collected>=tot;
+  const sub=tot>0?`🗺 ${collected}/${tot.toLocaleString()}`:`${collected} collected`;
+  return `<div class="ach-card compact ${done?'done':''}" onclick="spotsOpenState('${code}')"><div class="ach-card-icon">${isGps?'📌':'📍'}</div><div class="ach-scc-main"><div class="ach-card-title">${stateName(code)}</div><div class="ach-scc-sub">${sub}${done?' ✓':''}</div><div class="ach-bar sm"><div class="ach-bar-fill" style="width:${pct}%"></div></div></div></div>`;
+}
+function renderSpotsStateGrid(body){
+  const stateCodes=(OVERVIEW&&OVERVIEW.states&&!_legacySpotMode)
+    ? Object.keys(OVERVIEW.states)
+    : [...new Set(SPOTS.map(s=>s.st||s.state).filter(Boolean))];
+  if(!stateCodes.length){ body.innerHTML=`<div style="text-align:center;padding:24px;color:var(--tm);font-size:.8rem">Loading spots…</div>`; return; }
+  const coll={}; for(const id in foundState){ const st=foundState[id]; if(st) coll[st]=(coll[st]||0)+1; }
+  let gpsCode=null; try{ if(userLat!==null&&userLng!==null) gpsCode=assignState(userLat,userLng); }catch(e){}
+  if(gpsCode && !stateCodes.includes(gpsCode)) gpsCode=null;
+  const relevant=stateCodes.filter(c=>c===gpsCode||(coll[c]||0)>0).sort((a,b)=>{
+    if(a===gpsCode)return -1; if(b===gpsCode)return 1;
+    const d=(coll[b]||0)-(coll[a]||0); if(d)return d;
+    return a.localeCompare(b);
+  });
+  const relSet=new Set(relevant);
+  const rest=stateCodes.filter(c=>!relSet.has(c)).sort((a,b)=>a.localeCompare(b));
+  const showRest=_spotsShowAll||relevant.length===0;
+  const card=c=>spotsStateCardHtml(c,coll[c]||0,c===gpsCode);
+  const cards=relevant.map(card).join('')+(showRest?rest.map(card).join(''):'');
+  const toggle=(rest.length>0&&relevant.length>0)
+    ?`<button class="ach-showall" onclick="spotsToggleAll()">${showRest?'Show fewer ▴':('Show all '+stateCodes.length+' states ▾')}</button>`
+    :'';
+  body.innerHTML=`<div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--tm);text-transform:uppercase;letter-spacing:.08em;padding:8px 2px">Pick a state to explore its spots</div><div class="ach-grid">${cards}</div>${toggle}`;
+}
+
 const TIER_WORD={1:'Landmark',2:'National',3:'State',4:'Local'};
 
 function renderList(){
   const body=document.getElementById('panel-vietos');
   if(!body) return;
 
-  const stateCodes=(OVERVIEW&&OVERVIEW.states&&!_legacySpotMode)
-    ? Object.keys(OVERVIEW.states).sort()
-    : [...new Set(SPOTS.map(s=>s.st||s.state).filter(Boolean))].sort();
+  // Spots tab mirrors the badges window: a state-card grid -> tap to drill into one state.
+  if(_spotsView!=='list'){ renderSpotsStateGrid(body); return; }
 
-  const code=spotsPanelState();
+  const code=_spotsPanelState;
+  if(!code){ _spotsView='states'; renderSpotsStateGrid(body); return; }
 
-  // State picker + one-line explainer (no viewport auto-follow)
-  let h=`<div style="padding:8px 0 4px">
-    <select id="spotsStateSelect" onchange="onSpotsStateChange(this.value)"
-      style="width:100%;box-sizing:border-box;background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;padding:8px 10px;font-family:'DM Sans',sans-serif;font-size:.82rem;color:var(--txt);outline:none">
-      ${stateCodes.map(c=>`<option value="${c}"${c===code?' selected':''}>${c}${OVERVIEW&&OVERVIEW.states&&OVERVIEW.states[c]?` — ${OVERVIEW.states[c].count.toLocaleString()} spots`:''}</option>`).join('')}
-    </select>
-  </div>
-  <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--tm);padding:0 2px 6px">Showing your progress in ${code||'—'}. Pick another state to explore it.</div>`;
+  // Header: back to the state grid + the state name
+  let h=`<button class="spots-back" onclick="spotsBackToStates()">← All states</button>
+  <div style="display:flex;align-items:baseline;gap:8px;padding:0 2px 8px">
+    <span style="font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--gold);line-height:1.1">${stateName(code)}</span>
+    <span style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--tm)">${code}</span>
+  </div>`;
 
-  if(!code){body.innerHTML=h+`<div style="text-align:center;padding:24px;color:var(--tm);font-size:.8rem">Loading spots…</div>`;return;}
-
-  // Make sure the chosen state's pack is in memory (one KV fetch); re-render when ready.
-  if(!STATE_DATA.has(code)&&!_legacySpotMode){
-    body.innerHTML=h+`<div style="text-align:center;padding:24px;color:var(--tm);font-size:.8rem">Loading ${code}…</div>`;
-    ensureStatesLoaded([code]).then(()=>{if(_spotsPanelState===code)renderList();});
-    return;
-  }
+  if(!STATE_DATA.has(code)&&!_legacySpotMode){body.innerHTML=h+`<div style="text-align:center;padding:24px;color:var(--tm);font-size:.8rem">Loading ${code}…</div>`;ensureStatesLoaded([code]).then(()=>{if(_spotsPanelState===code&&_spotsView==='list')renderList();});return;}
 
   const stSpots=(STATE_DATA.has(code)?STATE_DATA.get(code).spots:SPOTS.filter(s=>(s.st||s.state)===code))
     .filter(s=>s.cat!=='hidden');
@@ -5120,7 +5154,7 @@ function deleteSpot(){
 // ═══════════ HEADER ═══════════
 
 function updateAll(){
-  document.getElementById('topSub').textContent=`${found.size} collected · Lv.${getPlayerLevel(totalXP)} · v${APP_VERSION}`;
+  document.getElementById('topSub').textContent=`${found.size} collected · Lv.${getPlayerLevel(totalXP)}`;
   const s=streak||0;
   document.getElementById('streakNum').textContent=s;
   const pill=document.getElementById('streakPill');
