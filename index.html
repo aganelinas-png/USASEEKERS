@@ -956,6 +956,20 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 .ob-text{font-size:.88rem;color:var(--td);line-height:1.65;margin-bottom:32px}
 .ob-btn{width:100%;background:var(--gold);color:#0e0c09;border:none;border-radius:14px;padding:14px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:.95rem;cursor:pointer;margin-bottom:12px}
 .ob-skip{font-size:.75rem;color:var(--tm);cursor:pointer;padding:4px}
+/* ── GPS HELP SHEET ── */
+.gpshelp-overlay{position:fixed;inset:0;z-index:3200;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;padding:20px}
+.gpshelp-overlay.show{display:flex}
+.gpshelp-sheet{background:var(--surf);border:1px solid var(--bdr);border-radius:18px;padding:22px 20px;width:100%;max-width:360px;box-shadow:0 8px 40px var(--sh);max-height:80vh;overflow:auto}
+.gpshelp-title{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--txt);margin-bottom:6px}
+.gpshelp-sub{font-size:.8rem;color:var(--td);line-height:1.55;margin-bottom:14px}
+.gpshelp-steps{margin:0 0 14px;padding-left:20px}
+.gpshelp-steps li{font-size:.82rem;color:var(--txt);line-height:1.6;margin-bottom:7px}
+.gpshelp-steps b{color:var(--gold);font-weight:700}
+.gpshelp-note{font-size:.74rem;color:var(--tm);line-height:1.5;margin-bottom:16px}
+.gpshelp-actions{display:flex;gap:10px}
+.gpshelp-btn{flex:1;border:none;border-radius:12px;padding:12px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:.86rem;cursor:pointer}
+.gpshelp-btn.primary{background:var(--gold);color:#0e0c09}
+.gpshelp-btn.ghost{background:var(--surf2);border:1px solid var(--bdr);color:var(--txt)}
 </style>
 </head>
 <body>
@@ -2993,13 +3007,64 @@ function showGpsDeniedBanner(){
   const b=document.createElement('div');
   b.id='gpsDeniedBanner';
   b.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:800;background:var(--surf);border:1px solid var(--gold);border-radius:16px;padding:10px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,.4);font-family:\'DM Sans\',sans-serif;font-size:.82rem;color:var(--txt);white-space:nowrap';
-  b.innerHTML=`<span>📍 GPS disabled</span><button onclick="retryGPS()" style="background:var(--gold);color:#0e0c09;border:none;border-radius:10px;padding:6px 12px;font-family:\'DM Sans\',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer">Allow GPS</button><button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--tm);font-size:1rem;cursor:pointer;padding:0 2px">✕</button>`;
+  b.innerHTML=`<span>📍 Location is off</span><button onclick="showGpsHelp()" style="background:var(--gold);color:#0e0c09;border:none;border-radius:10px;padding:6px 12px;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer">Turn it on</button><button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--tm);font-size:1rem;cursor:pointer;padding:0 2px">✕</button>`;
   document.body.appendChild(b);
 }
 function retryGPS(){
   document.getElementById('gpsDeniedBanner')?.remove();
   startGPS();
 }
+/* ── GPS denied: how-to-enable help (recovery path — browser can't re-prompt after a deny) ── */
+function _gpsPlatform(){
+  const ua=navigator.userAgent||'';
+  if(/iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && (navigator.maxTouchPoints||0)>1)) return 'ios';
+  if(/Android/i.test(ua)) return 'android';
+  return 'desktop';
+}
+const _GPS_HELP={
+  ios:[
+    'Open the <b>Settings</b> app.',
+    'Make sure <b>Privacy &amp; Security → Location Services</b> is turned on.',
+    'Find <b>Safari</b> (or <b>SpotSeekers</b> if you added it to your Home Screen) → <b>Location</b> → <b>While Using the App</b>.',
+    'Come back and reopen SpotSeekers.'
+  ],
+  android:[
+    'Tap the <b>lock / tune icon</b> to the left of the address bar.',
+    'Choose <b>Permissions → Location → Allow</b>.',
+    'If you don’t see it: <b>browser Settings → Site settings → Location</b>, then allow this site.',
+    'Reload the page.'
+  ],
+  desktop:[
+    'Click the <b>lock / tune icon</b> to the left of the address bar.',
+    'Set <b>Location</b> to <b>Allow</b>.',
+    'Reload the page.'
+  ]
+};
+function showGpsHelp(){
+  let el=document.getElementById('gpshelpOverlay');
+  if(!el){
+    el=document.createElement('div');
+    el.id='gpshelpOverlay';
+    el.className='gpshelp-overlay';
+    el.addEventListener('click',e=>{ if(e.target===el) closeGpsHelp(); });
+    document.body.appendChild(el);
+  }
+  const steps=_GPS_HELP[_gpsPlatform()]||_GPS_HELP.desktop;
+  el.innerHTML=`<div class="gpshelp-sheet">
+    <div class="gpshelp-title">Turn on location</div>
+    <div class="gpshelp-sub">SpotSeekers needs your location to know when you reach a spot. It is blocked right now, so the app can’t ask again — you will need to allow it in settings.</div>
+    <ol class="gpshelp-steps">${steps.map(s=>`<li>${s}</li>`).join('')}</ol>
+    <div class="gpshelp-note">If these steps don’t match your device, look for <b>Location</b> or <b>Site permissions</b> in your browser or system settings and allow it for SpotSeekers.</div>
+    <div class="gpshelp-actions">
+      <button class="gpshelp-btn ghost" onclick="closeGpsHelp()">Close</button>
+      <button class="gpshelp-btn primary" onclick="gpsHelpRetry()">Retry</button>
+    </div>
+  </div>`;
+  el.classList.add('show');
+}
+function closeGpsHelp(){ document.getElementById('gpshelpOverlay')?.classList.remove('show'); }
+function gpsHelpRetry(){ closeGpsHelp(); retryGPS(); }
+
 function refreshGPS(){
   const now=Date.now();
   if(now-_gpsRefreshTs<8000){toast('⌛ Wait before refreshing','info');return;}
