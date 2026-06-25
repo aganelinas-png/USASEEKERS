@@ -945,6 +945,17 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 .ach-row-prog .ach-bar{flex:1;margin-top:0}
 .ach-row-pct{font-family:'DM Mono',monospace;font-size:.62rem;color:var(--td);white-space:nowrap}
 @media(max-width:600px){.ach-grid{grid-template-columns:repeat(2,1fr);gap:9px}.ach-title{font-size:1rem}}
+/* ── ONBOARDING ── */
+.ob-overlay{position:fixed;inset:0;z-index:3000;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
+.ob-card{width:100%;max-width:360px;text-align:center}
+.ob-dots{display:flex;justify-content:center;gap:6px;margin-bottom:28px}
+.ob-dot{width:7px;height:7px;border-radius:50%;background:var(--bdr);transition:background .3s}
+.ob-dot.on{background:var(--gold)}
+.ob-icon{font-size:3.5rem;margin-bottom:16px}
+.ob-title{font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--gold);margin-bottom:10px}
+.ob-text{font-size:.88rem;color:var(--td);line-height:1.65;margin-bottom:32px}
+.ob-btn{width:100%;background:var(--gold);color:#0e0c09;border:none;border-radius:14px;padding:14px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:.95rem;cursor:pointer;margin-bottom:12px}
+.ob-skip{font-size:.75rem;color:var(--tm);cursor:pointer;padding:4px}
 </style>
 </head>
 <body>
@@ -7410,8 +7421,82 @@ function maybeShowAuthOnFirstVisit(){
   },300);
 }
 
-buildDesktopFilterBar();load();initMap();updateAll();startGPS();updateRouteBar();checkRefParam();
-maybeShowAuthOnFirstVisit();
+/* ═══════════ ONBOARDING (replaces maybeShowAuthOnFirstVisit; owns ss_onboarded_v1) ═══════════ */
+const OB_KEY='ss_onboarded_v1';
+const OB_SLIDES=[
+  {icon:'🗺',title:'Welcome to SpotSeekers!',text:'Exploring America, turned into a game. Tens of thousands of real historic places across all 50 states and Washington, D.C. are waiting to be found.'},
+  {icon:'📍',title:'Find a spot on the map',text:'The map is dotted with real places — houses, churches, bridges, forts, monuments and more. Every one has a story and a level.'},
+  {icon:'🚶',title:'Go there in person',text:'The only way to collect a spot is to physically travel to it. There is no way to collect one remotely.'},
+  {icon:'⭐',title:'Collect the spot',text:'Get within range and tap "⭐ Collect spot!" to earn XP and mark it found.'},
+  {icon:'📈',title:'Level up',text:'The more you collect, the higher your level. 50 levels from Newcomer 🐣 to USA Legend 💎 — and leveling up unlocks more spots on the map.'},
+  {icon:'🏆',title:'Compete',text:'Climb the leaderboard by XP, spots and streaks. Can you reach the Top 10?'},
+  {icon:'📡',title:'SpotSeekers runs on GPS',text:'Because you collect places by visiting them in person, the app needs your location to know when you have arrived. On the next tap, your device will ask permission to use your location.',gps:true},
+  {icon:'🎯',title:'Ready to explore',text:'Sign in or create an account, and let the expedition begin.',last:true},
+];
+let _obSlide=0;
+const _obGpsIdx=OB_SLIDES.findIndex(s=>s.gps);
+
+function maybeShowOnboarding(){
+  if(localStorage.getItem(OB_KEY)) return;
+  showOnboarding();
+}
+function showOnboarding(){
+  let el=document.getElementById('obOverlay');
+  if(!el){
+    el=document.createElement('div');
+    el.id='obOverlay';
+    el.className='ob-overlay';
+    document.body.appendChild(el);
+  }
+  _obSlide=0;
+  renderObSlide(el);
+  el.style.display='flex';
+}
+function renderObSlide(el){
+  const s=OB_SLIDES[_obSlide];
+  const dots=OB_SLIDES.map((_,i)=>`<div class="ob-dot${i===_obSlide?' on':''}"></div>`).join('');
+  let btnLabel,btnAction;
+  if(s.gps){ btnLabel='Enable location →'; btnAction='obEnableGps()'; }
+  else if(s.last){ btnLabel='Start →'; btnAction='finishOnboarding()'; }
+  else { btnLabel='Next →'; btnAction='nextObSlide()'; }
+  const showSkip=_obSlide<_obGpsIdx; // skip the tutorial, but never the GPS consent slide
+  el.innerHTML=`<div class="ob-card">
+    <div class="ob-dots">${dots}</div>
+    <div class="ob-icon">${s.icon}</div>
+    <div class="ob-title">${s.title}</div>
+    <div class="ob-text">${s.text}</div>
+    <button class="ob-btn" onclick="${btnAction}">${btnLabel}</button>
+    ${showSkip?`<div class="ob-skip" onclick="obSkipToGps()">Skip</div>`:''}
+  </div>`;
+}
+function nextObSlide(){
+  const el=document.getElementById('obOverlay');
+  if(!el) return;
+  _obSlide=Math.min(_obSlide+1,OB_SLIDES.length-1);
+  renderObSlide(el);
+}
+function obSkipToGps(){
+  const el=document.getElementById('obOverlay');
+  if(!el) return;
+  _obSlide=_obGpsIdx;
+  renderObSlide(el);
+}
+function obEnableGps(){
+  // First-run GPS consent: fire the real permission prompt, then advance regardless of grant/deny.
+  // (Returning users already started GPS on load. Soft gate + denied banner handle a denial.)
+  try{ startGPS(); }catch(e){}
+  nextObSlide();
+}
+function finishOnboarding(){
+  localStorage.setItem(OB_KEY,'1');
+  const el=document.getElementById('obOverlay');
+  if(el) el.style.display='none';
+  // New-user handoff: open the sign-up modal (preserves prior maybeShowAuthOnFirstVisit intent).
+  setTimeout(()=>{ try{ if(!window._fbUser) openEmailModalRegister(); }catch(e){} },400);
+}
+
+buildDesktopFilterBar();load();initMap();updateAll();if(localStorage.getItem(OB_KEY))startGPS();updateRouteBar();checkRefParam();
+maybeShowOnboarding();
 
 // ═══════════ PWA SETUP ═══════════
 (function(){
