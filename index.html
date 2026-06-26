@@ -196,7 +196,7 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 
 /* ── DRAWER MAIN VIEW ── */
 .drawer-main{display:flex;flex-direction:column;height:100%;position:relative;z-index:1}
-.drawer-nav-main{display:flex;flex-direction:column;gap:2px;padding:8px;flex:1;overflow-y:auto}
+.drawer-nav-main{display:flex;flex-direction:column;gap:2px;padding:8px;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;overscroll-behavior:contain}
 .dnav-main-item{display:flex;align-items:center;gap:12px;padding:16px 12px;border-radius:12px;cursor:pointer;transition:background .15s;-webkit-user-select:none;user-select:none;border:1px solid transparent}
 .dnav-main-item:active{background:var(--surf2)}
 .dnav-main-item:hover{background:var(--surf2);border-color:var(--bdr)}
