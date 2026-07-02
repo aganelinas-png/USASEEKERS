@@ -912,7 +912,6 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 .ach-state-pick label{font-family:'DM Mono',monospace;font-size:.7rem;color:var(--td);text-transform:uppercase;letter-spacing:.05em}
 .ach-select{flex:1;background:var(--surf2);color:var(--txt);border:1px solid var(--bdr);border-radius:9px;padding:9px 11px;font-size:.9rem;font-family:'DM Mono',monospace;cursor:pointer}
 .ach-select:focus{outline:none;border-color:var(--gold)}
-.ach-ladder-head{margin-bottom:12px}
 .ach-empty{color:var(--td);font-size:.8rem;padding:14px;text-align:center;background:var(--surf2);border:1px dashed var(--bdr);border-radius:10px}
 .ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
 .ach-card{background:var(--surf2);border:1px solid var(--bdr);border-radius:12px;padding:12px;cursor:pointer;transition:.18s;display:flex;flex-direction:column;gap:4px}
@@ -1301,6 +1300,25 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
   <button class="unlock-btn" id="unlockCloseBtn" onclick="closeUnlock()" style="display:none">Great! 🎉</button>
 </div>
 
+<!-- LEVEL UP OVERLAY -->
+<div class="levelup-overlay" id="levelUpOverlay">
+  <div class="lu-glyph" id="luGlyph">🏅</div>
+  <div class="lu-title">Level up!</div>
+  <div class="lu-level" id="luLevel"></div>
+  <div class="lu-name" id="luName"></div>
+  <div class="lu-reward" id="luReward"></div>
+  <button class="lu-btn" onclick="closeLevelUp()">Onward! 🎉</button>
+</div>
+
+<!-- STREAK BREAK OVERLAY -->
+<div class="streak-break-overlay" id="streakBreakOverlay">
+  <div class="sb-glyph">💔</div>
+  <div class="sb-title">Streak lost</div>
+  <div class="sb-desc" id="sbDesc"></div>
+  <div class="sb-tip">🔥 Collect a spot today to start a new streak</div>
+  <button class="sb-btn" onclick="closeStreakBreak()">OK</button>
+</div>
+
 
 
 <!-- INTRO OVERLAY -->
@@ -1567,7 +1585,7 @@ const TIER_CONFIG={
 
 // Default collection radius per spot in metres (can be overridden per spot)
 const DEFAULT_RADIUS=80;
-const APP_VERSION='usa-1.6';
+const APP_VERSION='usa-1.7';
 
 // Per-category sensible defaults — used when no explicit radius is set
 const CAT_DEFAULT_RADIUS={
@@ -2195,33 +2213,6 @@ function t4Collected(){return _tierCount(4);}
 // isSpotUnlocked → alias of isSpotVisible (reserved for future paywall)
 function isSpotUnlocked(spot){return isSpotVisible(spot);}
 
-function catsForTier(tier){
-  const cats=new Set(SPOTS.filter(s=>s.tier===tier).map(s=>s.cat));
-  return [...cats];
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-}
 
 // Spot collection radius — 0.85× across the board (tighter zones, especially in dense cities)
 // Hidden spots: fixed 80m, no multiplier (GPS unreliable near unusual locations)
@@ -2594,8 +2585,6 @@ function initMap(){
   map.on('moveend',scheduleViewportRender);
   map.on('zoomend',scheduleViewportRender);
   map.on('click',e=>{
-    // Close city filter if open
-    if(_cityFilterOpen) closeCityFilterSheet();
     // Suggest spot pick mode
     if(_sugPickMode){
       _handleSuggestMapPick(e);
@@ -2651,17 +2640,6 @@ function makeIcon(spot){
   });
 }
 
-function addMarker(spot){
-  if(spot.cat==='hidden') return;
-  if(!isSpotUnlocked(spot)) return; // locked T2/T3 — not shown on map
-  const m=L.marker([spot.lat,spot.lng],{icon:makeIcon(spot)});
-  m._isMarker=true;
-  m.on('click',()=>openSheet(spot));
-  markers[spot.id]=m;
-  const show=activeFilterHidden.size===0||!activeFilterHidden.has(spot.cat);
-  if(show&&clusterGroup) clusterGroup.addLayer(m);
-  else m._hiddenFromCluster=true;
-}
 
 function spotInCity(spot,city){
   const b=getCityBounds()[city];
@@ -2680,13 +2658,6 @@ function refreshMarkers(){
   renderViewportMarkers();
 }
 
-function addMarkerToCluster(spot,show){
-  const m=L.marker([spot.lat,spot.lng],{icon:makeIcon(spot)});
-  m._isMarker=true;
-  m.on('click',()=>openSheet(spot));
-  markers[spot.id]=m;
-  if(show&&clusterGroup) clusterGroup.addLayer(m);
-}
 
 // Viewport lazy rendering — only render markers near current map bounds
 let _viewportRenderPending=false;
@@ -2879,63 +2850,10 @@ function _syncFilterUI(){
 
 // ═══════════ CITY FILTER ═══════════
 let activeCity='all'; // 'all' or city name string
-let _cityFilterOpen=false;
 
-function toggleCityFilter(){
-  _cityFilterOpen=!_cityFilterOpen;
-  const arr=document.getElementById('cityFilterArr');
-  const pill=document.getElementById('cityFilterPill');
-  if(arr) arr.style.transform=_cityFilterOpen?'rotate(180deg)':'';
-  if(_cityFilterOpen) showCityFilterSheet();
-  else closeCityFilterSheet();
-  if(pill) pill.classList.toggle('on',_cityFilterOpen||activeCity!=='all');
-}
 
-function showCityFilterSheet(){
-  let el=document.getElementById('cityFilterSheet');
-  if(!el){
-    el=document.createElement('div');
-    el.id='cityFilterSheet';
-    el.style.cssText='position:fixed;top:calc(60px + env(safe-area-inset-top));left:0;right:0;z-index:199;background:var(--surf);border-bottom:1px solid var(--bdr);padding:10px 12px;display:flex;flex-wrap:wrap;gap:6px;box-shadow:0 4px 16px var(--sh);max-height:180px;overflow-y:auto';
-    document.body.appendChild(el);
-  }
-  // Only show cities that actually have spots in the current SPOTS array
-  const citiesWithSpots=Object.keys(getCityBounds()).filter(city=>{
-    const b=getCityBounds()[city];
-    return SPOTS.some(s=>s.cat!=='hidden'&&s.lat>=b.sw[0]&&s.lat<=b.ne[0]&&s.lng>=b.sw[1]&&s.lng<=b.ne[1]);
-  }).sort();
-  el.innerHTML=`
-    <div class="fcap ${activeCity==='all'?'on':''}" onclick="setCityFilter('all')">🇺🇸 All</div>
-    ${citiesWithSpots.map(c=>`<div class="fcap ${activeCity===c?'on':''}" onclick="setCityFilter('${c}')">${c}</div>`).join('')}
-  `;
-  el.style.display='flex';
-}
 
-function closeCityFilterSheet(){
-  const el=document.getElementById('cityFilterSheet');
-  if(el) el.style.display='none';
-  _cityFilterOpen=false;
-  const arr=document.getElementById('cityFilterArr');
-  if(arr) arr.style.transform='';
-}
 
-function setCityFilter(city){
-  activeCity=city;
-  const pill=document.getElementById('cityFilterPill');
-  if(pill){
-    pill.innerHTML=city==='all'?`📍 Region <span class="fg-arr" id="cityFilterArr">▾</span>`:`📍 ${city} <span class="fg-arr" id="cityFilterArr">▾</span>`;
-    pill.classList.toggle('on',city!=='all');
-  }
-  closeCityFilterSheet();
-  refreshMarkers();
-  // Fly to city if selected
-  if(city!=='all'&&getCityBounds()[city]){
-    const b=getCityBounds()[city];
-    const clat=(b.sw[0]+b.ne[0])/2;
-    const clng=(b.sw[1]+b.ne[1])/2;
-    map.setView([clat,clng],13);
-  }
-}
 
 // ═══════════ GPS ═══════════
 
@@ -3308,7 +3226,6 @@ function openDrawer(){
   document.getElementById('drawer').classList.add('open');
   document.getElementById('drawerBackdrop').classList.add('open');
   updateDrawerHeader();
-  renderDrawerStats();
 }
 function closeDrawer(){
   document.getElementById('drawer').classList.remove('open');
@@ -3349,10 +3266,6 @@ function openSubPanel(name){
   if(name==='mysuggestions') renderMySuggestions();
 }
 
-function isPanelOpen(name){
-  const el=document.getElementById('panel-'+name);
-  return el&&el.classList.contains('active')&&document.getElementById('drawerSubPanel')?.classList.contains('open');
-}
 
 function closeSubPanel(instant){
   const sp=document.getElementById('drawerSubPanel');
@@ -3361,9 +3274,6 @@ function closeSubPanel(instant){
   if(instant) setTimeout(()=>sp.style.transition='',10);
 }
 
-// Keep switchDrawerPanel as alias for compatibility
-function switchDrawerPanel(name){openSubPanel(name);}
-function renderCurrentPanel(name){if(name) openSubPanel(name);}
 
 function updateDrawerHeader(){
   document.getElementById('drawerSub').textContent=`🇺🇸 ${found.size} / ${totalSpots().toLocaleString()} · ${getLevel(totalXP).icon} Lv.${getLevel(totalXP).level} · ⭐ ${totalXP} XP`;
@@ -3371,42 +3281,8 @@ function updateDrawerHeader(){
   if(streakEl) streakEl.textContent=streak>0?`🔥 ${streak}-day streak`:'Start a streak!';
 }
 
-function renderTierProgressHTML(){
-  const plvl=getPlayerLevel(totalXP);
-  const lv=getLevel(totalXP);
-  const next=getNextLevel(totalXP);
-  const allSpots=SPOTS.filter(s=>s.cat!=='hidden');
-  const tc=[t1Collected(),t2Collected(),t3Collected(),t4Collected()];
-  function tierRow(tier,collected){
-    const cfg=TIER_CONFIG[tier];
-    const tot=SPOTS.filter(s=>s.tier===tier&&s.cat!=='hidden').length;
-    return`<div class="tier-row">
-      <div class="tier-dot" style="background:${cfg.color}"></div>
-      <div class="tier-info">
-        <div class="tier-name">${cfg.icon} ${cfg.label}</div>
-        <div class="tier-count">${collected} / ${tot.toLocaleString()} collected</div>
-        <div class="tier-bar"><div class="tier-fill" style="background:${cfg.color};width:${tot?collected/tot*100:0}%"></div></div>
-      </div>
-    </div>`;
-  }
-  return`<div class="tier-progress">
-    <div class="tier-row" style="margin-bottom:4px">
-      <div class="tier-dot" style="background:var(--gold)"></div>
-      <div class="tier-info">
-        <div class="tier-name">Lv.${plvl} — ${lv.name} ${lv.icon}</div>
-        <div class="tier-count">${found.size} / ${allSpots.length.toLocaleString()} collected${next?` · ${(next.xp-totalXP).toLocaleString()} XP to Lv.${plvl+1}`:' · max level'}</div>
-        <div class="tier-bar"><div class="tier-fill" style="background:var(--gold);width:${next?Math.round((totalXP-lv.xp)/Math.max(1,next.xp-lv.xp)*100):100}%"></div></div>
-      </div>
-    </div>
-    ${tierRow(1,tc[0])}
-    ${tierRow(2,tc[1])}
-    ${tierRow(3,tc[2])}
-    ${tierRow(4,tc[3])}
-  </div>`;
-}
 
 // Keep old name as alias so any stray calls don't crash
-function renderDrawerTierProgress(){}
 
 // ═══════════ DAILY QUEST ═══════════
 
@@ -3812,9 +3688,8 @@ function surpriseMe(){
 
 // ═══════════ BADGES ═══════════
 
-function gprog(g){if(!g.cat) return found.size;return SPOTS.filter(s=>s.cat===g.cat&&found.has(s.id)).length;}
-function gtot(g){if(!g.cat) return SPOTS.length;return SPOTS.filter(s=>s.cat===g.cat).length;}
-function tierAllDone(tier){return SPOTS.filter(s=>s.tier===tier).every(s=>found.has(s.id));}
+
+
 
 // \u2550\u2550\u2550 UNIFIED BADGE EVALUATION \u2550\u2550\u2550
 // Live totals: OVERVIEW is authoritative (lazy-load-proof); SPOTS is only a partial fallback.
@@ -4146,17 +4021,8 @@ function closeAchievements(){achState.open=false;const w=document.getElementById
 function achBack(){achState.view='overview';achState.group=null;renderAch();}
 function achOpenGroup(id){achState.view='detail';achState.group=id;renderAch();}
 function refreshAchIfOpen(){if(achState.open)renderAch();}
-let achSelectedState=null;
 let achShowAllStates=false;
-function defaultAchState(){
-  try{const m=localStorage.getItem('ke7_ach_state');if(m&&BADGE_GROUPS.some(g=>g.stateCode===m))return m;}catch(e){}
-  const c={};let best=null,bestN=0;
-  for(const id in foundState){const st=foundState[id];if(!st)continue;c[st]=(c[st]||0)+1;if(c[st]>bestN){bestN=c[st];best=st;}}
-  if(best&&BADGE_GROUPS.some(g=>g.stateCode===best))return best;
-  try{ if(userLat!==null&&userLng!==null){const gs=assignState(userLat,userLng);if(gs&&BADGE_GROUPS.some(x=>x.stateCode===gs))return gs;} }catch(e){}
-  return null;
-}
-function achSetState(code){ achSelectedState=code||null; try{ if(code) localStorage.setItem('ke7_ach_state',code); }catch(e){} renderAch(); }
+
 function achToggleAllStates(){ const b=document.getElementById('achBody'); const sc=b?b.scrollTop:0; achShowAllStates=!achShowAllStates; renderAch(); if(b) b.scrollTop=sc; }
 function achCardHtml(g,ctx){
   const r=groupRollup(g,ctx);
@@ -4174,17 +4040,6 @@ function achStateCardHtml(g,ctx,isGps){
   const done=r.earned>=r.total&&r.total>0;
   const spots=(r.cur!==null&&r.tot!==null&&r.tot>0)?`<span class="spots">🗺 ${r.cur}/${r.tot}</span>`:'';
   return `<div class="ach-card compact ${done?'done':''}" onclick="achOpenGroup('${g.id}')"><div class="ach-card-icon">${isGps?'📌':g.icon}</div><div class="ach-scc-main"><div class="ach-card-title">${g.title}</div><div class="ach-scc-sub">${r.earned}/${r.total}${done?' ✓':''} ${spots}</div><div class="ach-bar sm"><div class="ach-bar-fill" style="width:${pct}%"></div></div></div></div>`;
-}
-function achLadderHtml(g,ctx){
-  const r=groupRollup(g,ctx);
-  const dpct=r.total?Math.round(r.earned/r.total*100):0;
-  const spotLine=(r.cur!==null&&r.tot!==null&&r.tot>0)?` · 🗺 ${r.cur} / ${r.tot}`:'';
-  const head=`<div class="ach-ladder-head"><div class="ach-bar"><div class="ach-bar-fill" style="width:${dpct}%"></div></div><div class="ach-sum-row"><span>${r.earned} / ${r.total} badges${spotLine}</span><span>${dpct}%</span></div></div>`;
-  const rows=g.badges.map(b=>{
-    const st=evalBadge(b,g,ctx);const earned=earnedBadges.has(b.id)||st.met;const showProg=!earned&&st.need>0;
-    return `<div class="ach-row ${earned?'earned':''}"><div class="ach-row-icon">${b.icon}</div><div class="ach-row-main"><div class="ach-row-name">${b.name}${earned?' <span class="ach-check">✓</span>':''}</div><div class="ach-row-desc">${b.desc}</div>${showProg?`<div class="ach-row-prog"><div class="ach-bar sm"><div class="ach-bar-fill" style="width:${st.pct}%"></div></div><span class="ach-row-pct">${st.cur}/${st.need}</span></div>`:''}</div></div>`;
-  }).join('');
-  return head+`<div class="ach-list">${rows}</div>`;
 }
 
 function renderAch(){
@@ -4628,74 +4483,12 @@ function renderCityCompletion(){
 }
 
 // ═══════════ NEARBY SUGGESTIONS ═══════════
-function renderNearbySuggestions(){
-  if(userLat===null) return'';
-  const MAX_DIST=800;
-  const nearby=SPOTS
-    .filter(s=>!found.has(s.id)&&isSpotVisible(s)&&s.cat!=='hidden')
-    .map(s=>({s,d:dist(userLat,userLng,s.lat,s.lng)}))
-    .filter(x=>x.d<=MAX_DIST)
-    .sort((a,b)=>a.d-b.d)
-    .slice(0,5);
-  if(!nearby.length) return'';
-  const items=nearby.map(({s,d})=>{
-    const cat=CATS[s.cat]||CATS.history;
-    const dm=d<1000?`${Math.round(d)}m`:`${(d/1000).toFixed(1)}km`;
-    return`<div onclick="closeDrawer();goToSpot('${s.id}')" style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);cursor:pointer">
-      <span style="font-size:1.1rem">${cat.emoji}</span>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:.72rem;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
-        <div style="font-size:.6rem;color:var(--tm);font-family:'DM Mono',monospace">${cat.label}</div>
-      </div>
-      <span style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--gold)">${dm}</span>
-    </div>`;
-  }).join('');
-  return`<div class="streak-card" style="margin-bottom:8px">
-    <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--gold);margin-bottom:8px">📍 Nearby (within ${MAX_DIST}m)</div>
-    ${items}
-  </div>`;
-}
 
 // ═══════════ DRAWER STATS (main panel) ═══════════
-function renderDrawerStats(){
-  const el=document.getElementById('drawerStats');
-  if(!el) return;
-  el.innerHTML=renderTierProgressHTML()
-    +renderLevelCard()
-    +renderStreakCard()
-    +renderQuestCard()
-    +renderWeeklySummary()
-    +renderWeeklyChallenge()
-    +renderStateConquest()+renderCityCompletion()
-    +renderNearbySuggestions();
-}
 
 // ═══════════ SPOT LIST (collapsed by category) ═══════════
-let _catExpanded=new Set();
-function toggleCatList(catId){
-  if(_catExpanded.has(catId)) _catExpanded.delete(catId);
-  else _catExpanded.add(catId);
-  renderList();
-}
 
-// Which state the Spots panel is showing. Defaults to the user's GPS state,
-// then the state with the most collected spots, then the first available state.
-function spotsPanelState(){
-  if(_spotsPanelState&&(_legacySpotMode||!OVERVIEW||!OVERVIEW.states||OVERVIEW.states[_spotsPanelState])) return _spotsPanelState;
-  let code=null;
-  if(userLat!==null&&userLng!==null) code=assignState(userLat,userLng);
-  if(!code||(OVERVIEW&&OVERVIEW.states&&!OVERVIEW.states[code])){
-    const done={};for(const id in foundState){const st=foundState[id];if(st)done[st]=(done[st]||0)+1;}
-    const collected=Object.keys(done).sort((a,b)=>done[b]-done[a]);
-    if(collected.length) code=collected[0];
-  }
-  if(!code&&OVERVIEW&&OVERVIEW.states){const ks=Object.keys(OVERVIEW.states).sort();if(ks.length)code=ks[0];}
-  if(!code){const ks=[...new Set(SPOTS.map(s=>s.st||s.state).filter(Boolean))].sort();if(ks.length)code=ks[0];}
-  _spotsPanelState=code;
-  return code;
-}
 
-function onSpotsStateChange(code){_spotsPanelState=code;renderList();}
 
 function stateName(code){
   try{ if(typeof US_STATES!=='undefined'){ const r=US_STATES.find(x=>x[0]===code); if(r) return r[1]; } }catch(e){}
@@ -4837,18 +4630,6 @@ function goToSpot(id){
 
 // ═══════════ SOCIAL / SHARE ═══════════
 
-function generateShareCode(){
-  const data={
-    n:playerName,
-    f:[...found],
-    xp:totalXP,
-    s:streak,
-    e:[...earnedBadges],
-    v:7,
-    d:new Date().toDateString()
-  };
-  return btoa(encodeURIComponent(JSON.stringify(data)));
-}
 
 // Generate a clean invite URL with the user's name as ref
 function getInviteUrl(){
@@ -4943,11 +4724,6 @@ function nativeShare(url,text){
   document.getElementById('shareSheet')?.remove();
 }
 
-function copyText(text){
-  if(navigator.clipboard){
-    navigator.clipboard.writeText(text).then(()=>toast('📋 Copied!','success')).catch(()=>fallbackCopy(text));
-  } else fallbackCopy(text);
-}
 
 function fallbackCopy(text){
   const ta=document.createElement('textarea');
@@ -5238,7 +5014,6 @@ function updateAll(){
   pill.style.display=s>0?'flex':'none';
   updateLevelPill();
   updateDrawerHeader();
-  renderDrawerStats();
   // Routes badge (drawer)
   const rb=document.getElementById('routesBadge');
   if(rb){const rc=routes.length;rb.textContent=rc;rb.style.display=rc>0?'inline-flex':'none';}
@@ -5278,22 +5053,6 @@ function launchConfetti(){
 
 // ═══════════ LEVEL SYSTEM UI ═══════════
 
-function renderLevelCard(){
-  const lv=getLevel(totalXP),nxt=getNextLevel(totalXP);
-  const pct=getLevelProgress(totalXP);
-  const xpLeft=nxt?nxt.xp-totalXP:0;
-  return`<div class="level-card">
-    <div class="lc-top">
-      <div class="lc-icon">${lv.icon}</div>
-      <div class="lc-info">
-        <div class="lc-title">Lv.${lv.level} — ${lv.name}</div>
-        <div class="lc-sub">${nxt?`Next: Lv.${nxt.level} ${nxt.name} (${xpLeft} XP)`:'Max level! 👑'}</div>
-      </div>
-    </div>
-    <div class="lc-bar"><div class="lc-fill" style="width:${pct}%"></div></div>
-    <div class="lc-xp">${totalXP} XP${nxt?` / ${nxt.xp} XP`:''}</div>
-  </div>`;
-}
 
 function checkLevelUp(){
   const newLv=getLevel(totalXP).level;
@@ -5330,30 +5089,6 @@ function updateLevelPill(){
   if(lpName) lpName.textContent=lv.icon+' '+lv.name;
 }
 
-function renderStreakCard(){
-  const nextM=STREAK_MILES.find(m=>streak<m.day);
-  const daysLeft=nextM?nextM.day-streak:0;
-  const cls=streak>=2?'hot':'';
-  const miles=STREAK_MILES.map(m=>{
-    const done=streak>=m.day;
-    const isNext=nextM&&nextM.day===m.day;
-    return`<div class="sc-m ${done?'done':''} ${isNext?'next':''}">
-      <span class="sm-i">${done?'✓':m.icon}</span>
-      <span class="sm-d">${m.label}</span>
-      <span class="sm-r">${m.desc}</span>
-    </div>`;
-  }).join('');
-  return`<div class="streak-card ${cls}">
-    <div class="sc-top">
-      <div class="sc-fire">${streak>=2?'🔥':'🕯'}</div>
-      <div class="sc-info">
-        <div class="sc-title">${streak>0?`${streak}-day streak`:'No streak'}</div>
-        <div class="sc-sub">${nextM?`${daysLeft}d to ${nextM.icon} ${nextM.label}`:'All rewards earned!'}</div>
-      </div>
-    </div>
-    <div class="sc-miles">${miles}</div>
-  </div>`;
-}
 
 function checkStreakMilestones(){
   STREAK_MILES.forEach(m=>{
@@ -5609,32 +5344,6 @@ function osmGenerateName(t, cat){
   }
 }
 
-function makeOsmQuery(bbox){
-  return `data=[out:json][timeout:25];
-(
-  node["amenity"="place_of_worship"]["name"](${bbox});
-  node["tourism"="museum"]["name"](${bbox});
-  node["tourism"="gallery"]["name"](${bbox});
-  node["tourism"="viewpoint"]["name"](${bbox});
-  node["tourism"="artwork"]["name"](${bbox});
-  node["historic"~"castle|monument|memorial|ruins|fort|archaeological_site|artwork"]["name"](${bbox});
-  node["historic"~"mound|wayside_shrine|stone"]["name"](${bbox});
-  node["historic"="bridge"]["name"](${bbox});
-  node["leisure"~"park|garden|nature_reserve"]["name"](${bbox});
-  node["military"~"bunker|fort"]["name"](${bbox});
-  node["amenity"="grave_yard"]["name"](${bbox});
-  node["highway"="trailhead"]["name"](${bbox});
-  node["man_made"="chimney"](${bbox});
-  node["natural"="cliff"](${bbox});
-  way["amenity"="place_of_worship"]["name"](${bbox});
-  way["tourism"="museum"]["name"](${bbox});
-  way["historic"~"castle|monument|memorial|ruins|fort"]["name"](${bbox});
-  way["historic"="mound"]["name"](${bbox});
-  way["leisure"~"park|garden|nature_reserve"]["name"](${bbox});
-  way["landuse"="cemetery"]["name"](${bbox});
-);
-out center;`;
-}
 
 function processOsmElement(e){
   const lat=parseFloat((e.lat||(e.center&&e.center.lat)||0).toFixed(6));
@@ -6514,8 +6223,6 @@ let _lastClusterZoom=-1;
 let _clusterTimer=null;
 
 // Clustering is handled by L.markerClusterGroup — no manual culling needed
-function setupClusteringListener(){}
-function applyViewportCulling(){}
 
 // ═══════════ ROUTES ═══════════
 
@@ -6905,7 +6612,6 @@ async function promptCreateRoute(){
   toast(`✓ Created "${r.name}"`,'success');
 }
 
-function autoGenerateRoute(){ tpGenerate(); }
 
 // ── Filter: toggle all off ──
 function mobHideAll(){
@@ -6927,8 +6633,6 @@ function toggleRouteFilter(){
   refreshMarkers();
 }
 
-function renderFavoritesInto(target){renderRoutesInto(target);}
-function renderFavorites(){renderRoutes();}
 
 // ═══════════ TRIP ENGINE v2 (clustering + generation) ═══════════
 // Spot -> Stop (cluster) -> Trip (<=20 stops). Time budget master. Two shapes: loop, dest(A->B corridor).
