@@ -310,6 +310,8 @@ html,body{height:100%;overflow:hidden;font-family:'DM Sans',sans-serif;backgroun
 .tier-badge.t1{background:rgba(201,168,76,.12);color:var(--t1);border-color:var(--t1d)}
 .tier-badge.t2{background:rgba(122,156,201,.12);color:var(--t2);border-color:var(--t2d)}
 .tier-badge.t3{background:rgba(176,122,170,.12);color:var(--t3);border-color:var(--t3d)}
+@keyframes ftdPulse{0%{box-shadow:0 0 0 3.5px #e8c878,0 0 0 4px rgba(232,200,120,.6)}70%{box-shadow:0 0 0 3.5px #e8c878,0 0 0 14px rgba(232,200,120,0)}100%{box-shadow:0 0 0 3.5px #e8c878,0 0 0 4px rgba(232,200,120,0)}}
+.ftd-ring{animation:ftdPulse 2s ease-out infinite}
 
 /* LOCKED SHEET */
 .locked-sheet{text-align:center;padding:30px 20px}
@@ -1585,7 +1587,7 @@ const TIER_CONFIG={
 
 // Default collection radius per spot in metres (can be overridden per spot)
 const DEFAULT_RADIUS=80;
-const APP_VERSION='usa-1.7';
+const APP_VERSION='usa-1.8';
 
 // Per-category sensible defaults — used when no explicit radius is set
 const CAT_DEFAULT_RADIUS={
@@ -2131,6 +2133,7 @@ function compactSpot(s){
   if(s.tag) out.tag=s.tag;
   if(s.history) out.history=s.history;
   if(s.radius&&s.radius!==(CAT_DEFAULT_RADIUS[s.cat]||DEFAULT_RADIUS)) out.radius=s.radius;
+  if(s.featured) out.featured=1;
   return out;
 }
 
@@ -2628,14 +2631,15 @@ function makeIcon(spot){
   const editRouteId=_routeEditMode?_routeEditRouteId:null;
   const inRoute=editRouteId&&routes.find(r=>r.id===editRouteId)?.spots.includes(String(spot.id));
 
+  const isFtd=!!spot.featured;
   const bg=isF?cat.color:(isDark?'#1a1710':'#fff');
-  const bd=inRoute?'#c9a84c':(isF?cat.color:(isDark?tc.color:'#bbb'));
+  const bd=inRoute?'#c9a84c':(isFtd?'#e8c878':(isF?cat.color:(isDark?tc.color:'#bbb')));
   const outerGlow=inRoute?`0 0 0 2px #0e0c09,0 0 0 4px #c9a84c,0 3px 12px rgba(201,168,76,.5)`:
     `box-shadow:0 0 0 2px ${isDark?'#0e0c09':'#f2ede3'},0 0 0 3.5px ${tc.color},0 3px 10px rgba(0,0,0,.4)`;
 
   return L.divIcon({
     className:'',
-    html:`<div style="width:36px;height:36px;border-radius:50%;background:${bg};border:2px solid ${bd};display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:${outerGlow}">${inRoute?`<span style="position:absolute;top:-4px;right:-4px;width:14px;height:14px;background:#c9a84c;border-radius:50%;font-size:9px;display:flex;align-items:center;justify-content:center;color:#0e0c09;font-weight:700">✓</span>`:''}${cat.emoji}</div>`,
+    html:`<div class="${(isFtd&&!inRoute)?'ftd-ring':''}" style="width:36px;height:36px;border-radius:50%;background:${bg};border:2px solid ${bd};display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:${outerGlow}">${inRoute?`<span style="position:absolute;top:-4px;right:-4px;width:14px;height:14px;background:#c9a84c;border-radius:50%;font-size:9px;display:flex;align-items:center;justify-content:center;color:#0e0c09;font-weight:700">✓</span>`:''}${isFtd?`<span style="position:absolute;top:-7px;left:-7px;font-size:13px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))">⭐</span>`:''}${cat.emoji}</div>`,
     iconSize:[36,36],iconAnchor:[18,18],
   });
 }
@@ -3485,6 +3489,7 @@ function openSheet(spot){
       <div class="stitle">${spot.name}</div>
       <div class="tier-badge t${spot.tier||1}">${tc.icon} ${tc.label}</div>
       <div class="schips">
+        ${spot.featured?`<span class="chip" style="background:rgba(232,200,120,.14);color:#e8c878;border:1px solid rgba(232,200,120,.45)">⭐ Featured — Locals' pick</span>`:''}
         ${spot.tag?`<span class="chip hi">${spot.tag}</span>`:''}
       </div>
       ${spot.year&&spot.year!=='—'?(()=>{
@@ -3507,7 +3512,7 @@ function openSheet(spot){
 
   const _footer=document.getElementById('sheetFooter');
   if(_footer){
-    _footer.innerHTML = locked ? '' : `<div style="display:flex;gap:8px;margin-bottom:8px"><button class="route-show-btn" id="routeShowBtn" style="flex:1;margin-bottom:0" onclick="showRouteToSpot(selectedSpot)">🧭 Show route</button><button class="route-show-btn" style="flex:1;margin-bottom:0" onclick="tpFromHere(selectedSpot.id)">🗺 Plan trip</button></div><div class="crow"><div class="dbadge" id="distBadge">—</div><button class="${isF?'cbtn done':'cbtn gps-wait'}" id="collectBtn" onclick="collectCurrent()">${isF?'✓ Collected':'⌛ Get closer'}</button><button class="editbtn" id="favBtn" onclick="toggleSpotInActiveRoute()" title="Add to route" style="font-size:18px;padding:10px 12px">＋</button>${(window._fbUser&&ADMIN_UIDS.includes(window._fbUser.uid))?'<button class="editbtn" onclick="openEditor(selectedSpot)">✏️</button>':''}</div>`;
+    _footer.innerHTML = locked ? '' : `<div style="display:flex;gap:8px;margin-bottom:8px"><button class="route-show-btn" id="routeShowBtn" style="flex:1;margin-bottom:0" onclick="showRouteToSpot(selectedSpot)">🧭 Show route</button><button class="route-show-btn" style="flex:1;margin-bottom:0" onclick="tpFromHere(selectedSpot.id)">🗺 Plan trip</button></div><div class="crow"><div class="dbadge" id="distBadge">—</div><button class="${isF?'cbtn done':'cbtn gps-wait'}" id="collectBtn" onclick="collectCurrent()">${isF?'✓ Collected':'⌛ Get closer'}</button><button class="editbtn" id="favBtn" onclick="toggleSpotInActiveRoute()" title="Add to route" style="font-size:18px;padding:10px 12px">＋</button>${(window._fbUser&&ADMIN_UIDS.includes(window._fbUser.uid))?`<button class="editbtn" onclick="openEditor(selectedSpot)">✏️</button><button class="editbtn" onclick="toggleFeatured()" title="${spot.featured?'Unfeature':'Feature'} this spot" style="padding:10px 12px${spot.featured?';background:rgba(232,200,120,.2)':''}">⭐</button>`:''}</div>`;
   }
   hideProxPopup();   // B1: don't let the proximity popup cover the footer
   clearSpotRoute();  // clear any prior per-spot route when opening a new spot
@@ -7292,7 +7297,7 @@ maybeShowOnboarding();
   // Register service worker for offline caching
   if('serviceWorker' in navigator){
     const swCode=`
-const CACHE='spotseekers-usa-v6';
+const CACHE='spotseekers-usa-v7';
 const SPOTS_CACHE='ss-spots-v1';
 const PRECACHE=['/'];
 self.addEventListener('install',e=>{
@@ -7656,6 +7661,7 @@ function normalizeSpot(s){
   // Visit-based promotion overlay: ONLY upgrades Local (4) spots to National(2)/State(3).
   // Real NRHP Landmark/National/State (tier 1/2/3) are never touched.
   if(s.tier===4){const o=TIER_OVERRIDES[s.id];if(o===2||o===3)s.tier=o;}
+  if(s.featured) s.featured=1;
   if(!s.name) s.name='';
   return s;
 }
@@ -7885,6 +7891,29 @@ async function kvMutateStates(codes,mutator,label){
   }finally{
     if(touched.size) rebuildSPOTS();
     _kvBusy=false;setSyncDot('synced');
+  }
+}
+
+// ⭐ Featured toggle — flips the featured flag on one spot in its single state pack.
+async function toggleFeatured(){
+  if(!isAdmin()){toast('⚠ Admin only','info');return;}
+  const spot=selectedSpot;if(!spot)return;
+  const sid=String(spot.id);
+  const code=(spot.st&&STATE_BBOXES[spot.st])?spot.st:assignState(spot.lat,spot.lng);
+  if(!code||!STATE_BBOXES[code]){toast('⚠ Cannot resolve spot state','info');return;}
+  const turnOn=!spot.featured;
+  const ok=await kvMutateStates([code],(c,arr)=>{
+    const s=arr.find(x=>String(x.id)===sid);
+    if(!s)return 0;
+    if(turnOn)s.featured=1;else delete s.featured;
+    return 1;
+  },turnOn?'Feature spot':'Unfeature spot');
+  if(ok){
+    if(turnOn)spot.featured=1;else delete spot.featured;
+    const live=SPOTS.find(x=>String(x.id)===sid);
+    if(live&&live!==spot){if(turnOn)live.featured=1;else delete live.featured;}
+    if(markers[spot.id])markers[spot.id].setIcon(makeIcon(spot));
+    openSheet(spot); // re-render sheet with updated chip + button state
   }
 }
 
